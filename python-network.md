@@ -1,78 +1,490 @@
 # Network
 
-## IPy
+> 自顶向下
 
-> 解析ip地址
+## http
 
-- 列出网段内的所有ip
+### requests
+
+- [官方文档](https://requests.readthedocs.io/en/master/)
+
+| 属性方法          | 内容                         |
+|-------------------|------------------------------|
+| r.headers         | 响应报文                     |
+| r.request.headers | 请求报文                     |
+| r.content         | byte类型的text(可以decode()) |
+| r.text            | str类型的text(中文为unicode) |
+| r.json()          | 如果text是json,查看text      |
+| r.cookies         | cookies                      |
 
 ```py
-from IPy import IP
-ip = IP('192.168.1.0/24')
+import requests
 
-for i in ip:
-    print(i)
+# get
+r = requests.get('https://www.baidu.com/')
+
+# params 设置参数
+p = {'s?wd': '123'}
+r = requests.get('https://www.baidu.com/', params=p)
+
+# headers 设置请求头部
+url = 'https://www.baidu.com/'
+headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)' 'AppleWebKit/537.36 (KHTML, like Gecko)' 'Chrome/90.0.4430.85 Safari/537.36'}
+
+r = requests.get(url=url, headers=headers)
+r.request.headers
+
+# post方法的测试网站
+url = 'https://httpbin.org/post'
+
+# dict
+data1 = {'test': [1, 2]}
+# or
+data1 = [('test', 1), ('test', 2)]
+
+# 参数data,但实际上是form
+r = requests.post(url, data = data1)
+
+# post muti file
+# 建议使用二进制模式打开文件
+url = 'https://httpbin.org/post'
+multiple_files = [
+     ('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
+     ('images', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
+ r = requests.post(url, files=multiple_files)
+ r.text
+
+# cookies
+url = 'https://httpbin.org/cookies'
+cookies = dict(cookies_are='working')
+r = requests.get(url, cookies=cookies)
+r.json()
+
+# session
+# requests.get()会为每个请求新建session.而使用session再get()可以重用cookies, tcp 链接
+# 好比于: 每次都需要打开新的浏览器再打开site; 而session, 则是在同一个浏览器打开site
+s = requests.Session()
+r = s.get('https://httpbin.org/cookies/set/sessioncookie/123456789')
+r.json()
+
+# 确认session是否关闭
+with requests.Session() as s:
+    s.get('https://httpbin.org/cookies/set/sessioncookie/123456789')
+
+# stream=True时只下载响应头,和保持链接.因此需要使用with关闭链接
+with requests.get('https://httpbin.org/get', stream=True) as r:
+    # Do things with the response here.
+
+# hook
+def print_url(r, *args, **kwargs):
+    print(r.url)
+
+requests.get('https://httpbin.org/', hooks={'response': print_url})
+
+# hook multpie
+def record_hook(r, *args, **kwargs):
+    r.hook_called = 'my name is tz'
+    return r
+
+r = requests.get('https://httpbin.org/', hooks={'response': [print_url, record_hook]})
+r.hook_called
+
+# session hook
+s = requests.Session()
+s.hooks['response'].append(print_url)
+s.get('https://httpbin.org/')
+
+# proxy
+proxies = {
+  'http': 'http://10.10.1.10:3128',
+  'https': 'http://10.10.1.10:1080',
+}
+
+requests.get('http://example.org', proxies=proxies)
 ```
 
-## telnetlib
+### httpx
 
-> 端口搜索
+> 语法类似`requests`.支持同步, 异步, HTTP2
+
+- [官方文档](https://www.python-httpx.org/)
+
+- 向同一主机发出多个请求时，客户端将重用底层TCP连接(HTTP keep-alive)，而不是为每个请求重新创建一个
+
+- 默认 `encoding` 为 `utf-8`, 而requests的 `encoding` 为 `ISO-8859-1`
 
 ```py
-from telnetlib import Telnet
-ip = '192.168.1.221'
+import httpx
+import asyncio
 
-for port in range(65535):
-    try:
-       if Telnet(ip, port, timeout=1):
-            print(f'{port}  success')
-    except ConnectionRefusedError:
-        print(f'{port}  fail')
-        pass
+# async
+
+async with httpx.AsyncClient() as client:
+    r = await client.get(url)
+
+# unix domain socket
+transport = httpx.HTTPTransport(uds="/var/run/docker.sock")
+client = httpx.Client(transport=transport)
+response = client.get("http://docker/info")
+response.json()
+
+# http2
+client = httpx.AsyncClient(http2=True)
+r = await client.get(url)
+r.http_version
 ```
 
-## paramiko(ssh)
-
-- 执行命令
+- log
 
 ```py
-import paramiko
+# test.py
+import httpx
 
-def exec(ip, cmd):
-    with paramiko.SSHClient() as client:
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(ip, 22, 'root')
+url = 'https://www.baidu.com'
 
-        stdin, stdout, stderr = client.exec_command(cmd)
-        # stdout类似文件类
-        print(stdout.read().decode())
-
-centos7='192.168.100.208'
-exec(centos7, 'ls -l')
+with httpx.Client() as client:
+    r = client.get(url)
 ```
 
-- sftp文件操作
+```bash
+HTTPX_LOG_LEVEL=debug python3 test.py
+DEBUG [2021-03-27 11:45:16] httpx._client - HTTP Request: GET http://www.baidu.com "HTTP/1.1 200 OK"
+```
+
+```bash
+HTTPX_LOG_LEVEL=trace python3 test.py
+TRACE [2021-03-27 11:47:18] httpx._config - load_ssl_context verify=True cert=None trust_env=True http2=False
+TRACE [2021-03-27 11:47:18] httpx._config - load_verify_locations cafile=/home/tz/.local/lib/python3.9/site-packages/certifi/cacert.pem
+...
+```
+
+#### httpx vs aiohttp
+
+- [reference](https://github.com/encode/httpx/issues/838)
+
+- 代码:双线程, 10个链接
 
 ```py
-import paramiko
+from starlette.applications import Starlette
+from starlette.routing import Route
+from starlette.responses import PlainTextResponse
+import httpx
+import aiohttp
 
-def sftp(ip):
-    with paramiko.SSHClient() as client:
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(ip, 22, 'root')
 
-        with client.open_sftp() as ftp:
-            # 上传文件
-            ftp.put('/tmp/test', '/tmp/test')
-            # 修改权限
-            ftp.chmod('/tmp/test', 0o755)
-            # 改名
-            ftp.rename('/tmp/test', '/tmp/rename')
-            # 下载回来
-            ftp.get('/tmp/rename', '/tmp/rename')
+HOST, PORT = "localhost", 8000
+URL = f"http://{HOST}:{PORT}/"
 
-centos7='192.168.100.208'
-sftp(centos7)
+
+async def index(request):
+    return PlainTextResponse("world")
+
+
+async def aiohttp_single(request):
+    async with aiohttp.ClientSession() as client:
+        async with client.get(URL) as r:
+            return _response(await r.text())
+
+
+async def aiohttp_session(request):
+    async with aiohttp_session.get(URL) as r:
+        return _response(await r.text())
+
+
+async def httpx_single(request):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(URL)
+        return _response(r.text)
+
+
+async def httpx_session(request):
+    r = await httpx_session.get(URL)
+    return _response(r.text)
+
+
+async def httpx_single_http2(request):
+    async with httpx.AsyncClient(http2=True) as client:
+        r = await client.get(URL)
+        return _response(r.text)
+
+
+async def httpx_session_http2(request):
+    r = await httpx_session_http2.get(URL)
+    return _response(r.text)
+
+
+def _response(name):
+    return PlainTextResponse("Hello, " + name)
+
+
+routes = [
+    Route("/", endpoint=index),
+    Route("/aiohttp/single", endpoint=aiohttp_single),
+    Route("/aiohttp/session", endpoint=aiohttp_session),
+    Route("/httpx/single", endpoint=httpx_single),
+    Route("/httpx/session", endpoint=httpx_session),
+    Route("/httpx/single/http2", endpoint=httpx_single_http2),
+    Route("/httpx/session/http2", endpoint=httpx_session_http2),
+]
+
+
+async def on_startup():
+    global aiohttp_session, httpx_session, httpx_session_http2
+    aiohttp_session = aiohttp.ClientSession()
+    httpx_session = httpx.AsyncClient()
+    httpx_session_http2 = httpx.AsyncClient(http2=True)
+
+
+app = Starlette(debug=True, routes=routes, on_startup=[on_startup])
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host=HOST, port=PORT)
+```
+
+- 测试:
+
+```sh
+# single
+wrk http://localhost:8000/aiohttp/single
+wrk http://localhost:8000/httpx/single
+
+# single http2
+wrk http://localhost:8000/aiohttp/single/http2
+wrk http://localhost:8000/httpx/single/http2
+
+# session
+wrk http://localhost:8000/aiohttp/session
+wrk http://localhost:8000/httpx/session
+```
+
+- 结果:三个测试,都是`aiohttp`更快
+    - single
+    ![image](./imgs/httpx_vs_aiohttp-single.png)
+    - single-http2
+    ![image](./imgs/httpx_vs_aiohttp-single-http2.png)
+    - session
+    ![image](./imgs/httpx_vs_aiohttp-session.png)
+
+##### [httpxproxy: 堆栈跟踪, 性能可视化](https://github.com/florimondmanca/httpxprof)
+
+- 安装
+
+```sh
+pip install -e git+https://github.com/florimondmanca/httpxprof#egg=httpxprof
+```
+
+- httpx
+
+```sh
+httpxprof run async_single
+httpxprof view async_single
+```
+
+- aiohttp
+
+```py
+# aiohttp_single.py
+import asyncio
+import aiohttp
+import httpxprof
+
+async def main() -> None:
+    for _ in httpxprof.requests():
+        async with aiohttp.ClientSession() as session:
+            async with session.get(httpxprof.url):
+                pass
+
+asyncio.run(main())
+```
+
+```sh
+httpxprof run aiohttp_single.py
+httpxprof view aiohttp_single.py
+```
+
+### [aiohttp](https://github.com/aio-libs/aiohttp)
+
+> 异步requests
+
+- [官方文档](https://docs.aiohttp.org/en/stable/)
+
+- 注意: 最好为每个site建立一个session, 而不是每个request建立一个session
+
+- 注意: `read()`, `json()`, `text()` 这些session方法, 是加载到内存里的, 要小心大文件
+
+- aiohttp session 允许100个链接. 这里指的是链接而不是web site
+
+#### 基本使用
+
+- get
+
+```py
+import aiohttp
+import asyncio
+
+async def get(url):
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+
+            print("Status:", response.status)
+            print("Content-type:", response.headers['content-type'])
+
+            html = await response.text()
+            print("Body:", html[:15], "...")
+            return html
+
+# loop 相当于消息循环
+loop = asyncio.get_event_loop()
+url = 'http://www.baidu.com'
+html = loop.run_until_complete(get(url))
+```
+
+- 配合 `asyncio.wait()`, 实现多任务:
+
+```py
+async def get(url):
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+
+            print("Status:", response.status)
+            print("Content-type:", response.headers['content-type'])
+
+            html = await response.text()
+            print("Body:", html[:15], "...")
+            return html
+
+loop = asyncio.get_event_loop()
+
+# 任务列表
+task = [get('http://www.baidu.com') , get('http://www.bilibili.com')]
+
+# asyncio.wait()执行任务
+result = loop.run_until_complete(asyncio.wait(task))
+
+# 将结果保存到列表. 注意这里是result[0]
+htmls = []
+for html in result[0]:
+    htmls.append(html.result())
+
+len(htmls)
+```
+
+- 重用session
+
+```py
+import aiohttp
+import asyncio
+
+async def fetch(session, url):
+    async with session.get(url) as response:
+        return await response.text()
+
+async def get():
+    async with aiohttp.ClientSession() as session:
+        htmls = []
+        htmls.append(await fetch(session, 'http://www.baidu.com'))
+        htmls.append(await fetch(session, 'http://www.bilibili.com'))
+        return htmls
+
+loop = asyncio.get_event_loop()
+htmls = loop.run_until_complete(get())
+len(htmls)
+```
+
+- custom cookies
+
+```py
+async def ck(url, cookies):
+
+    async with aiohttp.ClientSession(cookies=cookies) as session:
+        async with session.get(url) as resp:
+            return await resp.json()
+
+loop = asyncio.get_event_loop()
+url = 'http://httpbin.org/cookies'
+cookies = {'cookies_are': 'working'}
+
+resp_cookies = loop.run_until_complete(ck(url, cookies))
+print(resp_cookies)
+```
+
+- `await resp.content.read()` 写入文件. 不会像 `read()`, `json()`, `text()` 方法占用内存
+
+```py
+async def get(url, file):
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            with open(file, 'wb') as fd:
+                while True:
+                    chunk = await resp.content.read(chunk_size)
+                    if not chunk:
+                        break
+                    fd.write(chunk)
+
+loop = asyncio.get_event_loop()
+url = 'https://api.github.com/events'
+file = '/tmp/test'
+chunk_size = 10
+result = loop.run_until_complete(get(url, file))
+```
+
+#### websocket
+
+- [阮一峰的WebSocket 教程](http://www.ruanyifeng.com/blog/2017/05/websocket.html)
+
+- 写入文件websocket_test.sh
+
+```sh
+#!/bin/bash
+# websocket_test.sh
+
+echo hello
+sleep 1
+
+echo tz
+sleep 1
+
+echo close
+```
+
+- 开启websocketd, 并执行websocket_test.sh
+
+```sh
+websocketd --port=8080 bash websocket_test.sh
+```
+
+- websokcet client
+
+```py
+import aiohttp
+import asyncio
+
+async def websocket(url):
+
+    async with aiohttp.ClientSession() as session:
+        async with session.ws_connect(url) as ws:
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    # 数据为close就close()
+                    if msg.data == 'close':
+                        await ws.close()
+                        break
+                    else:
+                        print(msg.data)
+                        # 发送answer
+                        await ws.send_str(msg.data + '/answer')
+                elif msg.type == aiohttp.WSMsgType.ERROR:
+                    break
+
+loop = asyncio.get_event_loop()
+url = 'http://127.0.0.1:8080'
+html = loop.run_until_complete(websocket(url))
 ```
 
 ## [scapy](https://github.com/secdev/scapy)
@@ -345,258 +757,77 @@ make_test(42, 666, 3)
 make_test(42, 666, 4)
 ```
 
-## requests
+## paramiko(ssh)
 
-- [官方文档](https://requests.readthedocs.io/en/master/)
-
-| 属性方法          | 内容                         |
-|-------------------|------------------------------|
-| r.headers         | 响应报文                     |
-| r.request.headers | 请求报文                     |
-| r.content         | byte类型的text(可以decode()) |
-| r.text            | str类型的text(中文为unicode) |
-| r.json()          | 如果text是json,查看text      |
-| r.cookies         | cookies                      |
+- 执行命令
 
 ```py
-import requests
+import paramiko
 
-# get
-r = requests.get('https://www.baidu.com/')
+def exec(ip, cmd):
+    with paramiko.SSHClient() as client:
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(ip, 22, 'root')
 
-# params 设置参数
-p = {'s?wd': '123'}
-r = requests.get('https://www.baidu.com/', params=p)
+        stdin, stdout, stderr = client.exec_command(cmd)
+        # stdout类似文件类
+        print(stdout.read().decode())
 
-# headers 设置请求头部
-url = 'https://www.baidu.com/'
-headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)' 'AppleWebKit/537.36 (KHTML, like Gecko)' 'Chrome/90.0.4430.85 Safari/537.36'}
-
-r = requests.get(url=url, headers=headers)
-r.request.headers
-
-# post方法的测试网站
-url = 'https://httpbin.org/post'
-
-# dict
-data1 = {'test': [1, 2]}
-# or
-data1 = [('test', 1), ('test', 2)]
-
-# 参数data,但实际上是form
-r = requests.post(url, data = data1)
-
-# post muti file
-# 建议使用二进制模式打开文件
-url = 'https://httpbin.org/post'
-multiple_files = [
-     ('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
-     ('images', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
- r = requests.post(url, files=multiple_files)
- r.text
-
-# cookies
-url = 'https://httpbin.org/cookies'
-cookies = dict(cookies_are='working')
-r = requests.get(url, cookies=cookies)
-r.json()
-
-# session
-s = requests.Session()
-r = s.get('https://httpbin.org/cookies/set/sessioncookie/123456789')
-r.json()
-
-# 确认session是否关闭
-with requests.Session() as s:
-    s.get('https://httpbin.org/cookies/set/sessioncookie/123456789')
-
-# stream=True时只下载响应头,和保持链接.因此需要使用with关闭链接
-with requests.get('https://httpbin.org/get', stream=True) as r:
-    # Do things with the response here.
-
-# hook
-def print_url(r, *args, **kwargs):
-    print(r.url)
-
-requests.get('https://httpbin.org/', hooks={'response': print_url})
-
-# hook multpie
-def record_hook(r, *args, **kwargs):
-    r.hook_called = 'my name is tz'
-    return r
-
-r = requests.get('https://httpbin.org/', hooks={'response': [print_url, record_hook]})
-r.hook_called
-
-# session hook
-s = requests.Session()
-s.hooks['response'].append(print_url)
-s.get('https://httpbin.org/')
-
-# proxy
-proxies = {
-  'http': 'http://10.10.1.10:3128',
-  'https': 'http://10.10.1.10:1080',
-}
-
-requests.get('http://example.org', proxies=proxies)
+centos7='192.168.100.208'
+exec(centos7, 'ls -l')
 ```
 
-## httpx
-
-> 语法类似`requests`.支持同步, 异步, HTTP2
-
-- [官方文档](https://www.python-httpx.org/)
-
-- 向同一主机发出多个请求时，客户端将重用底层TCP连接(HTTP keep-alive)，而不是为每个请求重新创建一个
-
-- 默认 `encoding` 为 `utf-8`, 而requests的 `encoding` 为 `ISO-8859-1`
+- sftp文件操作
 
 ```py
-import httpx
-import asyncio
+import paramiko
 
-# async
+def sftp(ip):
+    with paramiko.SSHClient() as client:
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(ip, 22, 'root')
 
-async with httpx.AsyncClient() as client:
-    r = await client.get(url)
+        with client.open_sftp() as ftp:
+            # 上传文件
+            ftp.put('/tmp/test', '/tmp/test')
+            # 修改权限
+            ftp.chmod('/tmp/test', 0o755)
+            # 改名
+            ftp.rename('/tmp/test', '/tmp/rename')
+            # 下载回来
+            ftp.get('/tmp/rename', '/tmp/rename')
 
-# unix domain socket
-transport = httpx.HTTPTransport(uds="/var/run/docker.sock")
-client = httpx.Client(transport=transport)
-response = client.get("http://docker/info")
-response.json()
-
-# http2
-client = httpx.AsyncClient(http2=True)
-r = await client.get(url)
-r.http_version
+centos7='192.168.100.208'
+sftp(centos7)
 ```
 
-- log
+## telnetlib
+
+> 端口搜索
 
 ```py
-# test.py
-import httpx
+from telnetlib import Telnet
+ip = '192.168.1.221'
 
-url = 'https://www.baidu.com'
-
-with httpx.Client() as client:
-    r = client.get(url)
+for port in range(65535):
+    try:
+       if Telnet(ip, port, timeout=1):
+            print(f'{port}  success')
+    except ConnectionRefusedError:
+        print(f'{port}  fail')
+        pass
 ```
 
-```bash
-HTTPX_LOG_LEVEL=debug python3 test.py
-DEBUG [2021-03-27 11:45:16] httpx._client - HTTP Request: GET http://www.baidu.com "HTTP/1.1 200 OK"
-```
+## IPy
 
-```bash
-HTTPX_LOG_LEVEL=trace python3 test.py
-TRACE [2021-03-27 11:47:18] httpx._config - load_ssl_context verify=True cert=None trust_env=True http2=False
-TRACE [2021-03-27 11:47:18] httpx._config - load_verify_locations cafile=/home/tz/.local/lib/python3.9/site-packages/certifi/cacert.pem
-...
-```
+> 解析ip地址
 
-### httpx vs aiohttp
-
-- [reference](https://gist.github.com/imbolc/15cab07811c32e7d50cc12f380f7f62f)
-
-- 代码:双线程, 10个链接
+- 列出网段内的所有ip
 
 ```py
-from starlette.applications import Starlette
-from starlette.routing import Route
-from starlette.responses import PlainTextResponse
-import httpx
-import aiohttp
+from IPy import IP
+ip = IP('192.168.1.0/24')
 
-
-HOST, PORT = "localhost", 8000
-URL = f"http://{HOST}:{PORT}/"
-
-
-async def index(request):
-    return PlainTextResponse("world")
-
-
-async def aiohttp_single(request):
-    async with aiohttp.ClientSession() as client:
-        async with client.get(URL) as r:
-            return _response(await r.text())
-
-
-async def aiohttp_session(request):
-    async with aiohttp_session.get(URL) as r:
-        return _response(await r.text())
-
-
-async def httpx_single(request):
-    async with httpx.AsyncClient() as client:
-        r = await client.get(URL)
-        return _response(r.text)
-
-
-async def httpx_session(request):
-    r = await httpx_session.get(URL)
-    return _response(r.text)
-
-
-async def httpx_single_http2(request):
-    async with httpx.AsyncClient(http2=True) as client:
-        r = await client.get(URL)
-        return _response(r.text)
-
-
-async def httpx_session_http2(request):
-    r = await httpx_session_http2.get(URL)
-    return _response(r.text)
-
-
-def _response(name):
-    return PlainTextResponse("Hello, " + name)
-
-
-routes = [
-    Route("/", endpoint=index),
-    Route("/aiohttp/single", endpoint=aiohttp_single),
-    Route("/aiohttp/session", endpoint=aiohttp_session),
-    Route("/httpx/single", endpoint=httpx_single),
-    Route("/httpx/session", endpoint=httpx_session),
-    Route("/httpx/single/http2", endpoint=httpx_single_http2),
-    Route("/httpx/session/http2", endpoint=httpx_session_http2),
-]
-
-
-async def on_startup():
-    global aiohttp_session, httpx_session, httpx_session_http2
-    aiohttp_session = aiohttp.ClientSession()
-    httpx_session = httpx.AsyncClient()
-    httpx_session_http2 = httpx.AsyncClient(http2=True)
-
-
-app = Starlette(debug=True, routes=routes, on_startup=[on_startup])
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host=HOST, port=PORT)
+for i in ip:
+    print(i)
 ```
-
-- 测试:
-
-```sh
-# single
-wrk http://localhost:8000/aiohttp/single
-wrk http://localhost:8000/httpx/single
-
-# single http2
-wrk http://localhost:8000/aiohttp/single/http2
-wrk http://localhost:8000/httpx/single/http2
-
-# session
-wrk http://localhost:8000/aiohttp/session
-wrk http://localhost:8000/httpx/session
-```
-
-- 结果:三个测试,都是`aiohttp`更快

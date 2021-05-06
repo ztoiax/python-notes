@@ -28,7 +28,7 @@
     * [list(列表)](#list列表)
         * [rlist(序列)](#rlist序列)
     * [tuple(元组)](#tuple元组-1)
-    * [dict(字典)](#dict字典)
+    * [Dictionaries(字典)](#dictionaries字典)
         * [json](#json)
         * [yaml](#yaml)
     * [yield](#yield)
@@ -403,16 +403,45 @@ print(b)
 
 判断变量是否定义: `if 'v' in locals():`
 
-- or
+- or 赋值
 
     ```py
-    # 最后v = 1
-
     b = None
     c = None
-    v = b or c or 1
+
+    # v = 1
+    v = b or 1 or c
     ```
+
+- match(类似于switch case): 需要python 3.10
+
+```py
+def http_error(status):
+    match status:
+        case 400:
+            return "Bad request"
+        case 401 | 403 | 404:
+            return "Not allowed"
+        case _:
+            return "Something's wrong with the Internet"
+```
+
 ## while, for(循环)
+
+```py
+for i in range(10):
+    print(i)
+```
+
+- 定义: 起点, 终点, 步进
+
+```py
+for i in range(1, 12, 2)
+    print(i)
+
+for i in range(10_000, 1_000_001, 20_000):
+    print(i)
+```
 
 - `*` 运算符
 
@@ -439,20 +468,9 @@ for a, *b in ([1, 2], [3, 4, 5]):
 
 1
 [2]
+
 3
 [4, 5]
-```
-- match(类似于switch case)
-
-```py
-def http_error(status):
-    match status:
-        case 400:
-            return "Bad request"
-        case 401 | 403 | 404:
-            return "Not allowed"
-        case _:
-            return "Something's wrong with the Internet"
 ```
 
 ## 函数式编程
@@ -839,7 +857,10 @@ pi=3.14
 
 ## list(列表)
 
+- [list每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Lists.html)
+
 - list.append(): 包含类型
+
 - append自身(递归)
 
 ```py
@@ -1048,7 +1069,9 @@ n = ('hello', 'Worrld', '!', 'in', 'Python')
 ninsert(n, 3, 'test')
 ```
 
-## dict(字典)
+## Dictionaries(字典)
+
+- [dict每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Dictionaries.html)
 
 > key不能重复
 
@@ -1132,20 +1155,20 @@ with open('test.yaml', 'w') as file:
 
 ## yield
 
-> 生成器,像`return`那样返回后,函数会暂停运行,可使用`__next__()`方法让函数继续执行
+> 生成器. 像`return`那样返回后,函数会暂停运行,可使用`__next__()`方法让函数继续执行
 
 ```py
-def grep(search, filename):
+def grep(pattern, filename):
     with open(filename) as file:
         for line in file.readlines():
-            if search in line:
+            if pattern in line:
                 yield line
 
-yd = grep('2', '/tmp/test')
+get_elem = grep('2', '/tmp/test')
 
 # 让函数继续执行
-yd.__next__()
-yd.__next__()
+get_elem.__next__()
+get_elem.__next__()
 ```
 
 ```py
@@ -1160,6 +1183,7 @@ yd.__next__()
 ```
 
 ### 协程
+
 > yield,通过send()传递值
 
 ```py
@@ -1454,7 +1478,9 @@ cls.age
 
 - `__str__()` 和 ` __repr__()`
 
-    > str(class),repr(class)后返回的值
+    > __str__: 执行print(class_name), 返回字符串
+
+    > __repr__: 执行print([class_name]), 传入列表, 返回包含字符串的列表
 
     ```py
     # 当使用str(object) 执行 __str__函数
@@ -1465,27 +1491,14 @@ cls.age
         def age(self, n):
             self.age = n
         def __str__(self):
-            return 'my name is %s' % self.name
-
-    class people1(object):
-        height = 180
-        def __init__(self, name):
-            self.name = name
-        def age(self, n):
-            self.age = n
+            return 'in __str__: my name is %s' % self.name
         def __repr__(self):
-            return 'my name is %s' % self.name
+            return 'in __repr__: my name is %s' % self.name
 
     # test
-    print(str(people1('tz')))
-    print(str(people('tz')))
-
-    # repr 与 str 的区别.repr()无法输出__str__
-    print(repr(people1('tz')))
-    print(repr(people('tz')))
+    print(people('tz'))
+    print([people('tz')])
     ```
-
-    ![image](./imgs/repr.png)
 
 - iterator迭代器:
 
@@ -1921,8 +1934,6 @@ p1.stdout.close()
 ```
 
 ##### asyncio(异步)
-
-- 定义函数
 
 ```py
 import asyncio
@@ -2670,6 +2681,8 @@ print('sorted list :', l)
 # reference article(优秀文章)
 
 - [python官方文档](https://docs.python.org/)
+
+- [Problem Solving with Algorithms and Data Structures using Python: 此书可以在线交互式运行代码](https://runestone.academy/runestone/books/published/pythonds3/index.html)
 
 - [Python Built-in Functions: 内置函数用法](https://www.programiz.com/python-programming/methods/built-in)
 

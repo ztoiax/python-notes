@@ -15,17 +15,38 @@ print('%.2f秒' % (end - start))
 
 ## timeit
 
-```py
-from timeit import time
+- timeit 统计函数执行的总时间
 
-mysetup = 'from math in sqrt'
+    - 单位微妙
+
+    - 默认执行100万次
+
+```py
+from timeit import timeit
+
+mysetup = 'from math import sqrt'
 
 def mycode():
     sqrt(3)
 
+# test
 timeit(setup = mysetup,        # 执行函数的预设
                stmt = mycode,  # 执行函数
                number = 10000) # 执行次数
+```
+
+- Timer 生成对象
+
+```py
+from timeit import Timer
+
+def mycode():
+    sqrt(3)
+
+t = Timer("sqrt(3)", "from math import sqrt")
+
+# 执行10000次
+t.timeit(number=10000)
 ```
 
 - 直接初始化 比 函数初始化要快3倍以上
