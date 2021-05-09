@@ -34,6 +34,7 @@
     * [yield](#yield)
         * [协程](#协程)
     * [def(函数)](#def函数)
+        * [参数argv, kwargs](#参数argv-kwargs)
         * [静态类型](#静态类型)
         * [内置函数,属性](#内置函数属性)
         * [装饰器](#装饰器)
@@ -1232,6 +1233,41 @@ r.send('123,321')
 ```
 
 ## def(函数)
+
+### 参数argv, kwargs
+
+- argv(tuple)
+
+```py
+def myFun(arg1, arg2, *argv):
+    print ("First argument :", arg1)
+    print ("Second argument :", arg2)
+    for arg in argv:
+        print("Next argument through *argv :", arg)
+ 
+myFun('Hello', 'Welcome', 'to', 'python')
+
+# 或者
+tuple1 = ('Hello', 'Welcome', 'to', 'python')
+myFun(*tuple1)
+```
+
+- kwargs(dict)
+
+```py
+def myFun(arg1, arg2, **kwargs):
+    print ("First argument :", arg1)
+    print ("Second argument :", arg2)
+    for key, value in kwargs.items():
+        print ("%s == %s" %(key, value))
+
+myFun('hello', 'tz', name = 'tz', age = '24')
+
+
+# 或者
+dict1 = {'name' : 'tz', 'age' : '24'}
+myFun('hello', 'tz', **dict1)
+```
 
 ### 静态类型
 
