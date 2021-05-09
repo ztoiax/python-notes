@@ -34,14 +34,23 @@
     | args   | 函数参数: 类型为tuple                        |
     | kwargs | 函数参数: 类型为dict                         |
 
-| 方法                                | 内容                       |
-|-------------------------------------|----------------------------|
-| threading.currentThread().getName() | 线程名                     |
-| thread.get_ident()                  | 线程唯一标识符, 不是线程id |
-| threading.get_native_id()           | 线程id                     |
-| threading.current_thread()          | 返回当前线程对象           |
-| threading.main_thread()             | 返回主线程对象             |
-| threading.enumerate()               | 返回所有线程对象(list类型) |
+| 方法                                       | 内容                                     |
+| ------------------------------------------ | ----------------------------             |
+| threading.currentThread().getName()        | 线程名                                   |
+| threading.currentThread().get_ident()      | 线程唯一标识符, 不是线程id               |
+| threading.currentThread().get_native_id()  | 线程id                                   |
+| threading.currentThread().get_native_id()  | 线程id                                   |
+| threading.currentThread().is_alive()       | 是否在运行                               |
+| threading.currentThread().isDaemon()       | 是否是守护进程                           |
+| threading.current_thread()                 | 返回当前线程对象                         |
+| threading.main_thread()                    | 返回主线程对象                           |
+| threading.enumerate()                      | 返回所有alive为Trued的线程对象(list类型) |
+
+| 线程方法 | 操作                                                     |
+|----------|----------------------------------------------------------|
+| start()  | 启动线程, 设置alive为True. 多次启动会异常:RuntimeError   |
+| run()    | 启动线程, 设置alive为True. 多次启动会异常:AttributeError |
+| join()   | 主线程等待(阻塞)线程结束(alive为False)                   |
 
 - 基本使用
 
@@ -53,9 +62,14 @@ def func(s):
     print(s)
     print(threading.currentThread().getName())
     print(threading.currentThread().native_id)
+    print(f'Daemon: {threading.currentThread().isDaemon()}')
+    print(f'alive: {threading.currentThread().is_alive()}')
 
 # 线程绑定函数
 t = threading.Thread(target=func, args=('hello tz',))
+
+# 如果需要以守护进程运行则
+t.daemon = True
 
 # 开启线程
 t.start()
@@ -64,10 +78,10 @@ t.start()
 t.join()
 ```
 
-- 继承`threading.Thread`类
+- 子类使用进程
 
 ```py
-# 定义自己的线程类
+import threading
 class myThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
@@ -558,6 +572,398 @@ if __name__ == '__main__':
     t2.join()
     t3.join()
     t4.join()
+```
+
+#### 使用Queue实现Pool(线程池)
+
+- 计算0到100的平方, 并加入到list里
+
+```py
+import threading
+from queue import Queue
+from queue import Empty
+
+def function_square(data):
+    global inputs
+    inputs.append(data*data)
+
+def pool_thread(q):
+    try:
+        while True:
+            # 接受queue
+            elem = q.get_nowait()
+            # 计算
+            function_square(elem)
+    except Empty:
+        pass
+
+if __name__ == '__main__':
+    inputs = []
+    q = Queue()
+    threads = []
+    for i in range(100):
+        # 发送queue
+        q.put(i)
+
+    # 4个线程的线程池
+    for i in range(4):
+        thr = threading.Thread(target=pool_thread, args=(q,))
+        thr.start()
+        threads.append(thr)
+
+    for i in threads:
+        i.join
+
+    print ('Pool    :', inputs)
+```
+
+### Barrier
+
+> 多个线程同时执行
+
+```py
+import threading
+from threading import Barrier, Lock, Thread
+from time import time
+from datetime import datetime
+
+def test_with_barrier(barrier, lock):
+    name = threading.currentThread().getName()
+    # 等待两个进程同时wait, 再执行
+    barrier.wait()
+    with lock:
+        print("process %s ----> %s" % (name, datetime.fromtimestamp(time())))
+
+def test_without_barrier():
+    name = threading.currentThread().getName()
+    print("process %s ----> %s" % (name, datetime.fromtimestamp(time())))
+
+if __name__ == '__main__':
+    # 初始化Barrier, 参数2代表两个进程
+    barrier = Barrier(2)
+    # 初始化锁
+    lock = Lock()
+    p1=Thread(name='p1 - test_with_barrier', target=test_with_barrier, args=(barrier,lock))
+    p2=Thread(name='p2 - test_with_barrier', target=test_with_barrier, args=(barrier,lock))
+    p3=Thread(name='p3 - test_without_barrier', target=test_without_barrier)
+    p4=Thread(name='p4 - test_without_barrier', target=test_without_barrier)
+    p1.start()
+    p2.start()
+    p3.start()
+    p4.start()
+    p1.join()
+    p2.join()
+    p3.join()
+    p4.join()
+```
+
+## Process(进程)
+
+- 把线程方法,改为进程方法:
+
+    - `threading` -> `multiprocessing`
+
+    - `threading.Thread` -> `multiprocessing.Process`
+
+```py
+import multiprocessing
+import threading
+
+def func(s):
+    print(s)
+    print(threading.currentThread().getName())
+    # pid
+    print(threading.currentThread().native_id)
+    print(f'Daemon: {threading.currentThread().isDaemon()}')
+    print(f'alive: {threading.currentThread().is_alive()}')
+
+p = multiprocessing.Process(target=func, args=('hello tz',))
+
+p.start()
+p.join()
+```
+
+| 方法                                    | 操作     |
+|-----------------------------------------|----------|
+| multiprocessing.current_process().name  | 进程名   |
+| multiprocessing.current_process().pid   | pid      |
+| multiprocessing.current_process().ident | pid,同上 |
+| terminate()                             | 终止进程 |
+
+- 三者相同都是pid:
+    - `multiprocessing.current_process().pid`
+    - `multiprocessing.current_process().ident`
+    - `threading.currentThread().native_id`
+
+```py
+import multiprocessing
+
+def func(s):
+    print(s)
+    print(multiprocessing.current_process().name)
+    print(multiprocessing.current_process().pid)
+    print(f'alive: {multiprocessing.current_process().is_alive()}')
+
+p = multiprocessing.Process(target=func, args=('hello tz',))
+
+p.start()
+p.join()
+```
+
+- 子类使用进程
+
+```py
+import multiprocessing
+class myProcess(multiprocessing.Process):
+    def __init__(self):
+        multiprocessing.Process.__init__(self)
+
+    def run(self):
+        for _ in range(10):
+            print(self.name)
+            print(self.pid)
+
+t1 = myProcess()
+t2 = myProcess()
+
+t1.start()
+t2.start()
+
+t1.join()
+t2.join()
+```
+
+### 共享变量
+
+- 线程共享变量: 线程之间使用同一内存空间, 可以直接使用
+
+```py
+import threading
+
+def worker(dictionary, key, item):
+   dictionary[key] = item
+   print("key = %d value = %d" % (key, item))
+
+if __name__ == '__main__':
+    dictionary = dict()
+    jobs = [threading.Thread(target=worker, args=(dictionary, i, i*2)) for i in range(10)]
+    for j in jobs:
+        j.start()
+    for j in jobs:
+        j.join()
+    print('Results:', dictionary)
+```
+
+- 进程共享变量: 因为进程之间相互独立, 需要使用`Manager()`进行管理
+
+```py
+import multiprocessing
+
+def worker(dictionary, key, item):
+   dictionary[key] = item
+   print("key = %d value = %d" % (key, item))
+
+if __name__ == '__main__':
+    # 初始化内存管理器
+    mgr = multiprocessing.Manager()
+    # 初始化共享变量
+    dictionary = mgr.dict()
+
+    jobs = [multiprocessing.Process(target=worker, args=(dictionary, i, i*2)) for i in range(10)]
+    for j in jobs:
+        j.start()
+    for j in jobs:
+        j.join()
+    print('Results:', dictionary)
+```
+
+- 线程, 进程性能对比
+
+> 线程比进程快2倍多
+
+```
+# 线程
+0.000921726227秒
+
+# 进程
+0.025198221207秒
+```
+
+### Queue
+
+- 相比于线程`from queue import Queue` -> `from multiprocessing import Queue`
+
+    - 进程没有 `queue.task_done()`
+
+- `self.queue.empty()`: 消费者查看queue是否为空
+
+```py
+from multiprocessing import Process, Queue
+import time
+
+class consumer(Process):
+    def __init__(self, queue):
+        Process.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        while True:
+            item = self.queue.get()
+            print('Consumer notify: get item %d by %s\n' % (item, self.name))
+
+class producer(Process):
+    def __init__(self, queue):
+        Process.__init__(self)
+        self.queue = queue
+
+    def run(self) :
+        for i in range(10):
+            item = i
+            self.queue.put(item)
+            print('Producer notify: item number %d by %s' % (item, self.name))
+            time.sleep(1)
+
+if __name__ == '__main__':
+    queue = Queue()
+    t1 = producer(queue)
+    t2 = consumer(queue)
+    t3 = consumer(queue)
+    t4 = consumer(queue)
+    t1.start()
+    t2.start()
+    t3.start()
+    t4.start()
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+```
+
+### Pipe
+
+| 方法    | 操作 |
+|---------|------|
+| send()  | 发送 |
+| recv()  | 结束 |
+| close() | 关闭 |
+
+```py
+import multiprocessing
+
+def create_items(pipe):
+    output_pipe, _ = pipe
+    for item in range(10):
+        # 发送pipe1
+        output_pipe.send(item)
+    output_pipe.close()
+
+def multiply_items(pipe_1, pipe_2):
+    close, input_pipe = pipe_1
+    close.close()
+    output_pipe, _ = pipe_2
+    try:
+        while True:
+            # 接受pipe1
+            item = input_pipe.recv()
+            # 发送pipe2
+            output_pipe.send(item * item)
+    except EOFError:
+        output_pipe.close()
+
+if __name__== '__main__':
+    # 第一个进程管道发出数字
+    pipe_1 = multiprocessing.Pipe(True)
+    process_pipe_1 = multiprocessing.Process(target=create_items, args=(pipe_1,))
+    process_pipe_1.start()
+
+    # 第二个进程管道接收数字并计算
+    pipe_2 = multiprocessing.Pipe(True)
+    process_pipe_2 = multiprocessing.Process(target=multiply_items, args=(pipe_1, pipe_2,))
+    process_pipe_2.start()
+    pipe_1[0].close()
+    pipe_2[0].close()
+
+    try:
+        while True:
+            # 接受pipe2
+            print(pipe_2[1].recv())
+    except EOFError:
+        print("End")
+```
+
+### Barrier
+
+> 多个进程同时执行
+
+```py
+import multiprocessing
+from multiprocessing import Barrier, Lock, Process
+from time import time
+from datetime import datetime
+
+def test_with_barrier(barrier, lock):
+    name = multiprocessing.current_process().name
+    # 等待两个进程同时wait, 再执行
+    barrier.wait()
+    with lock:
+        print("process %s ----> %s" % (name, datetime.fromtimestamp(time())))
+
+def test_without_barrier():
+    name = multiprocessing.current_process().name
+    print("process %s ----> %s" % (name, datetime.fromtimestamp(time())))
+
+if __name__ == '__main__':
+    # 初始化Barrier, 参数2代表两个进程
+    barrier = Barrier(2)
+    # 初始化锁
+    lock = Lock()
+    Process(name='p1 - test_with_barrier', target=test_with_barrier, args=(barrier,lock)).start()
+    Process(name='p2 - test_with_barrier', target=test_with_barrier, args=(barrier,lock)).start()
+    Process(name='p3 - test_without_barrier', target=test_without_barrier).start()
+    Process(name='p4 - test_without_barrier', target=test_without_barrier).start()
+```
+- 线程, 进程性能对比
+
+> 线程比进程快14倍
+
+```
+# 线程
+0.000603914261秒
+
+# 进程
+0.008400917053秒
+```
+
+### Pool(进程池)
+
+```py
+import multiprocessing
+
+def function_square(data):
+    result = data*data
+    return result
+
+if __name__ == '__main__':
+    inputs = list(range(100))
+    # 初始化4个进程的进程池
+    pool = multiprocessing.Pool(processes=4)
+    # map()将任务交给进程池执行
+    pool_outputs = pool.map(function_square, inputs)
+    pool.close()
+    pool.join()
+    print ('Pool    :', pool_outputs)
+```
+
+- 线程, 进程性能对比
+
+> 线程比进程快16倍
+
+```
+# 线程
+0.000762224197秒
+
+# 进程
+0.012202501297秒
 ```
 
 ## asyncio(异步I/O): 协程(Coroutines)
