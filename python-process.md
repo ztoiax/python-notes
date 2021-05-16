@@ -436,7 +436,7 @@ if __name__ == '__main__':
     c.join()
 ```
 
-### Event(事件)
+### threading.Event(事件)
 
 | 事件    | 操作     |
 |---------|----------|
@@ -521,7 +521,7 @@ if __name__ == '__main__':
        t2.join()
 ```
 
-### Queue
+### Queue(线程队列)
 
 | Queue       | 操作                                      |
 |-------------|-------------------------------------------|
@@ -659,6 +659,8 @@ if __name__ == '__main__':
 
 ## Process(进程)
 
+> 不受cpython的GIL的限制
+
 - 把线程方法,改为进程方法:
 
     - `threading` -> `multiprocessing`
@@ -789,7 +791,7 @@ if __name__ == '__main__':
 0.025198221207秒
 ```
 
-### Queue
+### Queue(进程队列)
 
 - 相比于线程`from queue import Queue` -> `from multiprocessing import Queue`
 
@@ -936,6 +938,10 @@ if __name__ == '__main__':
 
 ### Pool(进程池)
 
+- 进程之间会竞争
+
+- `pool.map()`
+
 ```py
 import multiprocessing
 
@@ -947,11 +953,34 @@ if __name__ == '__main__':
     inputs = list(range(100))
     # 初始化4个进程的进程池
     pool = multiprocessing.Pool(processes=4)
-    # map()将任务交给进程池执行
+    # map()将任务交给进程池执行. 进程之间会竞争
     pool_outputs = pool.map(function_square, inputs)
     pool.close()
     pool.join()
     print ('Pool    :', pool_outputs)
+```
+
+- `pool.imap_unordered` 返回生成器
+
+```py
+import multiprocessing
+
+def function_square(data):
+    result = data*data
+    return result
+
+if __name__ == '__main__':
+    inputs = list(range(100))
+    # 初始化4个进程的进程池
+    pool = multiprocessing.Pool(processes=4)
+    # pool.imap_unordered()返回生成器
+    pool_outputs = pool.imap_unordered(function_square, inputs)
+    pool.close()
+    pool.join()
+
+    # 打印值
+    for i in pool_outputs:
+        print(i)
 ```
 
 - 线程, 进程性能对比
@@ -964,6 +993,52 @@ if __name__ == '__main__':
 
 # 进程
 0.012202501297秒
+```
+
+### concurrent.futures进程, 线程池
+
+```py
+import concurrent.futures
+import time
+
+def evaluate_item(x):
+        # 计算总和，这里只是为了消耗时间
+        result_item = count(x)
+        # 打印输入和输出结果
+        return result_item
+
+def  count(number) :
+        for i in range(0, 10000000):
+                i += 1
+        return i * number
+
+if __name__ == "__main__":
+        number_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+        # 顺序执行
+        start_time = time.time()
+        for item in number_list:
+                print(evaluate_item(item))
+        print("Sequential execution in " + str(time.time() - start_time), "seconds")
+
+        # 线程池执行
+        start_time_1 = time.time()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                futures = [executor.submit(evaluate_item, item) for item in number_list]
+                for future in concurrent.futures.as_completed(futures):
+                        print(future.result())
+        print ("Thread pool execution in " + str(time.time() - start_time_1), "seconds")
+
+        # 进程池. 不受GIL的限制
+        start_time_2 = time.time()
+        with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
+                # submit()定义进程
+                futures = [executor.submit(evaluate_item, item) for item in number_list]
+                # as_completed()生成器, 主线程等待线程结束.类似yield
+                for future in concurrent.futures.as_completed(futures):
+                        # result()执行, 并返回
+                        print(future.result())
+        print ("Process pool execution in " + str(time.time() - start_time_2), "seconds")
 ```
 
 ## asyncio(异步I/O): 协程(Coroutines)
@@ -980,7 +1055,7 @@ if __name__ == '__main__':
 
 ### 基本使用
 
-- 异步的处理过程类似于生成器
+- 异步的处理过程类似于生成器`yield`
 
 - `async` 定义异步函数. 函数需要`asyncio.run()` 执行
 
@@ -991,13 +1066,693 @@ async def test():
     await func()
 ```
 
-- `@asyncio.coroutine` 装饰器, 代替async, await
+- `@asyncio.coroutine` 装饰器代替async; `yiled from`代替await.**在python3.8已被弃用**
 
 ```py
 # 等同于上一个例子
 @asyncio.coroutine
 def test():
     yield from func()
+```
+
+### 从调用function_1到function_3, 一共3次循环
+
+- 非异步
+
+```py
+import time
+
+def function_1():
+    print ("function_1 called")
+    if time.time() < end_time:
+        time.sleep(1)
+        function_2()
+    else:
+        exit(0)
+
+def function_2():
+    print ("function_2 called ")
+    if time.time() < end_time:
+        time.sleep(1)
+        function_3()
+    else:
+        exit(0)
+
+def function_3():
+    print ("function_3 called")
+    if time.time() < end_time:
+        time.sleep(1)
+        function_1()
+    else:
+        exit(0)
+
+if __name__ == '__main__':
+    end_time = time.time() + 9.0
+    time.sleep(1)
+    function_1()
+```
+
+- 异步
+
+```py
+import asyncio
+
+def function_1(end_time, loop):
+    print ("function_1 called")
+    if (loop.time() + 1.0) < end_time:
+        # 1秒后调用function_2
+        loop.call_later(1, function_2, end_time, loop)
+    else:
+        loop.stop()
+
+def function_2(end_time, loop):
+    print ("function_2 called ")
+    if (loop.time() + 1.0) < end_time:
+        loop.call_later(1, function_3, end_time, loop)
+    else:
+        loop.stop()
+
+def function_3(end_time, loop):
+    print ("function_3 called")
+    if (loop.time() + 1.0) < end_time:
+        loop.call_later(1, function_1, end_time, loop)
+    else:
+        loop.stop()
+
+if __name__ == '__main__':
+    # 事件循环
+    loop = asyncio.get_event_loop()
+    # function最长运行时间9秒, 3循环
+    end_loop = loop.time() + 9.0
+    # 调用function_1
+    loop.call_soon(function_1, end_loop, loop)
+    # 超时就停止
+    loop.run_forever()
+    loop.close()
+```
+
+### 协程: 从调用function_1到function_3, 并返回值
+
+```py
+import asyncio
+
+async def function_1():
+    await asyncio.sleep(1)
+    print ("function_1 called")
+    # 调用function_2, 并返回值
+    result = await function_2()
+    print(result)
+    return("function_1 finish")
+
+async def function_2():
+    await asyncio.sleep(1)
+    print ("function_2 called")
+    result = await function_3()
+    print(result)
+    return("function_2 finish")
+
+async def function_3():
+    await asyncio.sleep(1)
+    print ("function_3 called")
+    return("function_3 finish")
+
+if __name__ == '__main__':
+    # asyncio.run()调用function_1, 并返回值
+    result = asyncio.run(function_1())
+    print(result)
+```
+
+- 上面例子, 改为使用事件循环
+
+```py
+if __name__ == '__main__':
+    # 定义事件循环
+    loop = asyncio.get_event_loop()
+    # 调用function_1, 并返回值
+    result = loop.run_until_complete(function_1())
+    print(result)
+```
+
+### asyncio.Task()
+
+```py
+import asyncio
+
+async def function_1():
+    for i in range(3):
+        print("function_1(%s)" % (i))
+        await asyncio.sleep(1)
+
+async def function_2():
+    for i in range(3):
+        print("function_2(%s)" % (i))
+        await asyncio.sleep(1)
+
+async def function_3():
+    for i in range(3):
+        print("function_3(%s)" % (i))
+        await asyncio.sleep(1)
+
+if __name__ == "__main__":
+    # 定义asyncio.Task列表
+    tasks = [asyncio.Task(function_1()),
+             asyncio.Task(function_2()),
+             asyncio.Task(function_3())]
+    loop = asyncio.get_event_loop()
+    # 调用task
+    loop.run_until_complete(asyncio.wait(tasks))
+    loop.close()
+```
+
+## gevent(异步)
+
+- [优秀文档](https://sdiehl.github.io/gevent-tutorial/)
+
+- 并发的核心思想是:一个较大的任务分解成一组子任务,这些子任务异步运行,而不是一个一个的同步运行,两个子任务之间的切换称为上下文切换
+
+| 方法                                | 操作                      |
+|-------------------------------------|---------------------------|
+| gevent.spawn()                      | 使用gevent执行函数        |
+| gevent.joinall()                    | 等待spawn执行的函数结束   |
+| gevent.sleep(0)                     | 切换上下文, 由`yield`实现 |
+| gevent.select.select([], [], [], 2) | poll(轮询) 2秒            |
+| gevent.pool.Pool()                  | 池(不会出现竞争问题)      |
+
+```py
+import gevent
+
+def foo():
+    print('Running in foo')
+    # 异步总时间为1秒
+    gevent.sleep(1)
+    print('Explicit context switch to foo again')
+
+def bar():
+    print('Explicit context to bar')
+    gevent.sleep(1)
+    print('Implicit context switch back to bar')
+
+# 等待spawn执行的函数结束
+gevent.joinall([
+    gevent.spawn(foo),
+    gevent.spawn(bar),
+])
+```
+
+### `gevent.select.select([], [], [], 2)`: 轮询
+
+```py
+import time
+import gevent
+from gevent import select
+
+start = time.time()
+tic = lambda: 'at %1.1f seconds' % (time.time() - start)
+
+def gr1():
+    print('Started Polling: %s' % tic())
+    # poll 2秒
+    select.select([], [], [], 2)
+    print('Ended Polling: %s' % tic())
+
+def gr2():
+    print('Started Polling: %s' % tic())
+    select.select([], [], [], 2)
+    print('Ended Polling: %s' % tic())
+
+def gr3():
+    print("Hey lets do some stuff while the greenlets poll, %s" % tic())
+    gevent.sleep(1)
+
+gevent.joinall([
+    gevent.spawn(gr1),
+    gevent.spawn(gr2),
+    gevent.spawn(gr3),
+])
+```
+
+### 与普通的同步阻塞执行对比
+
+```py
+import gevent
+
+def task(pid):
+    # 同步: 每次执行等待时间为0.5秒; 异步: 总时间为0.5秒
+    gevent.sleep(0.5)
+    print('Task %s done' % pid)
+
+# 同步
+def synchronous():
+    for i in range(1,10):
+        task(i)
+
+# 异步
+def asynchronous():
+    threads = [gevent.spawn(task, i) for i in range(10)]
+    gevent.joinall(threads)
+
+print('Synchronous:')
+synchronous()
+
+print('Asynchronous:')
+asynchronous()
+```
+
+### `gevent.monkey`补丁修改标准库内阻塞的系统调用
+
+| 补丁                  | 补丁类型               |
+|-----------------------|------------------------|
+| monkey.patch_all()    | 所有系统调用都打上补丁 |
+| monkey.patch_socket() | socket补丁             |
+| monkey.patch_select() | select补丁             |
+
+```py
+import socket
+print(socket.socket)
+
+print("After monkey patch")
+from gevent import monkey
+# patch socket()
+monkey.patch_socket()
+print(socket.socket)
+
+import select
+print(select.select)
+# patch select()
+monkey.patch_select()
+print("After monkey patch")
+print(select.select)
+```
+
+- `gevent.monkey.patch_socket()` 修改 socket库
+
+- 补丁最好放在最前面
+
+```py
+# 打上修改socket的补丁
+from gevent import monkey; monkey.patch_socket()
+
+import gevent
+import requests
+
+def task(pid):
+    r = requests.get('http://www.baidu.com')
+    print(f'Process {pid}: {r.status_code}')
+
+def synchronous():
+    for i in range(1, 10):
+        task(i)
+
+def asynchronous():
+    threads = [gevent.spawn(task, i) for i in range(1, 10)]
+    gevent.joinall(threads)
+
+print('Synchronous:')
+synchronous()
+
+print('Asynchronous:')
+asynchronous()
+```
+
+### gevent.pool.Pool()(gevent池), 能维持数据一致性
+
+- 与进程Pool对比
+
+```py
+from time import time, sleep
+
+def echo(i):
+    sleep(0.001)
+    return i
+
+# Non Deterministic Process Pool
+
+start = time()
+from multiprocessing.pool import Pool
+
+p = Pool(10)
+run1 = [a for a in p.imap_unordered(echo, range(10))]
+run2 = [a for a in p.imap_unordered(echo, range(10))]
+run3 = [a for a in p.imap_unordered(echo, range(10))]
+run4 = [a for a in p.imap_unordered(echo, range(10))]
+# 进程之间会竞争, 所以结果不会相同
+print(run1 == run2 == run3 == run4)
+
+end = time()
+print('%.12f秒' % (end - start))
+
+# Deterministic Gevent Pool
+
+start = time()
+from gevent.pool import Pool
+
+p = Pool(10)
+run1 = [a for a in p.imap_unordered(echo, range(10))]
+run2 = [a for a in p.imap_unordered(echo, range(10))]
+run3 = [a for a in p.imap_unordered(echo, range(10))]
+run4 = [a for a in p.imap_unordered(echo, range(10))]
+print(run1 == run2 == run3 == run4)
+
+end = time()
+print('%.12f秒' % (end - start))
+```
+
+- 输出结果
+
+    - 虽然进程池存在一致性问题, 但速度比gevent快20倍
+
+```
+False
+0.027213811874秒
+True
+0.066201686859秒
+```
+
+### gevent.Timeout()
+
+- 4种timeout的方法
+
+```py
+import gevent
+from gevent import Timeout
+
+def wait():
+    gevent.sleep(2)
+
+# Thread 0
+
+timeout = Timeout(1)
+timeout.start()
+
+try:
+    gevent.spawn(wait).join()
+except Timeout:
+    print('Thread 0 timed out')
+
+# Thread 1
+
+timer = Timeout(1).start()
+thread1 = gevent.spawn(wait)
+
+try:
+    thread1.join(timeout=timer)
+except Timeout:
+    print('Thread 1 timed out')
+
+# Thread 2
+
+timer = Timeout.start_new(1)
+thread2 = gevent.spawn(wait)
+
+try:
+    thread2.get(timeout=timer)
+except Timeout:
+    print('Thread 2 timed out')
+
+# Thread 3
+
+try:
+    gevent.with_timeout(1, wait)
+except Timeout:
+    print('Thread 3 timed out')
+```
+
+### gevent.event.Event(事件)
+
+```py
+import gevent
+from gevent.event import Event
+
+def setter():
+    '''After 2 seconds, wake all threads waiting on the value of event'''
+    print('A: Hey wait for me, I have to do something')
+    gevent.sleep(2)
+    print("Ok, I'm done")
+    # 发送event
+    event.set()
+
+def waiter():
+    '''After 2 seconds the get call will unblock'''
+    print("I'll wait for you")
+    # blocking
+    event.wait()
+    print("It's about time")
+
+if __name__ == '__main__':
+    # 初始化事件
+    event = Event()
+
+    gevent.joinall([
+        gevent.spawn(setter),
+
+        gevent.spawn(waiter),
+        gevent.spawn(waiter),
+        gevent.spawn(waiter),
+        gevent.spawn(waiter),
+        gevent.spawn(waiter)
+    ])
+```
+### gevent.event.AsyncResult 是Event()的拓展, 允许唤醒后发送值
+
+```py
+import gevent
+from gevent.event import Event
+
+def setter():
+    '''After 2 seconds, wake all threads waiting on the value of event'''
+    print('A: Hey wait for me, I have to do something')
+    gevent.sleep(2)
+    print("Ok, I'm done")
+
+    # 发送event值
+    event.set("It's about time")
+
+def waiter():
+    '''After 2 seconds the get call will unblock'''
+    print("I'll wait for you")
+
+    # blocking
+    event.wait()
+
+    # 获取值
+    print(event.get())
+
+if __name__ == '__main__':
+    # 初始化AsyncResult
+    from gevent.event import AsyncResult
+    event = AsyncResult()
+
+    gevent.joinall([
+        gevent.spawn(setter),
+
+        gevent.spawn(waiter),
+        gevent.spawn(waiter),
+        gevent.spawn(waiter),
+        gevent.spawn(waiter),
+        gevent.spawn(waiter)
+    ])
+```
+
+### gevent.queue.Queue(队列)
+
+| Queue方法    | 操作        |
+|--------------|-------------|
+| get()        | 阻塞版get   |
+| put()        | 阻塞版put   |
+| get_nowait() | 非阻塞版get |
+| put_nowait() | 非阻塞版put |
+
+- 非阻塞版get, put
+
+```py
+import gevent
+from gevent.queue import Queue
+
+def consumer(n):
+    # 循环队列
+    while not queue.empty():
+        # 获取队列值, 队列长度减1
+        task = queue.get_nowait()
+        print('%s got %s' % (n, task))
+        gevent.sleep(0)
+
+    print('%s Quit!' % (n))
+
+def producer():
+    for i in range(10):
+        # 发送队列值
+        queue.put_nowait(i)
+
+if __name__ == '__main__':
+    # 初始化Queue
+    queue = Queue()
+
+    gevent.joinall([
+        gevent.spawn(producer),
+
+        gevent.spawn(consumer, 'function_1'),
+        gevent.spawn(consumer, 'function_2'),
+        gevent.spawn(consumer, 'function_3'),
+    ])
+```
+
+- 阻塞版get, put
+
+```py
+import gevent
+from gevent.queue import Queue, Empty
+
+def consumer(n):
+    # 循环队列
+    try:
+        while True:
+            # decrements queue size by 1
+            task = queue.get(timeout=1)
+            print('%s got %s' % (n, task))
+            gevent.sleep(0)
+    except Empty:
+        print('%s Quit!' % (n))
+
+def producer():
+    for i in range(10):
+        # 发送队列值
+        queue.put(i)
+    print('Assigned all work in iteration 1')
+
+    for i in range(10, 20):
+        # 第二条队列
+        queue.put(i)
+    print('Assigned all work in iteration 2')
+
+if __name__ == '__main__':
+    # 现在长度
+    queue = Queue(maxsize=3)
+
+    gevent.joinall([
+        gevent.spawn(producer),
+
+        gevent.spawn(consumer, 'function_1'),
+        gevent.spawn(consumer, 'function_2'),
+        gevent.spawn(consumer, 'function_3'),
+    ])
+```
+
+#### gevent与进程通信
+
+```py
+import gevent
+from multiprocessing import Process, Pipe
+from gevent.socket import wait_read, wait_write
+
+# To Process
+a, b = Pipe()
+
+# From Process
+c, d = Pipe()
+
+def relay():
+    for i in range(10):
+        msg = b.recv()
+        # 发送给d
+        c.send(msg + " in " + str(i))
+
+def put_msg():
+    for _ in range(10):
+        wait_write(a.fileno())
+        # 发送给b
+        a.send('hi')
+
+def get_msg():
+    for _ in range(10):
+        wait_read(d.fileno())
+        print(d.recv())
+
+if __name__ == '__main__':
+    proc = Process(target=relay)
+    proc.start()
+
+    g1 = gevent.spawn(get_msg)
+    g2 = gevent.spawn(put_msg)
+    gevent.joinall([g1, g2], timeout=1)
+```
+
+## 分布式
+
+### Celery
+
+> Celery是任务分发器负责发送消息, 需要安装并启动`RabbitMQ`消息队列
+
+- 文件: addTask.py
+
+```py
+from celery import Celery
+# module名字: addTask. 连接代理的 broker(RabbitMQ)
+app = Celery('addTask', broker='amqp://guest:@localhost:5672//')
+# 定义任务
+@app.task
+def add(x, y):
+    return x + y
+```
+
+- 文件: addTask_main.py
+```py
+import addTask
+if __name__ == '__main__':
+    # 调用add
+    result = test.add.delay(5,5)
+```
+
+```sh
+# 启动addTask
+celery -A addTask worker --loglevel=info
+
+# 运行. 在celery能看到结果等于10
+./addTask_main.py
+
+```
+### Scoop
+
+- 性能对比: Scoop.futures.mapReduce() 与 python内置map()
+
+```py
+import operator
+import time
+from scoop import futures
+
+def my_sum(inputData):
+    # 延长计算时间, 如果没有延长, 则有可能python内置map()更快
+    time.sleep(0.01)
+    return sum(inputData)
+
+def CompareMapReduce():
+    mapScoopTime = time.time()
+    res = futures.mapReduce(
+        my_sum,
+        operator.add,
+        # 相加每个元素[[], [1], [2, 2], [3, 3, 3], [4, 4, 4, 4]...1000]]
+        list([a] * a for a in range(1000)),
+    )
+    # futures.mapReduce()
+    mapScoopTime = time.time() - mapScoopTime
+    print("futures.map in SCOOP executed in {0:.3f}s with result:{1}".format(
+          mapScoopTime, res))
+
+    # python map()
+    mapPythonTime = time.time()
+    res = sum(map(my_sum, list([a] * a for a in range(1000))))
+    mapPythonTime = time.time() - mapPythonTime
+    print("map Python executed in: {0:.3f}s with result: {1}".format(
+        mapPythonTime, res))
+
+if __name__ == '__main__':
+    CompareMapReduce()
+```
+
+- Scoop.futures.map快10倍以上
+
+```
+futures.map in SCOOP executed in 0.899s with result:332833500
+map Python executed in: 10.101s with result: 332833500
 ```
 
 # reference

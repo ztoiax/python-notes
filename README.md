@@ -31,8 +31,9 @@
     * [Dictionaries(字典)](#dictionaries字典)
         * [json](#json)
         * [yaml](#yaml)
+    * [set(集合)](#set集合)
     * [yield](#yield)
-        * [协程](#协程)
+        * [send() 类似协程](#send-类似协程)
     * [def(函数)](#def函数)
         * [参数argv, kwargs](#参数argv-kwargs)
         * [静态类型](#静态类型)
@@ -53,6 +54,7 @@
         * [subprocess](#subprocess)
             * [Popen](#popen)
                 * [asyncio(异步)](#asyncio异步)
+                * [gevent](#gevent)
             * [clipboard](#clipboard)
         * [argparse(参数)](#argparse参数)
         * [optparse(参数)](#optparse参数)
@@ -1085,6 +1087,8 @@ ninsert(n, 3, 'test')
 a | b
 ```
 
+- `|=` instead `dict.update()`
+
 ```py
 a = {**a, **b}
 
@@ -1095,7 +1099,17 @@ a.update(b)
 a |= b
 ```
 
+- 通过转换kv, 去除重复value
+
+```py
+test_dict = { 'gfg' : 10, 'is' : 15, 'best' : 20, 'for' : 10, 'geeks' : 20}
+temp = {val : key for key, val in test_dict.items()}
+res = {val : key for key, val in temp.items()}
+print(res)
+```
+
 - Counter()
+
 ```py
 from collections import Counter
 c = Counter()
@@ -1154,6 +1168,12 @@ with open('test.yaml', 'w') as file:
   yaml.dump(dict1, file, allow_unicode=True)
 ```
 
+## set(集合)
+
+```py
+
+```
+
 ## yield
 
 > 生成器. 像`return`那样返回后,函数会暂停运行,可使用`__next__()`方法让函数继续执行
@@ -1183,7 +1203,7 @@ yd.__next__()
 yd.__next__()
 ```
 
-### 协程
+### send() 类似协程
 
 > yield,通过send()传递值
 
@@ -1697,6 +1717,17 @@ cls.age
 
 ## file
 
+| 权限 | 操作
+|------|--------------------------------------|
+| r    | 只读                                 |
+| w    | 只写                                 |
+| r+   | 读写(不会覆盖文件)                   |
+| w+   | 读写(如果文件不存在就创建, 覆盖文件) |
+| rb+  | 读写二进制文件                       |
+| wb+  | 只写二进制文件                       |
+| a    | 只写追加尾部                         |
+| a+   | 读写追加尾部(如果文件不存在就创建)   |
+
 - 写入文件
 
 ```py
@@ -1712,7 +1743,6 @@ with open('/tmp/test', 'w') as file:
 - 读取文件
 
 ```py
-
 # 指定编码 file = open('/tmp/test', 'r', encoding='utf-8')
 
 file = open('/tmp/test')
@@ -1742,6 +1772,17 @@ for i in file:
     print(f.read())
 
 f.close()
+
+# 防止文件不存在, 报错
+if not os.path.exists(file):
+    os.mknod(file)
+
+# 防止读取空文件
+with open(f, 'r') as file:
+    try:
+        page_dict |= yaml.load(file)
+    except:
+        pass
 ```
 
 ### shelve(以二进制将变量保存到文件)
@@ -1862,6 +1903,12 @@ for i in p.glob('**/*'):
 
 ```py
 import os
+
+# 创建目录
+os.mkdir(filepath)
+
+# 创建文件
+os.mknod(filepath)
 
 # 创建ipc文件
 os.mkfifo(filepath)
@@ -2038,6 +2085,22 @@ async def echo(msg):
 loop = asyncio.get_event_loop()
 loop.run_until_complete(echo('hello!'))
 loop.close()
+```
+##### gevent
+```py
+import gevent
+from gevent.subprocess import Popen, PIPE
+
+def cron():
+    while True:
+        print("cron")
+        gevent.sleep(0.2)
+
+g = gevent.spawn(cron)
+sub = Popen(['sleep 1; uname'], stdout=PIPE, shell=True)
+out, err = sub.communicate()
+g.kill()
+print(out.rstrip())
 ```
 
 #### clipboard
