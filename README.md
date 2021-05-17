@@ -66,7 +66,10 @@
         * [psutil](#psutil)
         * [cursesmenu(tui)](#cursesmenutui)
         * [pyinotify](#pyinotify)
-        * [wechatpy](#wechatpy)
+        * [itchat: 微信库](#itchat-微信库)
+        * [wxpy: 微信机器人](#wxpy-微信机器人)
+        * [pyecharts: 图表](#pyecharts-图表)
+        * [locust: web自动化压力测试](#locust-web自动化压力测试)
     * [命令行相关](#命令行相关)
         * [typer](#typer)
         * [click](#click)
@@ -77,6 +80,7 @@
         * [pygal](#pygal)
     * [sort(排序)](#sort排序)
     * [暂时还没搞懂的程序](#暂时还没搞懂的程序)
+    * [process: 进程, 线程, 协程](#process-进程-线程-协程)
     * [network: 网络](#network-网络)
     * [spider: 网络爬虫](#spider-网络爬虫)
     * [debug: 调试](#debug-调试)
@@ -2477,13 +2481,162 @@ import asyncore
 asyncore.loop()
 ```
 
-### [wechatpy](https://github.com/wechatpy/wechatpy)
+### [itchat: 微信库](https://github.com/littlecodersh/itchat)
 
-- [官方文档](https://wechatpy.readthedocs.io/zh_CN/stable/)
+### [wxpy: 微信机器人](https://github.com/youfou/wxpy)
+
+- [官方文档](https://wxpy.readthedocs.io/zh/latest/)
+
+- 好友
 
 ```py
+from wxpy import *
+# 登陆微信
+bot = Bot()
 
+# 查看所有好友
+bot.friends()
+
+# 查看所有好友信息
+bot.friends().stats_text()
+
+# 查找好友
+my_friend = bot.friends().search('name')[0]
+
+
+# 发送信息
+my_friend.send('Hello, WeChat!')
+# 发送图片
+my_friend.send_image('my_picture.png')
+# 发送视频
+my_friend.send_video('my_video.mov')
+# 发送文件
+my_friend.send_file('my_file.zip')
+# 以动态的方式发送图片
+my_friend.send('@img@my_picture.png')('my_picture.jpg')
 ```
+
+- 群
+
+```py
+# 查看群
+bot.groups()
+
+# 查找群
+group = bot.groups().search('name')[0]
+
+# 查看群主
+group.owner
+
+# 查看群友
+for i in group:
+    print(i)
+
+# 查看好友是否在群里
+my_friend in group
+
+# 查看所有公众号
+bot.mps()
+```
+- 统计好友地区分布
+
+```py
+friends_stat = bot.friends().stats()
+friend_loc = []
+for province, count in friends_stat["province"].items():
+    if province != "": 
+        friend_loc.append([province, count])
+
+friend_loc.sort(key=lambda x: x[1], reverse=True)
+for item in friend_loc[:10]:
+     print(item[0], item[1])
+```
+
+- 统计好友地区分布, 并使用`pyecharts`生成图
+
+```py
+from pyecharts import *
+
+friend_loc = []
+k_list = []
+v_list = []
+for province, count in friends_stat["province"].items():
+    if province != "": 
+        friend_loc.append([province, count])
+
+friend_loc.sort(key=lambda x: x[1], reverse=True)
+for k, v in friend_loc[:10]:
+     k_list.append(k)
+     v_list.append(v)
+
+pie = Pie('省份数量统计')
+pie.add('', k_list, v_list, is_label_show=True, center=[50, 60])
+pie.render()
+
+map = Map("广东地图示例", width=1200, height=600)
+map.add("", attrs, values, maptype='广东', is_visualmap=True, visual_text_color='#000')
+map.render("city.html")
+```
+
+- 统计好友男女数量
+
+```py
+for sex, count in friends_stat["sex"].items():
+    # 1代表MALE, 2代表FEMALE
+    if sex == 1:
+        print("MALE %d" % count)
+    elif sex == 2:
+        print("FEMALE %d" % count)
+```
+
+- 其它功能
+
+```py
+# 打印好友, 群公众号信息
+@bot.register()
+def print_others(msg):
+    print(msg)
+
+# 自动回复
+@bot.register(mp)
+def forward_message(msg):
+    return 'received: {} ({})'.format(msg.text, msg.type)
+
+# 指定好友, 自动回复
+@bot.register(my_friend)
+def reply_my_friend(msg):
+    return 'received: {} ({})'.format(msg.text, msg.type)
+```
+
+- 图灵机器人自动回复消息
+
+```py
+import json
+import requests
+
+# 调用图灵机器人API，发送消息并获得机器人的回复
+def auto_reply(text):
+    url = "http://www.tuling123.com/openapi/api"
+    api_key = "你的api key"
+    payload = {
+        "key": api_key,
+        "info": text,
+        "userid": "123456"
+    }
+    r = requests.post(url, data=json.dumps(payload))
+    result = json.loads(r.content)
+    return "[tuling] " + result["text"]
+
+@bot.register(my_friend)
+def reply_my_friend(msg):
+    return auto_reply(msg.text)
+```
+
+### [pyecharts: 图表](https://github.com/pyecharts/pyecharts)
+
+- [官方文档](https://pyecharts.readthedocs.io/zh/latest/en-us/charts_base/)
+
+### [locust: web自动化压力测试](https://github.com/locustio/locust)
 
 ## 命令行相关
 
@@ -2770,6 +2923,8 @@ list1 = ['geeks', 'for', 'geeks']
 l = sorted(list1, key = cmp_to_key(cmp_fun))
 print('sorted list :', l)
 ```
+
+## [process: 进程, 线程, 协程](./python-process.md)
 
 ## [network: 网络](./python-network.md)
 
