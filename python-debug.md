@@ -203,9 +203,11 @@ t.timeit(number=10000)
 
 - from 导入比import 导入要快
 
-    > 如果使用math.sqrt(), 解释器首先需要找到math模块,再去找对应的sqrt()方法
+    > sqrt() 比 math.sqrt() 快1.5到2倍
 
-    - sqrt() 比 math.sqrt() 快1.5到2倍
+    - 使用math.sqrt(), 解释器首先需要找到math模块,再去找对应的sqrt()方法
+
+    - 使用`.`(属性访问操作符时)会触发`__getattribute__()`和`__getattr__()`,这些方法会进行字典操作
 
     ```py
     timeit('math.sqrt(9)', 'import math')
@@ -215,6 +217,53 @@ t.timeit(number=10000)
     ```
     0.06219652999971004
     0.030946962999678362
+    ```
+
+- 全局变量, 局部变量
+    > 局部变量快1.多倍
+    ```py
+    a = 0
+    def global_add():
+        global a
+        a += 1
+
+    def local_add():
+        b = 0
+        b += 1
+
+
+    timeit(global_add)
+    timeit(local_add)
+    ```
+    输出:
+    ```
+    0.11157561699974394
+    0.06823660200006998
+    ```
+
+- 使用`@numba.jit`JIT编译与不使用对比
+    > 快424倍
+    ```py
+    import numba
+
+    @numba.jit
+    def with_numba():
+        sum = 0
+        for i in range(1000):
+            sum += i
+
+    def without_numba():
+        sum = 0
+        for i in range(1000):
+            sum += i
+
+    timeit(with_numba)
+    timeit(without_numba)
+    ```
+    输出:
+    ```
+    0.09106731399970158
+    38.623348115000226
     ```
 
 ## 面向对象的性能损耗

@@ -17,3 +17,7 @@
 # reference
 
 - [Problem Solving with Algorithms and Data Structures using Python: 此书可以在线交互式运行代码](https://runestone.academy/runestone/books/published/pythonds3/index.html)
+
+- [TheAlgorithms: Python](https://github.com/TheAlgorithms/Python)
+
+- [leetcode-master](https://github.com/youngyangyang04/leetcode-master)

@@ -6,13 +6,12 @@
         * [pip 包管理器](#pip-包管理器)
         * [pyenv](#pyenv)
         * [常用命令:](#常用命令)
-    * [基本概念](#基本概念)
     * [解释器](#解释器)
         * [compile() 返回code对象](#compile-返回code对象)
         * [python 慢的原因](#python-慢的原因)
-    * [动态类型](#动态类型)
     * [import and from](#import-and-from)
     * [if](#if)
+        * [PEP 572: 海象运算符(:=)](#pep-572-海象运算符)
     * [while, for(循环)](#while-for循环)
     * [函数式编程](#函数式编程)
         * [fib(斐波那契)](#fib斐波那契)
@@ -24,19 +23,23 @@
         * [黄金分割](#黄金分割)
         * [树形递归](#树形递归)
         * [平方根](#平方根)
-    * [str(字符串)](#str字符串)
-    * [list(列表)](#list列表)
+    * [数据类型](#数据类型)
+        * [基本概念](#基本概念)
+        * [动态类型](#动态类型)
+        * [str(字符串)](#str字符串)
+        * [list(列表)](#list列表)
         * [rlist(序列)](#rlist序列)
-    * [tuple(元组)](#tuple元组-1)
-    * [Dictionaries(字典)](#dictionaries字典)
-        * [json](#json)
-        * [yaml](#yaml)
-    * [set(集合)](#set集合)
+        * [tuple(元组)](#tuple元组-1)
+        * [Dictionaries(字典)](#dictionaries字典)
+        * [set(集合)](#set集合)
+        * [静态类型](#静态类型)
+            * [静态类型检查工具:mypy](#静态类型检查工具mypy)
+            * [静态类型检查工具:pytype](#静态类型检查工具pytype)
+            * [基本使用](#基本使用)
     * [yield](#yield)
         * [send() 类似协程](#send-类似协程)
     * [def(函数)](#def函数)
         * [参数argv, kwargs](#参数argv-kwargs)
-        * [静态类型](#静态类型)
         * [内置函数,属性](#内置函数属性)
         * [装饰器](#装饰器)
     * [class(类)](#class类)
@@ -45,9 +48,14 @@
         * [内置函数,属性](#内置函数属性-1)
         * [itertools(迭代器)](#itertools迭代器)
         * [class的内置装饰器](#class的内置装饰器)
+        * [`__getitem__` 和 `__class_getitem__` 函数](#__getitem__-和-__class_getitem__-函数)
     * [file](#file)
-        * [shelve(以二进制将变量保存到文件)](#shelve以二进制将变量保存到文件)
+        * [json](#json)
+        * [yaml](#yaml)
+        * [pickle](#pickle)
+        * [shelve](#shelve)
     * [lib(库)](#lib库)
+        * [time](#time)
         * [logging](#logging)
         * [pathlib](#pathlib)
         * [os](#os)
@@ -67,8 +75,9 @@
         * [cursesmenu(tui)](#cursesmenutui)
         * [pyinotify](#pyinotify)
         * [itchat: 微信库](#itchat-微信库)
-        * [wxpy: 微信机器人](#wxpy-微信机器人)
-        * [pyecharts: 图表](#pyecharts-图表)
+        * [wxpy: 微信自动化](#wxpy-微信自动化)
+        * [pyecharts: python ECharts数据可视化](#pyecharts-python-echarts数据可视化)
+        * [hashlib](#hashlib)
         * [locust: web自动化压力测试](#locust-web自动化压力测试)
     * [命令行相关](#命令行相关)
         * [typer](#typer)
@@ -91,6 +100,8 @@
 
 # python
 
+- 强类型的动态类型语言
+
 ## 环境配置
 
 ### 交互更友好的解释器
@@ -99,6 +110,9 @@
 
 - [jupyter notebooks](https://github.com/jupyterhub/jupyterhub)
     > 可以显示plot画的图
+
+- [nbterm](https://github.com/davidbrochart/nbterm)
+    > 在终端下的jupter notebooks
 
 - [在线jupyter(需要科学上网)](https://colab.research.google.com/notebooks/intro.ipynb#recent=true)
 
@@ -113,6 +127,39 @@
     - 有些模块像`scapy`需要root权限. 有些模块会破坏依赖, 因此不能使用sudo安装
 
     `/usr/lib/python3.9/`
+
+- 安装过程:
+
+    - 先`build`, 后`install` 两个阶段是分开的, 可以由不同的工具完成
+
+        - 1.`build`: 把源码构建为wheel(.whl文件)
+
+        - 2.`install`: 把wheel解压, 将文件移动到对应的目录
+
+            - pypi有些包, 操作系统提供wheel的下载(可以跳过build), 而有些则需要build
+
+            - wheel的文件小于源代码
+
+            - `--no-binary=:all:` 参数告诉pip即使有wheel文件, 也要下载源码进行本地构建
+            ```py
+
+            pip install \
+            --no-binary=:all: \
+            package
+            ```
+
+
+        ![image](./imgs/pip-install.png)
+
+        [视频:明希 - Python 打包 101](https://www.bilibili.com/video/BV1Db4y1h7Xx/?spm_id_from=333.788.recommend_more_video.0)
+
+- PEP660: editable build backend
+    - 修改源代码后不需要构建wheel, 即可使用, 但python程序还需重启(接近热更新)
+    ```sh
+    pip install -e .
+    ```
+    - 目前backend使用`pdm` 的代理模式
+
 
 ### pyenv
 
@@ -183,57 +230,6 @@ pip install trustme
 python -m trustme -i baidu.com
 ```
 
-## 基本概念
-
-- 一切皆是对象
-
-  - 每个对象由 `id(地址)` `type(类型)` `value(值)` 组成
-
-    `a is b` 实际上为 `id(a) == id(b)`. `is` 效率高于 `==`
-
-  - `list` `dict` `set` 为**可变数据**,值的修改**不需要创建新对象**
-     ```py
-     a = [1, [2], 3]
-     b = a
-     # 由于b引用a, 所以a和b一样
-     b[0] = 2
- 
-     import copy
-     # 浅复制不会复制所有子对象
-     b = copy.copy(a)
-     # 父对象修改不会影响a
-     b [0] = 2
-     # 子对象修改会影响a
-     b [1][0] = 1
-
-     # 深复制, 两个对象完全不会影响
-     b = copy.deepcopy(a)
-     ```
-
-
-  - `int` `str` `tuple` 为**不可变数据**,值的修改**需要创建新对象**
-
-    - `a = 256` `b = 256` 两者 id 相同
-
-      > python 维护一个(0, 256)的常量值, 这范围内的值的变量 id 相同
-
-    - `a = 257` `b = 257` 两者 id 不相同
-
-    - `a = 257` `b = a` 两者 id 相同
-
-    - `str1 = 'string'`
-
-    - `str1.upper()`
-        > 此时返回的是一个新字符串对象
-- 语法糖
-    ```py
-    a, b = 1, 2
-    a + b 等同于 a.__add__(b)
-
-    list1 = [1, 2]
-    list[0] 等同于 a.__getitem__(0)
-    ```
-
 ## 解释器
 
 ### compile() 返回code对象
@@ -292,67 +288,6 @@ code.co_code
   - [x] JIT
 
 - [python 性能对比](https://hackernoon.com/which-is-the-fastest-version-of-python-2ae7c61a6b2b)
-
-## 动态类型
-
-- 字典的 `key`, `value` 可以是其它类型
-
-  - 注意:
-
-    **key** 不能为 `list`, `set`
-
-  - 错误:
-
-    `lv = {['hello', 'nihao']: 1}`
-
-    `lv = {{'hello', 'nihao'}: 1}`
-
-    ```py
-    kv = {1: 'hello', 2: 'nihao'}
-    kl = {1: ['hello', 'nihao']}
-    kt = {1: ('hello', 'nihao')}
-    ks = {1: {'hello', 'nihao'}}
-
-    sv = {'hello': 1, 'nihao': 2}
-    tv = {('hello', 'nihao'): 1}
-    ```
-
-- `list`, `tuple`, `set` 转 `dict`
-
-  ```py
-  dict([(3, 9), (4, 16), (5, 25)])
-  dict(([3, 9], [4, 16], [5, 25]))
-  dict(({3, 9}, {4, 16}, {5, 25}))
-  ```
-
-- `dict` 转 `list`, `tuple`, `set` 只能保留 `key`:
-
-  ```py
-  tuple({1: 'a', 2: 'b'})
-  list({1: 'a', 2: 'b'})
-  set({1: 'a', 2: 'b'})
-  ```
-
-- 要想同时保留 `key` `value` 可以利用 list 保存 key,再循环赋值
-
-  ```py
-  D = {'a':1, 'c':3, 'b':2}
-  D1 = list(D.keys())
-  D1.sort()
-  s = tuple()
-  for i in D1:
-    s = s + (i, D[i])
-  ```
-
-- 循环赋值
-
-  ```py
-  (x for x in range(1,5))
-  tuple(x * 2 for x in 'abc')
-  [x for x in range(1,5) if x % 2 == 0]
-  ['x' * 2 for x in 'abc']
-  {x: x * x for x in range(1,5)}
-  ```
 
 ## import and from
 
@@ -431,6 +366,58 @@ def http_error(status):
             return "Not allowed"
         case _:
             return "Something's wrong with the Internet"
+```
+
+### [PEP 572: 海象运算符(:=)](https://www.python.org/dev/peps/pep-0572/)
+
+- 1.运行b函数
+- 2.赋值a
+- 3.判断a是否为`None`
+
+```py
+def b():
+    return 'not None'
+
+# 普通写法
+a = b()
+if (a):
+    print(a)
+
+# 海象运算符
+if (a := b()):
+    print(a)
+```
+
+```py
+def f(x):
+    return x + 1
+
+
+data = [1, 2, 3]
+
+# 普通写法
+results = []
+for x in data:
+    result = f(x)
+    if result:
+        results.append(result)
+
+# 普通写法1
+results = [
+    f(x) for x in data
+    if f(x)
+]
+
+# 海象运算符
+results = [
+    y for x in data
+    if (y := f(x))
+]
+```
+
+```py
+# f(x)赋值y
+stuff = [[y := f(x), x * y] for x in range(3)]
 ```
 
 ## while, for(循环)
@@ -816,7 +803,121 @@ square_root(16)
 logarithm(32, 2)
 ```
 
-## str(字符串)
+## 数据类型
+
+### 基本概念
+
+- 一切皆是对象
+
+  - 每个对象由 `id(地址)` `type(类型)` `value(值)` 组成
+
+    `a is b` 实际上为 `id(a) == id(b)`. `is` 效率高于 `==`
+
+  - `list` `dict` `set` 为**可变数据**,值的修改**不需要创建新对象**
+     ```py
+     a = [1, [2], 3]
+     b = a
+     # 由于b引用a, 所以a和b一样
+     b[0] = 2
+ 
+     import copy
+     # 浅复制不会复制所有子对象
+     b = copy.copy(a)
+     # 父对象修改不会影响a
+     b [0] = 2
+     # 子对象修改会影响a
+     b [1][0] = 1
+
+     # 深复制, 两个对象完全不会影响
+     b = copy.deepcopy(a)
+     ```
+
+
+  - `int` `str` `tuple` 为**不可变数据**,值的修改**需要创建新对象**
+
+    - `a = 256` `b = 256` 两者 id 相同
+
+      > python 维护一个(0, 256)的常量值, 这范围内的值的变量 id 相同
+
+    - `a = 257` `b = 257` 两者 id 不相同
+
+    - `a = 257` `b = a` 两者 id 相同
+
+    - `str1 = 'string'`
+
+    - `str1.upper()`
+        > 此时返回的是一个新字符串对象
+- 语法糖
+    ```py
+    a, b = 1, 2
+    a + b 等同于 a.__add__(b)
+
+    list1 = [1, 2]
+    list[0] 等同于 a.__getitem__(0)
+    ```
+
+### 动态类型
+
+- 字典的 `key`, `value` 可以是其它类型
+
+  - 注意:
+
+    **key** 不能为 `list`, `set`
+
+  - 错误:
+
+    `lv = {['hello', 'nihao']: 1}`
+
+    `lv = {{'hello', 'nihao'}: 1}`
+
+    ```py
+    kv = {1: 'hello', 2: 'nihao'}
+    kl = {1: ['hello', 'nihao']}
+    kt = {1: ('hello', 'nihao')}
+    ks = {1: {'hello', 'nihao'}}
+
+    sv = {'hello': 1, 'nihao': 2}
+    tv = {('hello', 'nihao'): 1}
+    ```
+
+- `list`, `tuple`, `set` 转 `dict`
+
+  ```py
+  dict([(3, 9), (4, 16), (5, 25)])
+  dict(([3, 9], [4, 16], [5, 25]))
+  dict(({3, 9}, {4, 16}, {5, 25}))
+  ```
+
+- `dict` 转 `list`, `tuple`, `set` 只能保留 `key`:
+
+  ```py
+  tuple({1: 'a', 2: 'b'})
+  list({1: 'a', 2: 'b'})
+  set({1: 'a', 2: 'b'})
+  ```
+
+- 要想同时保留 `key` `value` 可以利用 list 保存 key,再循环赋值
+
+  ```py
+  D = {'a':1, 'c':3, 'b':2}
+  D1 = list(D.keys())
+  D1.sort()
+  s = tuple()
+  for i in D1:
+    s = s + (i, D[i])
+  ```
+
+- 循环赋值
+
+  ```py
+  (x for x in range(1,5))
+  tuple(x * 2 for x in 'abc')
+  [x for x in range(1,5) if x % 2 == 0]
+  ['x' * 2 for x in 'abc']
+  {x: x * x for x in range(1,5)}
+  ```
+
+### str(字符串)
 
 - join() : `list`, `tuple`, `dict` 转 `str`
 
@@ -862,7 +963,7 @@ pi=3.14
 "{:.2f}".format(3.1415926)
 ```
 
-## list(列表)
+### list(列表)
 
 - [list每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Lists.html)
 
@@ -911,6 +1012,11 @@ list1[::2]
 # 反向
 list1[-2::]
 [4, 5]
+```
+
+```
+list1 = [1, 2, 3, 4, 5]
+', '.join(x for i in list1)
 ```
 
 ### rlist(序列)
@@ -1023,7 +1129,7 @@ def count(rlist, x):
 
 count(rlist, 1)
 ```
-## tuple(元组)
+### tuple(元组)
 
 ```py
 word = "hello Worrld ! in Python"
@@ -1076,7 +1182,7 @@ n = ('hello', 'Worrld', '!', 'in', 'Python')
 ninsert(n, 3, 'test')
 ```
 
-## Dictionaries(字典)
+### Dictionaries(字典)
 
 - [dict每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Dictionaries.html)
 
@@ -1125,57 +1231,329 @@ with open('/home/tz/.bash_history', 'r') as f:
        c[cmd[0]] += 1
 ```
 
-### json
-
-- 对变量的转换: 带s的方法loads(), dumps()
-
-- 对文件的读写: 不带s的方法load(), dump()
+### set(集合)
 
 ```py
-import json
 
-# loads() str内的dict转json.注意:字符串外层必须是',字典内必须是"
-str_dict = '{"a": 1, "b": 2}'
-json.loads(str_dict)
-
-# dumps() dict转换json.'' 变成 ""
-dict1 = {'a': 1, 'b': 2}
-json.dumps(dict1)
-json.dumps(dict1, indent = 4, sort_keys=True)
-
-# load() 读取json文件
-with open('test.json') as file:
-  data = json.load(f)
-
-# dump() 写入json文件
-with open('test.json', 'w') as file:
-  json.dump(dict1, file)
-
-# ensure_ascii=False(默认使用ascii编码) 防止中文乱码
-with open('test.json', 'w') as file:
-  json.dump(dict1, file, ensure_ascii=False)
 ```
 
-### yaml
+### 静态类型
 
-> 操作类似json
+#### [静态类型检查工具:mypy](https://github.com/python/mypy)
+
+- 将代码保存文件后, 使用`mypy` 进行静态类型检查
+    ```sh
+    mypy ./test.py
+    # python2
+    mypy --py2 ./test.py
+    ```
+
+- 以下代码的**报错**是指静态类型检查阶段
 
 ```py
-import yaml
- 
-# 读取json文件
-with open('test.json') as file:
-  data = yaml.load(f)
+def add(x: int, y: int):
+    return x + y
 
-# 使用utf编码, 写入文件
-with open('test.yaml', 'w') as file:
-  yaml.dump(dict1, file, allow_unicode=True)
+# 报错 不是int
+add('1', '2')
 ```
 
-## set(集合)
+```py
+def test(n: int) -> int:
+    return n
+
+test(1)
+
+# 报错 输入值不是int
+test(1.1)
+
+def test1(n: int) -> int:
+    # 报错 返回值不是int
+    n = 1.1
+    return n
+
+test1(1)
+```
 
 ```py
+from typing import List
 
+def test(names: List[str]) -> None:
+    print(names)
+
+names = ["Alice", "Bob", "Charlie"]
+ages = [10, 20, 30]
+
+test(names)
+
+# 报错 输入值不是list
+test('123')
+```
+
+#### [静态类型检查工具:pytype](https://github.com/google/pytype)
+
+- 自动生成`pyi`文件
+
+    - 相当于解耦
+
+- 源码:
+    ```py
+    class o:
+        def __init__(self, x):
+            self.x = []
+    ```
+
+- `pyi`文件:
+    ```py
+    from typing import List
+
+    class o:
+        x: List[nothing]
+        def __init__(self, x) -> None: ...
+    ```
+
+#### 基本使用
+
+- [视频: 丁来强-Python强类型编程最佳实践](https://www.bilibili.com/video/BV185411H7Bc?spm_id_from=333.999.0.0)
+
+- [dropbox 检查400万行代码的过程](https://dropbox.tech/application/our-journey-to-type-checking-4-million-lines-of-python)
+
+- 什么时候需要静态类型检查:
+    - 1.sdk, 库, 接口给别人的时候
+    - 2.大代码量
+    - 3.单元测试
+
+- PEP484: 分两个阶段
+
+    - 1.静态检查阶段
+
+    - 2.运行时阶段
+
+- `TYPE_CHECKING` 只在静态检查阶段导入库
+    ```py
+    from typing import TYPE_CHECKING
+
+    # 静态检查阶段
+    if TYPE_CHECKING:
+        import requests
+    ```
+
+- `[]` 定义类型:
+    ```py
+    # 定义元组内的类型, 第一个必须是int, 第二个必须是str
+    n = tuple[int, str]
+
+    def f() -> n:
+        return (1, '1')
+
+    # 报错 第二个元素不是str类型
+    def f() -> n:
+        return (1, 1)
+
+    # 报错 多出一个元素
+    def f() -> n:
+        return (1, '1', 1)
+    ```
+
+    - `Literal` 定义一组值
+    ```py
+    from typing import Literal
+
+    # 定义r, w
+    mode = Literal['r', 'w']
+    def myopen(path: str, m: mode) ->None:
+        pass
+
+    # 不报错
+    myopen('/tmp/test', 'r')
+    # 报错 rb不在mode列表内
+    myopen('/tmp/test', 'rb')
+    ```
+
+    - `Union` 定义一组类型, 类型可以不同
+    ```py
+    from typing import Union
+
+    n = Union[int, str]
+
+    # 不会报错
+    def f() -> n:
+        return 1
+
+    # 不会报错
+    def f() -> n:
+        return '1'
+    ```
+
+    - `TypeVar` 定义一组类型(泛型), 类型必须相同
+    ```
+    from typing import TypeVar
+
+    n = TypeVar('n', int, str)
+
+    def f(x: n, y: n):
+        pass
+
+    # 没有报错
+    f(1, 1)
+
+    # 没有报错
+    f('1', '1')
+
+    # 报错 两个参数的类型必须相同
+    f('1', 1)
+    ```
+    - `Iterable` 定义迭代器
+    ```py
+    from typing import TypeVar, Iterable
+
+    n = TypeVar('n', int, float)
+    # 定义迭代器
+    n1 = Iterable[tuple[n, n]]
+
+    def f(v: n1[n]):
+        pass
+
+
+    # 不会报错
+    f(
+      ((1, 1), (2, 2))
+            )
+
+    # 不会报错
+    f(
+      ((1, 1.1), (2.1, 2))
+            )
+
+    # 报错
+    f(
+      (1, 1.1)
+            )
+    ```
+
+    - 类继承`Generic` , 使类下的方法与`TypeVar`相同
+    ```py
+    from typing import TypeVar, Generic
+
+    # 初始化泛型
+    n = TypeVar('n')
+
+    # 继承泛型
+    class o(Generic[n]):
+        def f(self, x: n):
+            pass
+
+    # 定义泛型为int
+    a: o[int] = o()
+
+    # 不会报错
+    a.f(1)
+
+    # 报错 参数只能是泛型n, 也就是int类型
+    a.f('1')
+    ```
+
+- `@no_type_check` 关闭静态类型检查:
+    ```py
+    from typing import no_type_check
+
+    # 不会报错
+    @no_type_check
+    def f(x: int) -> int:
+        return x + 1
+
+    f(1.1)
+    ```
+
+- `Final`变量不能修改
+    ```py
+    from typing import Final
+
+    x: Final = 1
+
+    # 报错, 变量不能修改
+    x += 1
+    ```
+
+- `@final` 类, 方法不能继承和重写
+
+    - 类
+    ```py
+    from typing import final
+
+    @final
+    class o: pass
+
+    # 报错, 不能继承
+    class o1(o): pass
+
+    # 报错, 不能重写
+    class o: pass
+    ```
+
+    - 方法:
+    ```py
+    class o:
+        @final
+        def f(self): pass
+
+        # 报错, 不能重写
+        def f(self): pass
+    ```
+
+- `@dataclass` 将类变为数据结构
+    ```py
+    from dataclasses import dataclass
+
+    @dataclass
+    class o:
+        x: int
+        y: int
+
+    a = o(1, 2)
+    ```
+
+    ```py
+    from dataclasses import dataclass
+    from typing import List
+
+    @dataclass
+    class o:
+        x: int
+        y: int
+
+    @dataclass
+    class o1:
+        mylist: List[o]
+
+    b = o1([o(1, 2), o(3, 4)])
+    print(b.mylist)
+    # 获取列表中, 第一个o对象中的, 第一个元素
+    print(b.mylist[0].x)
+    ```
+
+- `Protocol`实现 duck typing. 不检查类型, 而是检查给定方法或属性是否存在
+```py
+from typing import Protocol, Iterable
+
+class iresource(Protocol):
+    def close(self) -> None:
+        pass
+
+# 并不需要继承iresource
+class resource():
+    def close(self) -> None:
+        pass
+
+# close所有列表对象
+def close_all(r: Iterable[iresource]):
+    for i in r:
+        i.close()
+
+f = open('/tmp/test')
+r = resource()
+
+close_all([f, r])
 ```
 
 ## yield
@@ -1291,13 +1669,6 @@ myFun('hello', 'tz', name = 'tz', age = '24')
 # 或者
 dict1 = {'name' : 'tz', 'age' : '24'}
 myFun('hello', 'tz', **dict1)
-```
-
-### 静态类型
-
-```py
-def test(name: str) -> str:
-    return(name)
 ```
 
 ### 内置函数,属性
@@ -1719,6 +2090,33 @@ cls.age
     a.name
     ```
 
+### `__getitem__` 和 `__class_getitem__` 函数
+- `__getitem__` 函数:
+    ```py
+    class o:
+        def __getitem__(self, x):
+            print(x)
+
+    class o1(o): pass
+
+    # ()调用__getitem__函数, []表示传入参数
+    o()['test']
+    o1()['test']
+    ```
+
+- `__class_getitem__` 函数:
+    ```py
+    class o:
+        # cls表示类, item表示参数
+        def __class_getitem__(cls, item):
+            print(f"{cls.__name__}[{item.__name__}]")
+
+    class o1(o): pass
+
+    # []调用__class_getitem__函数, 并传入参数
+    o1[int]
+    ```
+
 ## file
 
 | 权限 | 操作
@@ -1749,6 +2147,7 @@ with open('/tmp/test', 'w') as file:
 ```py
 # 指定编码 file = open('/tmp/test', 'r', encoding='utf-8')
 
+# 文件必须存在
 file = open('/tmp/test')
 # 只能读取一次
 print(file.read())
@@ -1789,9 +2188,77 @@ with open(f, 'r') as file:
         pass
 ```
 
-### shelve(以二进制将变量保存到文件)
+### json
 
-    > 数据类型是dict
+- 对变量的转换: 带s的方法loads(), dumps()
+
+- 对文件的读写: 不带s的方法load(), dump()
+
+```py
+import json
+
+# loads() str内的dict转json.注意:字符串外层必须是',字典内必须是"
+str_dict = '{"a": 1, "b": 2}'
+json.loads(str_dict)
+
+# dumps() dict转换json.'' 变成 ""
+dict1 = {'a': 1, 'b': 2}
+json.dumps(dict1)
+json.dumps(dict1, indent = 4, sort_keys=True)
+
+# load() 读取json文件
+with open('test.json') as file:
+  data = json.load(file)
+
+# dump() 写入json文件
+with open('test.json', 'w') as file:
+  json.dump(dict1, file)
+
+# ensure_ascii=False(默认使用ascii编码) 防止中文乱码
+with open('test.json', 'w') as file:
+  json.dump(dict1, file, ensure_ascii=False)
+```
+
+### yaml
+
+> 操作类似json
+
+```py
+import yaml
+ 
+# 读取json文件
+with open('test.json') as file:
+  data = yaml.load(f)
+
+# 使用utf编码, 写入文件
+with open('test.yaml', 'w') as file:
+  yaml.dump(dict1, file, allow_unicode=True)
+```
+
+### pickle
+
+- 二进制保存文件
+
+```py
+import pickle
+
+integers = [1, 2, 3, 4, 5]
+
+# 写入
+with open('file', 'wb') as file:
+    pickle.dump(integers, file)
+
+# 读取
+with open('file', 'rb') as file:
+    integers = pickle.load(file)
+    print integers
+```
+
+### shelve
+
+- [shelve与pickle的区别](https://newbedev.com/what-is-the-difference-between-pickle-and-shelve)
+
+    - 在pickle之上并实现一个序列化dict(字典)
 
 ```py
 import shelve
@@ -1810,6 +2277,25 @@ file.close()
 ```
 
 ## lib(库)
+
+### time
+
+| time | 符号 |
+|------|------|
+| 年   | %Y   |
+| 月   | %m   |
+| 日   | %d   |
+| 时   | %H   |
+| 分   | %M   |
+| 秒   | %S   |
+
+```py
+import time
+
+# 年 月 日 时 分 秒
+current_time = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
+print(current_time)
+```
 
 ### logging
 
@@ -1947,7 +2433,7 @@ for root, dirs, files in os.walk(".", topdown=False):
 
     - subprocess.check_output 返回 str
 
-        - 如果报错则出现CalledProcessError
+        - 如果报错则出现subprocess.CalledProcessError
 
     - subprocess.run 返回对象(subprocess.CompletedProcess)
 
@@ -2190,7 +2676,7 @@ args, positional = parser.parse_args()
 ### re(正则表达式)
 
 ```py
-a = '123abc 192.168.1.1 ABC\n1.1.1.1\nabc ABC\n999.999.999.999'
+a = '123abc 192.168.1.1 ABC\n1.1.1.1\nabc ABC\n999.999.999.999\n<meta name="user-login" content="ztoiax">'
 
 # findall() 返回列表. 匹配ip地址
 re.findall('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', a)
@@ -2203,6 +2689,10 @@ ip = aa.group()
 # search() 返回第一个符合匹配
 aa = re.search('\d+', a)
 ip = aa.group()
+
+# group(1)提取
+match = re.search(r'"user-login" content="(.*?)"', a)
+name = match.group(1)
 
 # sub 替换
 # 所有数字替换成0
@@ -2483,7 +2973,7 @@ asyncore.loop()
 
 ### [itchat: 微信库](https://github.com/littlecodersh/itchat)
 
-### [wxpy: 微信机器人](https://github.com/youfou/wxpy)
+### [wxpy: 微信自动化](https://github.com/youfou/wxpy)
 
 - [官方文档](https://wxpy.readthedocs.io/zh/latest/)
 
@@ -2503,7 +2993,6 @@ bot.friends().stats_text()
 # 查找好友
 my_friend = bot.friends().search('name')[0]
 
-
 # 发送信息
 my_friend.send('Hello, WeChat!')
 # 发送图片
@@ -2514,6 +3003,17 @@ my_friend.send_video('my_video.mov')
 my_friend.send_file('my_file.zip')
 # 以动态的方式发送图片
 my_friend.send('@img@my_picture.png')('my_picture.jpg')
+
+# 下载好友头像
+img = my_friend.get_avatar()
+with open('img.png','wb') as file:
+     file.write(img)
+
+# 下载所有好友的头像
+for friend in bot.friends():
+    img = friend.get_avatar()
+    with open(f'{friend.name}.png','wb') as file:
+         file.write(img)
 ```
 
 - 群
@@ -2541,41 +3041,38 @@ bot.mps()
 - 统计好友地区分布
 
 ```py
+# 获取好友信息
 friends_stat = bot.friends().stats()
-friend_loc = []
-for province, count in friends_stat["province"].items():
-    if province != "": 
-        friend_loc.append([province, count])
 
-friend_loc.sort(key=lambda x: x[1], reverse=True)
-for item in friend_loc[:10]:
+# 统计好友地区分布
+friend_list = []
+for province, count in friends_stat["province"].items():
+    if province != "":
+        friend_list.append([province, count])
+
+# 排序
+friend_list.sort(key=lambda x: x[1], reverse=True)
+
+# 打印
+for item in friend_list[:10]:
      print(item[0], item[1])
 ```
 
-- 统计好友地区分布, 并使用`pyecharts`生成图
+- 对以上的统计例子, 使用`pyecharts`生成饼图
 
 ```py
-from pyecharts import *
+from pyecharts.charts import Pie
+from pyecharts import options as opts
 
-friend_loc = []
-k_list = []
-v_list = []
-for province, count in friends_stat["province"].items():
-    if province != "": 
-        friend_loc.append([province, count])
-
-friend_loc.sort(key=lambda x: x[1], reverse=True)
-for k, v in friend_loc[:10]:
-     k_list.append(k)
-     v_list.append(v)
-
-pie = Pie('省份数量统计')
-pie.add('', k_list, v_list, is_label_show=True, center=[50, 60])
-pie.render()
-
-map = Map("广东地图示例", width=1200, height=600)
-map.add("", attrs, values, maptype='广东', is_visualmap=True, visual_text_color='#000')
-map.render("city.html")
+# 生成饼图
+(
+    Pie()
+    .add("", friend_list)
+    .set_colors(["blue", "green", "yellow", "red", "pink", "orange", "purple"])
+    .set_global_opts(title_opts=opts.TitleOpts())
+    .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
+    .render("name.html")
+)
 ```
 
 - 统计好友男女数量
@@ -2587,6 +3084,32 @@ for sex, count in friends_stat["sex"].items():
         print("MALE %d" % count)
     elif sex == 2:
         print("FEMALE %d" % count)
+```
+
+- 对以上的统计例子, 使用`pyecharts`生成饼图
+
+```py
+friends_stat = bot.friends().stats()
+
+sex_list = []
+for sex, count in friends_stat["sex"].items():
+    # 1代表男, 2代表女
+    if sex == 1:
+        sex_list.append(['男', count])
+    elif sex == 2:
+        sex_list.append(['女', count])
+
+# 生成饼图
+from pyecharts.charts import Pie
+from pyecharts import options as opts
+(
+    Pie()
+    .add("", sex_list)
+    .set_colors(["blue", "red"])
+    .set_global_opts(title_opts=opts.TitleOpts())
+    .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
+    .render("name.html")
+)
 ```
 
 - 其它功能
@@ -2632,9 +3155,198 @@ def reply_my_friend(msg):
     return auto_reply(msg.text)
 ```
 
-### [pyecharts: 图表](https://github.com/pyecharts/pyecharts)
+### [pyecharts: python ECharts数据可视化](https://github.com/pyecharts/pyecharts)
 
-- [官方文档](https://pyecharts.readthedocs.io/zh/latest/en-us/charts_base/)
+- [官方文档](https://gallery.pyecharts.org/#/README)
+
+- Bar(柱形图)
+```py
+from pyecharts.charts import Bar
+
+bar = Bar()
+attr = ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
+v1 = [5, 20, 36, 10, 75, 90]
+v2 = [10, 25, 8, 60, 20, 80]
+
+# x轴
+bar.add_xaxis(attr)
+# y轴
+bar.add_yaxis("商家A", v1)
+bar.add_yaxis("商家B", v1)
+
+# 生成html
+bar.render('name.html')
+```
+
+- 链式调用
+
+```py
+from pyecharts.charts import Bar
+
+attr = ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
+v1 = [5, 20, 36, 10, 75, 90]
+v2 = [10, 25, 8, 60, 20, 80]
+
+(
+    Bar()
+    # x轴
+    .add_xaxis(attr)
+    # y轴
+    .add_yaxis("商家A", v1)
+    .add_yaxis("商家B", v1)
+
+    # 生成html
+    .render('name.html')
+)
+```
+
+- Line(折线图)
+
+```py
+from pyecharts.charts import Line
+import pyecharts.options as opts
+
+line = Line()
+attr = ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
+v1 = [5, 20, 36, 10, 75, 90]
+v2 = [10, 25, 8, 60, 20, 80]
+
+(
+    # 设置宽度, 高度
+    Line(init_opts=opts.InitOpts(width="1600px", height="800px"))
+    .add_xaxis(xaxis_data=attr)
+    .add_yaxis(series_name="商品A", y_axis=v1,)
+    .add_yaxis(series_name="商品B", y_axis=v2,)
+    .render("name.html")
+)
+```
+
+- 画点, 画线
+
+```py
+from pyecharts.charts import Line
+import pyecharts.options as opts
+
+line = Line()
+attr = ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
+v1 = [5, 20, 36, 10, 75, 90]
+v2 = [10, 25, 8, 60, 20, 80]
+
+(
+    Line()
+    .add_xaxis(xaxis_data=attr)
+    .add_yaxis(series_name="商品A", y_axis=v1,
+        # MarkPointOpts()高亮最大, 最小点
+        markpoint_opts=opts.MarkPointOpts(
+            data=[
+                opts.MarkPointItem(type_="max", name="最大值"),
+                opts.MarkPointItem(type_="min", name="最小值"),
+            ]
+        ),
+        # 高亮平均点
+        markline_opts=opts.MarkLineOpts(
+            data=[opts.MarkLineItem(type_="average", name="平均值")]
+        ),
+    )
+    .add_yaxis(series_name="商品B", y_axis=v2,
+        markpoint_opts=opts.MarkPointOpts(
+            data=[opts.MarkPointItem(value=-2, name="周最低", x=1, y=-1.5)]
+        ),
+        # MarkLineOpts()最高点画线
+        markline_opts=opts.MarkLineOpts(
+            data=[
+                opts.MarkLineItem(type_="average", name="平均值"),
+                opts.MarkLineItem(symbol="none", x="90%", y="max"),
+                opts.MarkLineItem(symbol="circle", type_="max", name="最高点"),
+            ]
+        ),
+    )
+    .render("name.html")
+)
+```
+- 图表转换
+```py
+from pyecharts.charts import Line
+import pyecharts.options as opts
+
+line = Line()
+attr = ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"]
+v1 = [5, 20, 36, 10, 75, 90]
+v2 = [10, 25, 8, 60, 20, 80]
+
+(
+    Line()
+    .add_xaxis(xaxis_data=attr)
+    .add_yaxis(series_name="商品A", y_axis=v1,
+        markpoint_opts=opts.MarkPointOpts(
+            data=[
+                opts.MarkPointItem(type_="max", name="最大值"),
+                opts.MarkPointItem(type_="min", name="最小值"),
+            ]
+        ),
+        markline_opts=opts.MarkLineOpts(
+            data=[opts.MarkLineItem(type_="average", name="平均值")]
+        ),
+    )
+    .add_yaxis(series_name="商品B", y_axis=v2,
+        markpoint_opts=opts.MarkPointOpts(
+            data=[opts.MarkPointItem(value=-2, name="周最低", x=1, y=-1.5)]
+        ),
+        markline_opts=opts.MarkLineOpts(
+            data=[
+                opts.MarkLineItem(type_="average", name="平均值"),
+                opts.MarkLineItem(symbol="none", x="90%", y="max"),
+                opts.MarkLineItem(symbol="circle", type_="max", name="最高点"),
+            ]
+        ),
+    )
+    # 图表转换
+    .set_global_opts(
+        title_opts=opts.TitleOpts(title="标题", subtitle="子标题"),
+        tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        toolbox_opts=opts.ToolboxOpts(is_show=True),
+        xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+    )
+    .render("name.html")
+)
+```
+
+- Pie(饼图)
+
+```py
+from pyecharts.charts import Pie
+from pyecharts import options as opts
+
+data = [['小米', 65], ['三星', 83], ['华为', 20], ['苹果', 116], ['魅族', 44], ['VIVO', 96], ['OPPO', 92]]
+
+phones = (
+    Pie()
+    .add("", data)
+    .set_colors(["blue", "green", "yellow", "red", "pink", "orange", "purple"])
+    .set_global_opts(title_opts=opts.TitleOpts(title="Pie-设置颜色"))
+    .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
+    .render("name.html")
+)
+```
+
+### hashlib
+
+- 内置库
+
+```py
+import hashlib
+
+name = 'tz'
+
+# md5
+token = hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()
+
+# sha256
+token = hashlib.sha256(name.encode(encoding='UTF-8')).hexdigest()
+
+# sha3_512
+token = hashlib.sha3_512(name.encode(encoding='UTF-8')).hexdigest()
+```
 
 ### [locust: web自动化压力测试](https://github.com/locustio/locust)
 
@@ -2645,7 +3357,7 @@ def reply_my_friend(msg):
     > 快速构建命令行的帮助信息, 针对函数
 
 ### [click](https://github.com/pallets/click)
-    > 快速构建命令行的帮助信息, 针对变量
+    > 快速构建命令行的帮助信息, 针对变量. 执行完@click.command()的函数后会自动退出
 
 - [官方文档](https://click.palletsprojects.com/en/7.x/)
 
@@ -2658,18 +3370,20 @@ message = click.edit()
 print(message, end='')
 ```
 
-- 密码输入
+- 账号, 密码输入
 
 ```py
 import click
 
 @click.command()
+@click.option("--account", prompt="Account", help="The person to greet.")
 @click.option('--password', prompt=True, hide_input=True,
               confirmation_prompt=True)
-def encrypt(password):
-    click.echo('Encrypting password to %s' % password.encode('rot13'))
+def main(account, password):
+    print(f'account:{account}')
+    print(f'password:{password}')
 
-encrypt()
+main()
 ```
 
 ### [prompt_toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
@@ -2935,6 +3649,11 @@ print('sorted list :', l)
 # reference article(优秀文章)
 
 - [python官方文档](https://docs.python.org/)
+
+- [PEP 20: python之禅](https://www.python.org/dev/peps/pep-0020/)
+    ```py
+    import this
+    ```
 
 - [Problem Solving with Algorithms and Data Structures using Python: 此书可以在线交互式运行代码](https://runestone.academy/runestone/books/published/pythonds3/index.html)
 
