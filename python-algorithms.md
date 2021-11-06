@@ -2,15 +2,15 @@
 
 ## 复杂度
 
-| f(n)  | Name                 |
-|-------|----------------------|
-| 1     | Constant(常数)       |
-| logn  | Logarithmic(对数)    |
-| n     | Linear(线性)         |
-| nlogn | Log Linear(线性对数) |
-| n2    | Quadratic(平方)      |
-| n3    | Cubic(立方)          |
-| 2n    | Exponential(指数)    |
+| f(n)    | Name                 |
+| ------- | -------------------- |
+| 1       | Constant(常数)       |
+| log n   | Logarithmic(对数)    |
+| n       | Linear(线性)         |
+| n log n | Log Linear(线性对数) |
+| n^2     | Quadratic(平方)      |
+| n^3     | Cubic(立方)          |
+| 2^n     | Exponential(指数)    |
 
 ![image](./imgs/Big-O.png)
 

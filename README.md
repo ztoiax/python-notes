@@ -13,6 +13,7 @@
     * [if](#if)
         * [PEP 572: 海象运算符(:=)](#pep-572-海象运算符)
     * [while, for(循环)](#while-for循环)
+    * [match case(模式匹配): 需要python 3.10](#match-case模式匹配-需要python-310)
     * [函数式编程](#函数式编程)
         * [fib(斐波那契)](#fib斐波那契)
             * [循环 while, for](#循环-while-for)
@@ -39,9 +40,9 @@
     * [yield](#yield)
         * [send() 类似协程](#send-类似协程)
     * [def(函数)](#def函数)
-        * [参数argv, kwargs](#参数argv-kwargs)
+        * [参数`*argv`, `**kwargs`](#参数argv-kwargs)
         * [内置函数,属性](#内置函数属性)
-        * [装饰器](#装饰器)
+        * [装饰器(decorater)](#装饰器decorater)
     * [class(类)](#class类)
         * [dataclass(简化类的定义)](#dataclass简化类的定义)
         * [setattr(添加实例化后的属性)](#setattr添加实例化后的属性)
@@ -91,7 +92,7 @@
     * [暂时还没搞懂的程序](#暂时还没搞懂的程序)
     * [process: 进程, 线程, 协程](#process-进程-线程-协程)
     * [network: 网络](#network-网络)
-    * [spider: 网络爬虫](#spider-网络爬虫)
+    * [spider: 网络爬虫和自动化测试](#spider-网络爬虫和自动化测试)
     * [debug: 调试](#debug-调试)
 * [reference article(优秀文章)](#reference-article优秀文章)
 * [第三方软件资源](#第三方软件资源)
@@ -182,7 +183,11 @@ pyenv global 2.7.18
 
 - virtualenv:
 
-    > pip 也是独立的环境
+    - 能管理纯python库, 但不能管理拓展库
+
+    - 不能管理python本身的编译
+
+    - pip 也是独立的环境
 
 ```bash
 # 终端1
@@ -355,19 +360,6 @@ print(b)
     v = b or 1 or c
     ```
 
-- match(类似于switch case): 需要python 3.10
-
-```py
-def http_error(status):
-    match status:
-        case 400:
-            return "Bad request"
-        case 401 | 403 | 404:
-            return "Not allowed"
-        case _:
-            return "Something's wrong with the Internet"
-```
-
 ### [PEP 572: 海象运算符(:=)](https://www.python.org/dev/peps/pep-0572/)
 
 - 1.运行b函数
@@ -422,50 +414,207 @@ stuff = [[y := f(x), x * y] for x in range(3)]
 
 ## while, for(循环)
 
-```py
-for i in range(10):
-    print(i)
-```
-
 - 定义: 起点, 终点, 步进
+    ```py
+    for i in range(1, 12, 2)
+        print(i)
 
-```py
-for i in range(1, 12, 2)
-    print(i)
-
-for i in range(10_000, 1_000_001, 20_000):
-    print(i)
-```
+    for i in range(10_000, 1_000_001, 20_000):
+        print(i)
+    ```
 
 - `*` 运算符
+    ```py
+    for a, *b in ([1, 2], [3, 4, 5]):
+        print(a)
+        print(b)
+    ```
+    - 输出
+    ```
+    1
+    [2]
 
+    3
+    [4, 5]
+    ```
+
+- `enumerate()` 步进
+    ```py
+    list1 = [i for i in range(3)]
+
+    # i表示步进
+    for i, n in enumerate(list1):
+        print(i, n)
+    ```
+    - 输出
+    ```
+    0 0
+    1 1
+    2 2
+    ```
+
+## match case(模式匹配): 需要python 3.10
+
+- [PEP634: Specification](https://www.python.org/dev/peps/pep-0634/)
+
+- [PEP635: Motivation and Rationale](https://www.python.org/dev/peps/pep-0635/)
+
+- [视频: 谭啸 - 如何用好 Python 的模式匹配语法](https://www.bilibili.com/video/BV1Nb4y1a7zV?spm_id_from=333.788.dynamic.content.click)
+
+- `switch case`匹配
+    ```py
+    def http_error(status):
+        match status:
+            case 400:
+                return "Bad request"
+            case 401 | 403 | 404:
+                return "Not allowed"
+            case _:
+                return "Something's wrong with the Internet"
+    ```
+
+- 参数匹配:
+    ```py
+    import sys
+
+    match sys.argv[1:]:
+        case 'add', k, v:
+            print('add', k, v)
+        case _:
+            print('不合法输入')
+
+    ```
+    - 输出
+    ```sh
+    ./test.py add name tz
+    add name tz
+
+    ./test.py abc
+    不合法输入
+    ```
+
+- 匹配对象:
+
+    - 1.数组
+    ```py
+    # 以下三种case的语义相同
+    match [1, 2 ,3]:
+        case x, y, z:
+            pass
+        case [x, y, z]:
+            pass
+        case (x, y, z):
+            pass
+
+    # _省略单个元素, *_省略后面所有元素
+    match [1, 2 ,3]:
+        case x, _, _:
+            pass
+        case x, *_,:
+            pass
+    ```
+    - 2.字典:
+    ```py
+    # 可以使用**kwargs
+    match {'x': x ,'y': y}:
+        case {'x': x, 'y': y}:
+            pass
+        case {'x': x, **kwargs}:
+            pass
+        case {**kwargs}:
+            pass
+    ```
+    - 3.class:
+    ```py
+    from dataclasses import dataclass
+
+    class o:
+        x: int = 1
+        y: int = 1
+
+    class o2:
+        __match_args__ = ("x", "y")
+        def __init__(self):
+            self.x: int = 0
+            self.y: int = 0
+
+    @dataclass
+    class o2:
+        x: int = 0
+        y: int = 0
+
+    class o3:
+        x: int = 0
+        y: int = 0
+
+    def f(subject):
+        match subject:
+            # 判断subject是不是o类, 以及x, y是否等于1
+            case o(x=1, y=1):
+                print('1')
+
+            # 需要定义__match_args__ 或者使用@dataclass
+            case o2(x, y):
+                print('2')
+
+            # object表示duck type(任何class)
+            case object(x=x, y=y):
+                print('3')
+
+    f(o())
+    f(o2())
+    f(o3())
+    ```
+    - 输出
+    ```
+    1
+    2
+    3
+    ```
+
+
+
+- 值匹配:
+    
+    - 判断类的值
+    ```py
+    # o类来自上面例子
+    a = o()
+
+    match (1, 1):
+        case (a.x, a.y):
+            pass
+
+    match (1, 1):
+        # case先执行, if后执行
+        case (a.x, a.y) if a.x > 0:
+            pass
+    ```
+
+    - 普通变量的值会被改写
+    ```py
+    x, y = 0, 0
+
+    match (1, 1):
+        # 会改写为1
+        case (x, y):
+            print(x, y)
+    ```
+    - 输出
+    ```
+    1 1
+    ```
+
+- 类型匹配:
 ```py
-a, *b, c ,d= range(10)
+dict1 = {'x': 1, 'y': 1.1}
 
-a
-0
-
-b
-[1, 2, 3, 4, 5, 6, 7]
-
-c
-8
-
-d
-9
+match dict1:
+    # 判断x是否为int, y是否为float
+    case {'x': int(), 'y': float()}:
+        pass
 ```
 
-```py
-for a, *b in ([1, 2], [3, 4, 5]):
-    print(a)
-    print(b)
-
-1
-[2]
-
-3
-[4, 5]
-```
 
 ## 函数式编程
 
@@ -1019,6 +1168,63 @@ list1 = [1, 2, 3, 4, 5]
 ', '.join(x for i in list1)
 ```
 
+- 切割头, 中间, 尾
+    ```py
+    a1, *a2, a3 = "123456789"
+    ```
+
+    - 输出
+    ```
+    a1
+    '1'
+
+    a2
+    ['2', '3', '4', '5', '6', '7', '8']
+
+    a3
+    '9'
+    ```
+
+- 切割头, 尾
+    ```py
+    list1 = [['name', 'tz', 'zt'], ['age', 24]]
+    k, *v = list1
+
+    # 生成字典
+    {k:v for k, *v in list1}
+    ```
+    - 输出
+    ```
+    k
+    ['name', 'tz', 'zt']
+
+    v
+    [['age', 24]]
+
+    {k:v for k, *v in list1}
+    {'name': ['tz', 'zt'], 'age': [24]}
+    ```
+
+- 取出列表内的值
+    ```py
+    list1 = [1, 2, [3, 4], 5]
+    [a, b, [c, d], e] = list1
+
+    # *_表示省略后面
+    [a, b, [c, *_], *_] = list1
+    ```
+    - 输出
+    ```
+    a
+    1
+
+    b
+    2
+
+    c
+    3
+    ```
+
 ### rlist(序列)
 
 ```py
@@ -1230,6 +1436,53 @@ with open('/home/tz/.bash_history', 'r') as f:
        cmd = line.strip().split()
        c[cmd[0]] += 1
 ```
+
+- zip()两个数组转换为字典
+    ```py
+    k = ['k1', 'k2']
+    v = ['v1', 'v2']
+    kv = dict(zip(k,v))
+
+    # 通过切片交换数组, 形成字典
+    old_kv = ['k1', 'v1', 'k2', 'v2']
+    old_kv1 = ['k10', 'v10', 'k20', 'v20']
+    new_kv = dict(zip(old_kv[0::2], old_kv1[0::2]))
+    ```
+    - 输出
+    ```
+    kv
+    {'k1': 'v1', 'k2': 'v2'}
+
+    new_kv
+    {'k1': 'k10', 'k2': 'k20'}
+    ```
+- 取出字典内的kv
+    ```py
+    dict1 = {'k1': 'v1', 'k2': 'v2'}
+    (k1, v1), (k2, v2) = dict1.items()
+    (i1, i2)  = dict1.items()
+
+    # *_表示省略后面
+    (k1, v1), *_  = dict1.items()
+
+    # _表示省略
+    (i1, _)  = dict1.items()
+    ```
+    - 输出
+    ```
+    k1
+    'k1'
+
+    v1
+    'v1'
+
+    i1
+    ('k1', 'v1')
+
+    i2
+    ('k2', 'v2')
+    ```
+
 
 ### set(集合)
 
@@ -1532,7 +1785,7 @@ test('123')
     print(b.mylist[0].x)
     ```
 
-- `Protocol`实现 duck typing. 不检查类型, 而是检查给定方法或属性是否存在
+- `Protocol`实现 duck typing(任何class). 不检查类型, 而是检查方法, 属性是否存在
 ```py
 from typing import Protocol, Iterable
 
@@ -1553,6 +1806,7 @@ def close_all(r: Iterable[iresource]):
 f = open('/tmp/test')
 r = resource()
 
+# 不管是什么class, 都可以close()
 close_all([f, r])
 ```
 
@@ -1636,9 +1890,9 @@ r.send('123,321')
 
 ## def(函数)
 
-### 参数argv, kwargs
+### 参数`*argv`, `**kwargs`
 
-- argv(tuple)
+- `*argv`: 表示剩下的元组元素
 
 ```py
 def myFun(arg1, arg2, *argv):
@@ -1654,7 +1908,7 @@ tuple1 = ('Hello', 'Welcome', 'to', 'python')
 myFun(*tuple1)
 ```
 
-- kwargs(dict)
+- `**kwargs`: 表示剩下的字典kv
 
 ```py
 def myFun(arg1, arg2, **kwargs):
@@ -1664,7 +1918,6 @@ def myFun(arg1, arg2, **kwargs):
         print ("%s == %s" %(key, value))
 
 myFun('hello', 'tz', name = 'tz', age = '24')
-
 
 # 或者
 dict1 = {'name' : 'tz', 'age' : '24'}
@@ -1707,7 +1960,7 @@ test()
 test.__dict__
 ```
 
-### 装饰器
+### 装饰器(decorater)
 
 > 输入输出函数
 
@@ -2295,6 +2548,17 @@ import time
 # 年 月 日 时 分 秒
 current_time = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
 print(current_time)
+```
+
+- 统计函数运行的时间
+
+```py
+from time import time, sleep
+
+start = time()
+sleep(1)
+end = time()
+print('%.2f秒' % (end - start))
 ```
 
 ### logging
@@ -3642,7 +3906,7 @@ print('sorted list :', l)
 
 ## [network: 网络](./python-network.md)
 
-## [spider: 网络爬虫](./python-spider.md)
+## [spider: 网络爬虫和自动化测试](./python-spider.md)
 
 ## [debug: 调试](./python-debug.md)
 
