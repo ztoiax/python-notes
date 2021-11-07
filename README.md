@@ -6,13 +6,14 @@
         * [pip 包管理器](#pip-包管理器)
         * [pyenv](#pyenv)
         * [常用命令:](#常用命令)
-    * [解释器](#解释器)
-        * [compile() 返回code对象](#compile-返回code对象)
-        * [python 慢的原因](#python-慢的原因)
+    * [python 慢的原因](#python-慢的原因)
     * [import and from](#import-and-from)
     * [if](#if)
         * [PEP 572: 海象运算符(:=)](#pep-572-海象运算符)
     * [while, for(循环)](#while-for循环)
+        * [`enumerate()` index的语法糖](#enumerate-index的语法糖)
+        * [yield](#yield)
+            * [send() 类似协程](#send-类似协程)
     * [match case(模式匹配): 需要python 3.10](#match-case模式匹配-需要python-310)
     * [函数式编程](#函数式编程)
         * [fib(斐波那契)](#fib斐波那契)
@@ -24,12 +25,12 @@
         * [黄金分割](#黄金分割)
         * [树形递归](#树形递归)
         * [平方根](#平方根)
+        * [rlist(序列)](#rlist序列)
     * [数据类型](#数据类型)
         * [基本概念](#基本概念)
         * [动态类型](#动态类型)
         * [str(字符串)](#str字符串)
         * [list(列表)](#list列表)
-        * [rlist(序列)](#rlist序列)
         * [tuple(元组)](#tuple元组-1)
         * [Dictionaries(字典)](#dictionaries字典)
         * [set(集合)](#set集合)
@@ -37,14 +38,12 @@
             * [静态类型检查工具:mypy](#静态类型检查工具mypy)
             * [静态类型检查工具:pytype](#静态类型检查工具pytype)
             * [基本使用](#基本使用)
-    * [yield](#yield)
-        * [send() 类似协程](#send-类似协程)
     * [def(函数)](#def函数)
         * [参数`*argv`, `**kwargs`](#参数argv-kwargs)
         * [内置函数,属性](#内置函数属性)
         * [装饰器(decorater)](#装饰器decorater)
     * [class(类)](#class类)
-        * [dataclass(简化类的定义)](#dataclass简化类的定义)
+        * [@dataclass(简化类的定义)](#dataclass简化类的定义)
         * [setattr(添加实例化后的属性)](#setattr添加实例化后的属性)
         * [内置函数,属性](#内置函数属性-1)
         * [itertools(迭代器)](#itertools迭代器)
@@ -54,6 +53,7 @@
         * [json](#json)
         * [yaml](#yaml)
         * [pickle](#pickle)
+            * [pickletools](#pickletools)
         * [shelve](#shelve)
     * [lib(库)](#lib库)
         * [time](#time)
@@ -65,6 +65,8 @@
                 * [asyncio(异步)](#asyncio异步)
                 * [gevent](#gevent)
             * [clipboard](#clipboard)
+            * [安全问题:代码注入](#安全问题代码注入)
+        * [bandit安全测试](#bandit安全测试)
         * [argparse(参数)](#argparse参数)
         * [optparse(参数)](#optparse参数)
         * [re(正则表达式)](#re正则表达式)
@@ -88,6 +90,7 @@
         * [numpy](#numpy)
             * [numpy 处理图片](#numpy-处理图片)
         * [pygal](#pygal)
+    * [cython](#cython)
     * [sort(排序)](#sort排序)
     * [暂时还没搞懂的程序](#暂时还没搞懂的程序)
     * [process: 进程, 线程, 协程](#process-进程-线程-协程)
@@ -107,7 +110,7 @@
 
 ### 交互更友好的解释器
 
-- [ptpython](https://github.com/prompt-toolkit/ptpython)比`ipython`更好
+- [ptpython](https://github.com/prompt-toolkit/ptpython)比[ipython](https://github.com/ipython/ipython)更好
 
 - [jupyter notebooks](https://github.com/jupyterhub/jupyterhub)
     > 可以显示plot画的图
@@ -235,33 +238,7 @@ pip install trustme
 python -m trustme -i baidu.com
 ```
 
-## 解释器
-
-### compile() 返回code对象
-
-- eval
-```py
-line = '1+1'
-mode = 'eval'
-code = compile(line, "<stdin>", mode, flags=8192, dont_inherit=True,)
-result = eval(code)
-```
-
-- exec
-```py
-line = 'a = 1\nb = a + 1'
-mode = 'exec'
-code = compile(line, "<stdin>", mode, flags=8192, dont_inherit=True,)
-exec(code)
-```
-
-字节码:
-
-```py
-code.co_code
-```
-
-### python 慢的原因
+## python 慢的原因
 
 > 官方的 python 版本是 cpython
 
@@ -269,15 +246,53 @@ code.co_code
 
 - GIL(Global Interpreter Lock)全局解释器锁:
 
-  - python 变量使用引用计数,次数为 0 时则释放内存.当多个线程共享变量, 每次只能一个线程操作变量
+  - 解决多线程, 异步编程中变量的死锁问题
+
+  - 变量使用引用计数,次数为 0 时则释放内存
+
+  - 当多个线程共享变量, 每次只能一个线程操作变量, 导致并发效率降低
+
+  - PEP554: 子解释器(subinterpreters) 解决GIL锁低并发问题:
+
+        - 每个进程有独立的解释器以及GIL
+
+        - 子解释器: 进程内部也可以有多个独立的解释器以及GIL
+
+            - 子解释器之间的资源通信: 使用`pickle verison 5` 把资源序列化, 然后通过共享内存进行传输
+
+                ![image](./imgs/subinterpreters.png)
+
+                - 全局变量不能被其它子解释器访问
+
+                - 开销: 子解释器的初始化
+
+                    - 要把模块导入到另一个命名空间
+
+                    - ...
 
 - JIT(Just-in-time):
 
-  - 优点: 将代码拆分成多个块,分析哪些代码会多次运行,运行时依然使用字节码
+  - 原理:
 
-  - 缺点: 启动时间慢
+    - 1.通过一种中间语言, 将代码拆分成多个块
+
+    - 2.运行时依然使用字节码, JIT并没有提升字节码的运行速度
+
+    - 3.而是分析哪些代码会多次运行, 并标记为热点(hot spots), 最后对这些热点进行优化
+
+  - 缺点:
+
+    - 1.启动时间慢: cpython 本身的启动时间就很慢, 使用了JIT的pypy启动时间还要慢2-3倍
+
+    - 2.动态语言很难优化
+
+        - 比较和转换类型的成本很高，每次读取、写入或引用变量时，都会检查类型
+
+- Cython: 牺牲灵活性, 换取性能
 
 - Jpython: java 实现
+
+  > Jython中的Python线程, 就是Java线程, 由JVM管理
 
   - [ ] GIL
   - [ ] JIT
@@ -292,7 +307,9 @@ code.co_code
   - [x] GIL
   - [x] JIT
 
-- [python 性能对比](https://hackernoon.com/which-is-the-fastest-version-of-python-2ae7c61a6b2b)
+- [Why is Python so slow?](https://medium.com/hackernoon/why-is-python-so-slow-e5074b6fe55b)
+
+- [不同python版本的性能对比](https://hackernoon.com/which-is-the-fastest-version-of-python-2ae7c61a6b2b)
 
 ## import and from
 
@@ -438,20 +455,118 @@ stuff = [[y := f(x), x * y] for x in range(3)]
     [4, 5]
     ```
 
-- `enumerate()` 步进
-    ```py
-    list1 = [i for i in range(3)]
+### `enumerate()` index的语法糖
 
-    # i表示步进
-    for i, n in enumerate(list1):
-        print(i, n)
+- 基本使用
+    ```py
+    list1 = [0, 1, 2]
+
+    # 普通写法. pythonic(这很不python)
+    for index in range(len(list1)):
+        print(index, n[index])
+
+    # enumerate()语法糖
+    for index, n in enumerate(list1):
+        print(index, n)
     ```
-    - 输出
+    输出:
     ```
     0 0
     1 1
     2 2
     ```
+
+- `enumerate(array, 1)` : 第二个参数表示对index + 1
+
+    ```py
+    for index, n in enumerate(list1, 1):
+        print(index, n)
+    ```
+    输出:
+    ```
+    1 0
+    2 1
+    3 2
+    ```
+
+
+### yield
+
+> 生成器. 像`return`那样返回后,函数会暂停运行,可使用`__next__()`方法让函数继续执行
+
+```py
+def grep(pattern, filename):
+    with open(filename) as file:
+        for line in file.readlines():
+            if pattern in line:
+                yield line
+
+get_elem = grep('2', '/tmp/test')
+
+# 让函数继续执行
+get_elem.__next__()
+get_elem.__next__()
+```
+
+```py
+def count(start, stop):
+    while True:
+        yield start
+        start += stop
+
+yd = count(10, 1)
+yd.__next__()
+yd.__next__()
+```
+
+#### send() 类似协程
+
+> yield,通过send()传递值
+
+```py
+def xicheng():
+    while True:
+        n = (yield)
+        print(n)
+
+# test
+r = xicheng()
+
+# send之前需要__next__()
+r.__next__()
+r.send('123')
+r.send('hello')
+
+# 通过装饰器包一层函数,让它自动__next__()
+def wrapper(func):
+    def newxicheng():
+        r = func()
+        r.__next__()
+        return r
+    return newxicheng
+
+@wrapper
+def xicheng():
+    while True:
+        n = (yield)
+        print(n)
+
+# test
+r = xicheng()
+r.send('123')
+
+# 生成器
+def xicheng():
+    r = None
+    while True:
+        line = (yield r)
+        r = line.split(',')
+
+# test
+r = xicheng()
+r.__next__()
+r.send('123,321')
+```
 
 ## match case(模式匹配): 需要python 3.10
 
@@ -952,6 +1067,116 @@ square_root(16)
 logarithm(32, 2)
 ```
 
+### rlist(序列)
+
+```py
+def first(rlist):
+    return rlist[0]
+
+def rest(rlist):
+    return rlist[1]
+
+# insert
+def insert(rlist, x):
+    return (rlist,x)
+
+def finsert(rlist, x):
+    return (x,rlist)
+
+# lengh
+def lengh(rlist):
+    n = 0
+    while rlist != None:
+        rlist, n = rest(rlist), n + 1
+    return n
+
+# test
+rlist = (1, (1, (2, (2, None))))
+lengh(rlist)
+
+# get item
+def get(rlist, n):
+    while n > 0:
+        rlist, n = rest(rlist), n - 1
+    return first(rlist)
+
+# test
+get(rlist, 2)
+
+# nonone
+def nonone(rlist):
+    if rest(rlist) == None:
+        return first(rlist)
+    return rlist
+
+# reverse 反转
+def reverse(rlist):
+    x, rlist = insert(first(rlist),None), rest(rlist)
+    while rlist != None:
+        x, rlist = insert(first(rlist),x), rest(rlist)
+    return x
+
+# 递归
+def test(rlist, x):
+    if rlist != None:
+       x = test(rest(rlist), (first(rlist),x))
+    return x
+
+def reverse(rlist):
+    return test(rlist, None)
+
+# test
+reverse(rlist)
+
+# insert
+def ninsert(rlist, x, n):
+    len, y, rerlist = lengh(rlist) - n, None, reverse(rlist)
+    while rerlist != None:
+        y, rerlist = insert(first(rerlist),y), rest(rerlist)
+        len = len - 1
+        if len == 0:
+            y = insert(x, y)
+    return y
+
+# test
+ninsert(rlist, 0, 2)
+
+def einsert(rlist, x):
+    return ninsert(rlist, x, lengh(rlist))
+
+def einsert(rlist, x):
+    x = insert(0, None)
+    rerlist = reverse(rlist)
+    link(x, rerlist)
+    return x
+
+# test
+einsert(rlist, 0)
+```
+
+元组操作序列:
+
+```py
+# count 计算一个值,在序列出现的次数
+def count(rlist, x):
+    n = 0
+    while rlist != None:
+        if (x == first(rlist)):
+            n = n + 1
+        rlist = rest(rlist)
+    return n
+
+# bug
+def count(rlist, x):
+    n = 0
+    for i in rlist:
+        print(i)
+        if i == x:
+            n = n + 1
+    return n
+
+count(rlist, 1)
+```
 ## 数据类型
 
 ### 基本概念
@@ -1225,116 +1450,6 @@ list1 = [1, 2, 3, 4, 5]
     3
     ```
 
-### rlist(序列)
-
-```py
-def first(rlist):
-    return rlist[0]
-
-def rest(rlist):
-    return rlist[1]
-
-# insert
-def insert(rlist, x):
-    return (rlist,x)
-
-def finsert(rlist, x):
-    return (x,rlist)
-
-# lengh
-def lengh(rlist):
-    n = 0
-    while rlist != None:
-        rlist, n = rest(rlist), n + 1
-    return n
-
-# test
-rlist = (1, (1, (2, (2, None))))
-lengh(rlist)
-
-# get item
-def get(rlist, n):
-    while n > 0:
-        rlist, n = rest(rlist), n - 1
-    return first(rlist)
-
-# test
-get(rlist, 2)
-
-# nonone
-def nonone(rlist):
-    if rest(rlist) == None:
-        return first(rlist)
-    return rlist
-
-# reverse 反转
-def reverse(rlist):
-    x, rlist = insert(first(rlist),None), rest(rlist)
-    while rlist != None:
-        x, rlist = insert(first(rlist),x), rest(rlist)
-    return x
-
-# 递归
-def test(rlist, x):
-    if rlist != None:
-       x = test(rest(rlist), (first(rlist),x))
-    return x
-
-def reverse(rlist):
-    return test(rlist, None)
-
-# test
-reverse(rlist)
-
-# insert
-def ninsert(rlist, x, n):
-    len, y, rerlist = lengh(rlist) - n, None, reverse(rlist)
-    while rerlist != None:
-        y, rerlist = insert(first(rerlist),y), rest(rerlist)
-        len = len - 1
-        if len == 0:
-            y = insert(x, y)
-    return y
-
-# test
-ninsert(rlist, 0, 2)
-
-def einsert(rlist, x):
-    return ninsert(rlist, x, lengh(rlist))
-
-def einsert(rlist, x):
-    x = insert(0, None)
-    rerlist = reverse(rlist)
-    link(x, rerlist)
-    return x
-
-# test
-einsert(rlist, 0)
-```
-
-元组操作序列:
-
-```py
-# count 计算一个值,在序列出现的次数
-def count(rlist, x):
-    n = 0
-    while rlist != None:
-        if (x == first(rlist)):
-            n = n + 1
-        rlist = rest(rlist)
-    return n
-
-# bug
-def count(rlist, x):
-    n = 0
-    for i in rlist:
-        print(i)
-        if i == x:
-            n = n + 1
-    return n
-
-count(rlist, 1)
-```
 ### tuple(元组)
 
 ```py
@@ -1810,84 +1925,6 @@ r = resource()
 close_all([f, r])
 ```
 
-## yield
-
-> 生成器. 像`return`那样返回后,函数会暂停运行,可使用`__next__()`方法让函数继续执行
-
-```py
-def grep(pattern, filename):
-    with open(filename) as file:
-        for line in file.readlines():
-            if pattern in line:
-                yield line
-
-get_elem = grep('2', '/tmp/test')
-
-# 让函数继续执行
-get_elem.__next__()
-get_elem.__next__()
-```
-
-```py
-def count(start, stop):
-    while True:
-        yield start
-        start += stop
-
-yd = count(10, 1)
-yd.__next__()
-yd.__next__()
-```
-
-### send() 类似协程
-
-> yield,通过send()传递值
-
-```py
-def xicheng():
-    while True:
-        n = (yield)
-        print(n)
-
-# test
-r = xicheng()
-
-# send之前需要__next__()
-r.__next__()
-r.send('123')
-r.send('hello')
-
-# 通过装饰器包一层函数,让它自动__next__()
-def wrapper(func):
-    def newxicheng():
-        r = func()
-        r.__next__()
-        return r
-    return newxicheng
-
-@wrapper
-def xicheng():
-    while True:
-        n = (yield)
-        print(n)
-
-# test
-r = xicheng()
-r.send('123')
-
-# 生成器
-def xicheng():
-    r = None
-    while True:
-        line = (yield r)
-        r = line.split(',')
-
-# test
-r = xicheng()
-r.__next__()
-r.send('123,321')
-```
-
 ## def(函数)
 
 ### 参数`*argv`, `**kwargs`
@@ -2031,20 +2068,62 @@ b.name
 
 ## class(类)
 
-### dataclass(简化类的定义)
+### @dataclass(简化类的定义)
 
 ```py
 from dataclasses import dataclass
+
 @dataclass
-class test:
+class people:
     name: str
     age: int
 
 # 以上等同于
-class test:
-    def __init__(self, name: str, age: int)
+class people:
+    def __init__(self, name: str, age: int):
         self.name = name
         self.age = age
+
+example = people('tz', 24)
+print(example)
+```
+
+- `frozen`: 设置只读, 默认为False
+```py
+@dataclass(frozen=True)
+class people:
+    name: str
+    age: int
+```
+
+```py
+@dataclass(frozen=True)
+class people:
+    name: str
+    age: int
+
+    def __post_init__(self):
+        self.age = self.age.upper()
+
+example = people('tz')
+```
+
+
+- `field(default_factory=function)`变量赋值为函数返回值
+
+```py
+from dataclasses import dataclass, field
+
+def f():
+    return 24
+
+@dataclass
+class people:
+  name: str
+  age:  int = field(default_factory=f)
+
+example = people(name = 'tz')
+print(example)
 ```
 
 ### setattr(添加实例化后的属性)
@@ -2472,6 +2551,8 @@ with open('test.json', 'w') as file:
   json.dump(dict1, file, ensure_ascii=False)
 ```
 
+- 没有代码注入的安全问题
+
 ### yaml
 
 > 操作类似json
@@ -2488,10 +2569,67 @@ with open('test.yaml', 'w') as file:
   yaml.dump(dict1, file, allow_unicode=True)
 ```
 
+- `yaml.load()` 和`pickle.loads()`一样有代码注入的安全问题
+
+    ```py
+    print(yaml.load('!!python/tuple [1, 2, 3]'))
+    ```
+
+    - 解决方法: 使用`yaml.safe_load()`代替
+
+    ```py
+    yaml.safe_load(f)
+    ```
+
 ### pickle
 
-- 二进制保存文件
+- 安全问题
 
+    - [从零开始python反序列化攻击：pickle原理解析 & 不用reduce的RCE姿势](https://zhuanlan.zhihu.com/p/89132768)
+
+    - [思辨｜浅谈Python的Pickle模块](https://mp.weixin.qq.com/s?src=11&timestamp=1636190790&ver=3420&signature=eUxnKBaczfVeupHnz1AQTW6rKwqztJQovwcukJQGLp1m58IcvKfnyDu-dSLWHJRQkO3yJJE6QbcWa3duD7gEKGdmhRpN1e3HD*kWLmk0DrbeBn0rhB-vz9hl7G7fsqFi&new=1)
+
+    - 数据和指令保存在一起不加区分, 会有代码注入风险, 因此不要对未知来源的数据进行unpickle操作
+
+
+- 序列化对象
+
+    - 通过pickle将数据和命令, 在进程之间进行传输
+
+- `dumps()`序列化, `loads()`反序列化
+```py
+import pickle, base64
+
+list1 = [1, 2, 3]
+
+# dumps()6个版本
+print(pickle.dumps(list1, protocol=0))
+print(pickle.dumps(list1, protocol=1))
+print(pickle.dumps(list1, protocol=2))
+print(pickle.dumps(list1, protocol=3))
+print(pickle.dumps(list1, protocol=4))
+print(pickle.dumps(list1, protocol=5))
+
+# 使用base64加密
+print(base64.b64encode(pickle.dumps(list1, protocol=0)))
+
+# loads可以自动识别版本
+print(pickle.loads(b'(lp0\nI1\naI2\naI3\na.'))
+
+```
+输出:
+```
+b'(lp0\nI1\naI2\naI3\na.'
+b']q\x00(K\x01K\x02K\x03e.'
+b'\x80\x02]q\x00(K\x01K\x02K\x03e.'
+b'\x80\x03]q\x00(K\x01K\x02K\x03e.'
+b'\x80\x04\x95\x0b\x00\x00\x00\x00\x00\x00\x00]\x94(K\x01K\x02K\x03e.'
+b'\x80\x05\x95\x0b\x00\x00\x00\x00\x00\x00\x00]\x94(K\x01K\x02K\x03e.'
+b'KGxwMApJMQphSTIKYUkzCmEu'
+[1, 2, 3]
+```
+
+- `dump()`, `load()`
 ```py
 import pickle
 
@@ -2504,7 +2642,47 @@ with open('file', 'wb') as file:
 # 读取
 with open('file', 'rb') as file:
     integers = pickle.load(file)
-    print integers
+    print(integers)
+```
+
+#### pickletools
+
+- `optimize()`: 优化`dumps()`后的序列化对象
+
+```py
+import pickle, pickletools
+
+list1 = [1, 2, 3]
+
+list1_pickle = pickle.dumps(list1,protocol=0)
+print(list1_pickle)
+
+# 优化
+list1_pickle = pickletools.optimize(list1_pickle)
+print(list1_pickle)
+```
+输出
+```
+b'(lp0\nI1\naI2\naI3\na.'
+b'(lI1\naI2\naI3\na.'
+```
+
+- `dis()`反编译序列化对象
+```py
+pickletools.dis(list1_pickle)
+```
+输出
+```
+    0: (    MARK
+    1: l        LIST       (MARK at 0)
+    2: I    INT        1
+    5: a    APPEND
+    6: I    INT        2
+    9: a    APPEND
+   10: I    INT        3
+   13: a    APPEND
+   14: .    STOP
+highest protocol among opcodes = 0
 ```
 
 ### shelve
@@ -2875,6 +3053,62 @@ def setClipboard(data):
 
 setClipboard('data'.encode())
 ```
+
+#### 安全问题:代码注入
+
+- [Python中的10个常见安全问题](https://medium.com/hackernoon/10-common-security-gotchas-in-python-and-how-to-avoid-them-e19fbe265e03)
+
+- ping例子
+```py
+import subprocess, sys, re
+
+address = sys.argv[1]
+
+# 匹配是否为ip地址
+if not re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", address):
+    print('error')
+    exit(1)
+
+print(address)
+subprocess.call("/bin/ping -c 3 '{0}'".format (address), shell = True)
+```
+
+- 注入代码
+
+```sh
+ ./test.py "127.0.0.1';/bin/cat /etc/passwd;'"
+```
+
+- 解决方法: 使用`shlex` 模块
+
+    - 该模块只适用与unix
+
+```py
+import subprocess, sys, re
+import shlex
+
+address = sys.argv[1]
+
+# shlex.quote()
+address = shlex.quote(address)
+
+# 匹配是否为ip地址
+if not re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", address):
+    print('error')
+    exit(1)
+
+print(address)
+subprocess.call("/bin/ping -c 3 '{0}'".format (address), shell = True)
+```
+
+
+### [bandit](https://github.com/PyCQA/bandit)安全测试
+
+```py
+bandit -r ./test.py
+```
+
+
 ### argparse(参数)
 
 - [文档](https://zetcode.com/python/argparse/)
@@ -3876,6 +4110,39 @@ Image.fromarray(image_merge).show()
 ```
 
 ### pygal
+
+## cython
+
+- [官方文档](https://cython.readthedocs.io/en/latest/src/tutorial/cython_tutorial.html)
+
+- 编译:
+
+    - file: `helloworld.pyx`
+
+    ```py
+    print('hello world')
+    ```
+    - file: `setup.py`
+    ```py
+    from setuptools import setup
+    from Cython.Build import cythonize
+    import numpy
+
+    setup(
+        ext_modules = cythonize("helloworld.pyx"),
+        include_dirs=[numpy.get_include()]
+    )
+    ```
+    - 编译生成文件: `helloworld.c`, `helloworld.cpython-39-x86_64-linux-gnu.so`
+    ```sh
+    python setup.py build_ext --inplace
+    ```
+    - 运行
+    ```py
+    import helloworld
+    ```
+
+- [性能对比: 使用cython vs 不使用](./python-debug.md#cython)
 
 ## sort(排序)
 

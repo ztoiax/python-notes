@@ -504,9 +504,6 @@ timeit(setup = mysetup,        # 执行函数的预设
 ```py
 from timeit import Timer
 
-def mycode():
-    sqrt(3)
-
 t = Timer("sqrt(3)", "from math import sqrt")
 
 # 执行10000次
@@ -949,6 +946,59 @@ t.timeit(number=10000)
     ```
     0.007418086000143376
     0.007216046999928949
+    ```
+
+<span id="cython"></span>
+#### 使用cython vs 不使用
+
+- 使用cython快1.8倍
+
+- 使用cython静态类型快16倍
+
+- file: `fib.pyx`
+
+    ```py
+    # 不使用静态类型
+    def fib():
+        a, b, n = 0, 1, 100
+        while b < n:
+            a, b = b, a + b
+
+    # 使用静态类型
+    def fib1():
+        cdef int a, b, n
+        a, b, n = 0, 1, 100
+        while b < n:
+            a, b = b, a + b
+    ```
+
+- setup.py编译后. 使用以下代码进行测试
+
+    ```py
+    from timeit import timeit
+
+    # cython的不使用静态类型fib
+    from fib import fib as cpython_fib_test
+
+    # cython的使用静态类型fib
+    from fib import fib1 as cpython_fib1_test
+
+    # 本地的fib
+    def fib_test():
+        a, b = 0, 1
+        n = 100
+        while b < n:
+            a, b = b, a + b
+
+    print(timeit(stmt = fib_test, number = 10000))
+    print(timeit(stmt = cpython_fib_test, number = 10000))
+    print(timeit(stmt = cpython_fib1_test, number = 10000))
+    ```
+    输出
+    ```
+    0.004571270000042205
+    0.002575273000047673
+    0.0002849779998541635
     ```
 
 ## cProfile
