@@ -1001,6 +1001,66 @@ t.timeit(number=10000)
     0.0002849779998541635
     ```
 
+#### 字典循环使用keys() vs 不使用
+
+- 不使用比使用快3分之1
+
+```py
+global dict1
+dict1 = {'name': 'tz', 'age': 24}
+
+def key_test():
+    for k in dict1.keys():
+        pass
+
+def key1_test():
+    for k in dict1:
+        pass
+
+print(timeit(stmt = key_test, number = 10000))
+print(timeit(stmt = key1_test, number = 10000))
+```
+输出
+```
+0.0015382250003312947
+0.0011474080001789844
+```
+
+<span id="str"></span>
+#### 4种字符串格式化方法性能对比
+
+- `{}` >  `+` > `%` > `format`
+
+```py
+global name, age
+name = 'tz'
+age = '24'
+
+def format():
+    f'name {0} age {1}'.format(name, age)
+
+def percent():
+    'name %s age %s' % (name, age)
+
+def plus():
+    'name ' + name + ' ' + 'age ' + age
+
+def brace():
+    f'name {name} age {age}'
+
+print(timeit(stmt = format, number = 10000))
+print(timeit(stmt = percent, number = 10000))
+print(timeit(stmt = plus, number = 10000))
+print(timeit(stmt = brace, number = 10000))
+```
+输出
+```
+0.0025678450001578312
+0.0019183020012860652
+0.0017795429994293954
+0.001179738999780966
+```
+
 ## cProfile
 
 ```py
@@ -1028,7 +1088,7 @@ ncalls  tottime  percall  cumtime  percall filename:lineno(function)
     > 查看执行时间
 
 ```py
-import pstat
+import pstats
 
 profiler = cProfile.Profile()
 profiler.enable()
@@ -1054,7 +1114,7 @@ p.name()
 
 ## tracemalloc: 查看内存使用
 
-- [官方文档](https://docs.python.org/3/library/tracemalloc.html)
+- [优秀文档](https://coderzcolumn.com/tutorials/python/tracemalloc-how-to-trace-memory-usage-in-python-code)
 
 ```py
 import tracemalloc
@@ -1068,15 +1128,82 @@ tuple1 = (i for i in range(100))
 list1 = [i for i in range(100)]
 
 snapshot = tracemalloc.take_snapshot()
-top_stats = snapshot.statistics('lineno')
 
-for stat in top_stats[:10]:
+# 'lineno'表示根据行号进行跟踪排序
+for stat in snapshot.statistics('lineno'):
     print(stat)
+
+    # 跟踪的语句
+    print(stat.traceback.format())
 ```
 输出:
 ```
-size=152 B, count=2, average=76 B
-size=1440 B, count=2, average=720 B
+/home/tz/test.py:36: size=864 B, count=1, average=864 B
+['  File "/home/tz/test.py", line 36', '    list1 = [i for i in range(100)]']
+
+/home/tz/test.py:35: size=736 B, count=3, average=245 B
+['  File "/home/tz/test.py", line 35', '    tuple1 = (i for i in range(100))']
+```
+
+- 多个snapshot
+
+```py
+import tracemalloc
+
+tracemalloc.start()
+
+tuple1 = (i for i in range(100))
+snapshot1 = tracemalloc.take_snapshot()
+
+print("================ SNAPSHOT 1 =================")
+for stat in snapshot1.statistics("lineno"):
+    print(stat)
+    print(stat.traceback.format())
+
+# 清空数据
+tracemalloc.clear_traces()
+
+list1 = [i for i in range(100)]
+snapshot2 = tracemalloc.take_snapshot()
+
+print("\n================ SNAPSHOT 2 =================")
+for stat in snapshot2.statistics("lineno"):
+    print(stat)
+    print(stat.traceback.format())
+
+# 停止跟踪
+tracemalloc.stop()
+```
+输出
+```
+================ SNAPSHOT 1 =================
+/home/tz/test.py:32: size=736 B, count=3, average=245 B
+['  File "/home/tz/test.py", line 32', '    tuple1 = (i for i in range(100))']
+
+================ SNAPSHOT 2 =================
+/home/tz/test.py:42: size=1288 B, count=2, average=644 B
+['  File "/home/tz/test.py", line 42', '    list1 = [i for i in range(100)]']
+```
+
+- 将跟踪结果写入和读取文件
+```py
+import tracemalloc
+
+tracemalloc.start()
+
+tuple1 = (i for i in range(100))
+list1 = [i for i in range(100)]
+
+snapshot = tracemalloc.take_snapshot()
+
+# 写入文件
+snapshot.dump("/tmp/snap.out")
+
+# 读取文件
+snapshot_loaded = tracemalloc.Snapshot.load("/tmp/snap.out")
+
+for stat in snapshot_loaded.statistics("lineno"):
+    print(stat)
 ```
 
 ## [pysnooper](https://github.com/cool-RR/PySnooper)

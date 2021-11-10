@@ -30,9 +30,14 @@
         * [基本概念](#基本概念)
         * [动态类型](#动态类型)
         * [str(字符串)](#str字符串)
+            * [4种字符串格式化方法](#4种字符串格式化方法)
+            * [string模块](#string模块)
         * [list(列表)](#list列表)
+            * [Deque列表](#deque列表)
         * [tuple(元组)](#tuple元组-1)
+            * [namedtuple](#namedtuple)
         * [Dictionaries(字典)](#dictionaries字典)
+            * [collections模块](#collections模块)
         * [set(集合)](#set集合)
         * [静态类型](#静态类型)
             * [静态类型检查工具:mypy](#静态类型检查工具mypy)
@@ -45,6 +50,7 @@
     * [class(类)](#class类)
         * [@dataclass(简化类的定义)](#dataclass简化类的定义)
         * [setattr(添加实例化后的属性)](#setattr添加实例化后的属性)
+        * [元类(metaclass)](#元类metaclass)
         * [内置函数,属性](#内置函数属性-1)
         * [itertools(迭代器)](#itertools迭代器)
         * [class的内置装饰器](#class的内置装饰器)
@@ -358,6 +364,27 @@ from test import b
 print(b)
 ```
 
+- from导入函数应使用`()` 代替`\`
+
+    ```py
+    # 两者一样
+    from timeit import timeit, repeat, \
+                        main, reindent
+
+    from timeit import (timeit, repeat,
+                        main, reindent)
+    ```
+    - 注意只能在from语句可以使用(), import 则会报错
+
+        ```py
+        import timeit, sys,\
+                time, re
+
+        # 报错
+        import (timeit, sys,
+                time, re)
+        ```
+
 ## if
 
 | 正确写法        | 错误写法        |
@@ -430,6 +457,8 @@ stuff = [[y := f(x), x * y] for x in range(3)]
 ```
 
 ## while, for(循环)
+
+- python3的 `range` 代替 python2 的`xrange`
 
 - 定义: 起点, 终点, 步进
     ```py
@@ -1307,15 +1336,6 @@ dict1 = {'hello': 1, 'world': 2}
 ' '.join(dict1)
 ```
 
-- `f'{v=}'` instead of `print(f"v = {v}")`
-
-```py
-pi = 3.14
-print(f'{pi=}')
-
-pi=3.14
-```
-
 - strip()
 
 ```py
@@ -1327,14 +1347,72 @@ pi=3.14
 '####123####'.strip('#13')
 ```
 
-- format()
+- startswith()
+
+    > 判断字符串开头
 
 ```py
-# 对象
-"my name is {a.name} , age is {a.age}".format(a=people())
+str1 = "my name is tz , age is 24"
 
-# 小数保留
-"{:.2f}".format(3.1415926)
+x = str1.startswith('my')
+print(x)
+
+x = str1.startswith('name')
+print(x)
+
+# 查看name是否在第3个字符
+x = str1.startswith('name', 3, 20)
+print(x)
+```
+输出
+```
+True
+False
+True
+```
+
+#### 4种字符串格式化方法
+
+```py
+name = 'tz'
+age = '24'
+
+str1 = 'name %s age %s' % (name, age)
+str1 = 'name ' + name + ' ' + 'age ' + age
+str1 = f'name {name} age {age}'
+str1 = f'name {0} age {1}'.format(name, age)
+```
+
+- `format()`
+
+    ```py
+    # 对象
+    "my name is {a.name} , age is {a.age}".format(a=people())
+
+    # 小数保留
+    "{:.2f}".format(3.1415926)
+    ```
+
+- 使用`f'{v=}'` 取代 `f"v = {v}"`
+
+    ```py
+    pi = 3.14
+    print(f'{pi=}')
+
+    pi=3.14
+    ```
+
+- [timeit性能对比: 4种字符串格式化方法](./python-debug.md#str)
+    - `{}` >  `+` > `%` > `format`
+
+#### string模块
+
+- `Template()` 模板
+
+```py
+from string import Template
+str1 = Template("name $name age $age")
+print(str1.substitute(name = 'tz', age = '24'))
 ```
 
 ### list(列表)
@@ -1450,6 +1528,37 @@ list1 = [1, 2, 3, 4, 5]
     3
     ```
 
+#### Deque列表
+
+- Deque是优化的列表.更快地从两边append()和pop()操作。
+
+    - Deque的时间复杂度O(1); 列表的时间复杂度为O(n)。
+
+```py
+from collections import deque
+
+de = deque([1, 2, 3])
+
+de.append(4)
+print(de)
+
+# 左边添加
+de.appendleft(0)
+print(de)
+
+de.pop()
+# 左边移除
+
+de.popleft()
+print(de)
+```
+输出
+```
+deque([1, 2, 3, 4])
+deque([0, 1, 2, 3, 4])
+deque([1, 2, 3])
+```
+
 ### tuple(元组)
 
 ```py
@@ -1503,6 +1612,42 @@ n = ('hello', 'Worrld', '!', 'in', 'Python')
 ninsert(n, 3, 'test')
 ```
 
+#### namedtuple
+
+```py
+from collections import namedtuple
+
+people = namedtuple('people', ('name', 'age'))
+
+a = people('tz', 24)
+print(a.name, a.age)
+print(a[0], a[1])
+
+# 字典输出
+print(a._asdict())
+```
+输出
+```
+tz 24
+tz 24
+{'name': 'tz', 'age': 24}
+```
+- 列表输入
+```py
+from collections import namedtuple
+
+people = namedtuple('people', ('name', 'age'))
+
+# 列表输入
+list1 = ['tz', 24]
+people._make(list1)
+print(list1)
+```
+输出
+```
+['tz', 24]
+```
+
 ### Dictionaries(字典)
 
 - [dict每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Dictionaries.html)
@@ -1537,19 +1682,6 @@ test_dict = { 'gfg' : 10, 'is' : 15, 'best' : 20, 'for' : 10, 'geeks' : 20}
 temp = {val : key for key, val in test_dict.items()}
 res = {val : key for key, val in temp.items()}
 print(res)
-```
-
-- Counter()
-
-```py
-from collections import Counter
-c = Counter()
-
-# 统计命令次数
-with open('/home/tz/.bash_history', 'r') as f:
-    for line in f:
-       cmd = line.strip().split()
-       c[cmd[0]] += 1
 ```
 
 - zip()两个数组转换为字典
@@ -1598,6 +1730,104 @@ with open('/home/tz/.bash_history', 'r') as f:
     ('k2', 'v2')
     ```
 
+#### collections模块
+
+- [geeksforgeeks文档](https://www.geeksforgeeks.org/python-collections-module/)
+
+- Counter()
+
+    ```py
+    from collections import Counter
+
+    print(Counter(['B','B','A','B','C','A','B',
+                   'B','A','C']))
+    ```
+    输出
+    ```
+    Counter({'B': 5, 'A': 3, 'C': 2})
+    ```
+
+    - 统计命令的次数
+
+        ```py
+        from collections import Counter
+
+        cmd = []
+
+        # 将所有命令加入list
+        with open('/home/tz/.bash_history', 'r') as f:
+            for line in f:
+                l = line.split()
+                if len(l) > 1:
+                    cmd.append(l[0])
+
+        # Counter用dict统计list重复的值, 并按顺序排序
+        print(Counter(cmd))
+        ```
+
+- defaultdict
+
+    - append().  value为列表
+
+        ```py
+        from collections import defaultdict
+
+        # 定义list
+        d = defaultdict(list)
+
+        for i in range(5):
+            d[i].append(i)
+
+        print(d)
+        ```
+        输出
+        ```
+        defaultdict(<class 'list'>, {0: [0], 1: [1], 2: [2], 3: [3], 4: [4]})
+        ```
+
+    - 统计
+
+        ```py
+        from collections import defaultdict
+
+        # 定义int
+        d = defaultdict(int)
+
+        list1 = [1, 2, 3, 4, 2, 4, 1, 2]
+
+        for i in list1:
+            d[i] += 1
+
+        print(d)
+        ```
+        输出
+        ```
+        defaultdict(<class 'int'>, {1: 2, 2: 3, 3: 1, 4: 2})
+        ```
+
+    - 统计命令的次数
+
+        ```py
+        from collections import defaultdict
+        cmd = []
+
+        d = defaultdict(str)
+        # 将所有命令加入list
+        with open('/home/tz/.bash_history', 'r') as f:
+            for line in f:
+                l = line.split()
+                if len(l) > 1:
+                    cmd.append(l[0])
+
+        # 定义int
+        d = defaultdict(int)
+
+        for i in cmd:
+            d[i] += 1
+
+        # 不会按顺序排序
+        print(d)
+        ```
 
 ### set(集合)
 
@@ -2140,9 +2370,120 @@ setattr(cls, 'age', 24)
 cls.age
 ```
 
+### 元类(metaclass)
+
+- `type()` 是python默认的元类
+
+```py
+a = 1
+print(a.__class__)
+print(a.__class__.__class__)
+```
+输出
+```
+<class 'int'>
+<class 'type'>
+```
+
+- `type()` 装饰类, 类似与装饰器于函数
+
+    - 三个参数
+        - 1.返回类型
+        - 2.继承的类, 用元组表示
+        - 3.类字典: 类的属性, 方法
+
+    ```py
+    # creating a base class
+    class Base:
+        def myfun(self):
+            print("This is inherited method!")
+
+    def f(self):
+        print("This is Test class method!")
+
+    # 装饰类
+    Test = type('Test', (Base, ), dict(x = 1, my_method=f))
+
+    o = Test()
+
+    o.myfun()
+
+    o.my_method()
+
+    print(o.x)
+    ```
+- 使用`__new__` 元类代替函数装饰器
+
+    - 装饰器例子
+
+    ```py
+    def debugmethods(cls):
+        # vars() 字典类型:类的方法, 方法对象
+        for key, val in vars(cls).items():
+            # callable() 判断对象是否可执行, 函数, 类都为True
+            if callable(val):
+                # setattr() 对类添加属性或方法
+                setattr(cls, key, val)
+        return cls
+
+    @debugmethods
+    class Calc:
+        def add(self, x, y):
+            return x+y
+        def mul(self, x, y):
+            return x*y
+        def div(self, x, y):
+            return x/y
+
+    mycal = Calc()
+    print(mycal.add(2, 3))
+    print(mycal.mul(5, 2))
+    ```
+
+    - 元类例子
+    ```py
+    def debugmethods(cls):
+        for key, val in vars(cls).items():
+            if callable(val):
+                setattr(cls, key, val)
+        return cls
+
+    # 元类
+    class Meta(type):
+        def __new__(cls, clsname, bases, clsdict):
+            obj = super().__new__(cls, clsname, bases, clsdict)
+            # 装饰类
+            obj = debugmethods(obj)
+            return obj
+
+    # 继承元类
+    class Base(metaclass=Meta):pass
+
+    # 继承Base
+    class Calc(Base):
+        def add(self, x, y):
+            return x+y
+
+    # 继承Calc
+    class Calc_adv(Calc):
+        def mul(self, x, y):
+            return x*y
+
+    mycal = Calc_adv()
+    print(mycal.add(2, 3))
+    print(mycal.mul(5, 2))
+    ```
+
+
+
 ### 内置函数,属性
 
-- ` __new__()`创建实例,` __init__()`初始化实例
+- ` __new__()`创建实例, 并返回实例
+
+    - 在init()之前调用的方法, 可以重写这个方法来控制如何创建实例
+
+- ` __init__()`初始化实例: 将参数传递给已创建的实例
+
 
     > 类实例化的内部函数
 
@@ -2151,6 +2492,7 @@ cls.age
         pass
 
     a = cls.__new__(cls)
+
     if isinstance(a, cls):
         cls.__new__(a)
 
@@ -3173,6 +3515,8 @@ args, positional = parser.parse_args()
 
 ### re(正则表达式)
 
+- 注意:判断字符串开头应使用`str.startswith()`, 而不是re
+
 ```py
 a = '123abc 192.168.1.1 ABC\n1.1.1.1\nabc ABC\n999.999.999.999\n<meta name="user-login" content="ztoiax">'
 
@@ -4106,7 +4450,7 @@ image_merge = image1 * 0.5 + image2 * 0.5
 # 转换整数
 image_merge = image_merge.astype(np.uint8)
 
-Image.fromarray(image_merge).show()
+image.fromarray(image_merge).show()
 ```
 
 ### pygal
@@ -4142,7 +4486,11 @@ Image.fromarray(image_merge).show()
     import helloworld
     ```
 
-- [性能对比: 使用cython vs 不使用](./python-debug.md#cython)
+- [timeit性能对比: 使用cython vs 不使用](./python-debug.md#cython)
+
+    - 使用cython快1.8倍
+
+    - 使用cython静态类型快16倍
 
 ## sort(排序)
 
