@@ -9,13 +9,18 @@
     * [python 慢的原因](#python-慢的原因)
     * [import and from](#import-and-from)
     * [if](#if)
+        * [assert](#assert)
         * [PEP 572: 海象运算符(:=)](#pep-572-海象运算符)
+        * [三元运算符(Ternary)](#三元运算符ternary)
     * [while, for(循环)](#while-for循环)
         * [`enumerate()` index的语法糖](#enumerate-index的语法糖)
         * [yield](#yield)
             * [send() 类似协程](#send-类似协程)
     * [match case(模式匹配): 需要python 3.10](#match-case模式匹配-需要python-310)
     * [函数式编程](#函数式编程)
+        * [map()](#map)
+        * [filter(): 过滤](#filter-过滤)
+        * [reduce()](#reduce)
         * [fib(斐波那契)](#fib斐波那契)
             * [循环 while, for](#循环-while-for)
             * [迭代](#迭代)
@@ -47,6 +52,7 @@
         * [参数`*argv`, `**kwargs`](#参数argv-kwargs)
         * [内置函数,属性](#内置函数属性)
         * [装饰器(decorater)](#装饰器decorater)
+        * [functools模块](#functools模块)
     * [class(类)](#class类)
         * [@dataclass(简化类的定义)](#dataclass简化类的定义)
         * [setattr(添加实例化后的属性)](#setattr添加实例化后的属性)
@@ -55,6 +61,8 @@
         * [itertools(迭代器)](#itertools迭代器)
         * [class的内置装饰器](#class的内置装饰器)
         * [`__getitem__` 和 `__class_getitem__` 函数](#__getitem__-和-__class_getitem__-函数)
+        * [`__getattribute__`](#__getattribute__)
+        * [partialmethod() 只能封装是类里的方法](#partialmethod-只能封装是类里的方法)
     * [file](#file)
         * [json](#json)
         * [yaml](#yaml)
@@ -98,7 +106,7 @@
         * [pygal](#pygal)
     * [cython](#cython)
     * [sort(排序)](#sort排序)
-    * [暂时还没搞懂的程序](#暂时还没搞懂的程序)
+    * [PEP 20: pythonic(python之禅)](#pep-20-pythonicpython之禅)
     * [process: 进程, 线程, 协程](#process-进程-线程-协程)
     * [network: 网络](#network-网络)
     * [spider: 网络爬虫和自动化测试](#spider-网络爬虫和自动化测试)
@@ -387,10 +395,10 @@ print(b)
 
 ## if
 
-| 正确写法        | 错误写法        |
-|-----------------|-----------------|
-| `if not v:` or  `if v is None:`| `if v == None:` |
-| `if v:`         | `if v != None:` |
+| 正确写法                       | 错误写法        |
+|--------------------------------|-----------------|
+| `if not v:` or `if v is None:` | `if v == None:` |
+| `if v:`                        | `if v != None:` |
 
 判断变量是否定义: `if 'v' in locals():`
 
@@ -403,6 +411,42 @@ print(b)
     # v = 1
     v = b or 1 or c
     ```
+    - False, True
+
+    ```py
+    age = False
+    s = age or 24
+    print(s)
+
+    age = True
+    s = age or 24
+    print(s)
+    ```
+    输出
+    ```
+    24
+    True
+    ```
+
+### assert
+
+```py
+x = 1
+
+# 异常
+assert x > 1
+```
+
+- 自定义异常
+
+```py
+class Myerror(Exception):
+    def __str__(self):
+        return 'define error'
+
+raise Myerror()
+```
+
 
 ### [PEP 572: 海象运算符(:=)](https://www.python.org/dev/peps/pep-0572/)
 
@@ -454,6 +498,25 @@ results = [
 ```py
 # f(x)赋值y
 stuff = [[y := f(x), x * y] for x in range(3)]
+```
+
+### 三元运算符(Ternary)
+
+```py
+# False选第一个元素
+state = False
+array = ('0', '1', '2')[state]
+print(array)
+
+# True选第二个元素
+state = True
+array = ('0', '1', '2')[state]
+print(array)
+```
+输出
+```
+0
+1
 ```
 
 ## while, for(循环)
@@ -795,6 +858,85 @@ func(-1)
 
 func = wrapper(2)
 func(-1)
+```
+
+### map()
+
+- [优秀文档](https://book.pythontips.com/en/latest/map_filter.html)
+
+- 常用写法
+
+```py
+items = [1, 2, 3, 4, 5]
+squared = []
+for i in items:
+    squared.append(i**2)
+```
+- 使用map
+
+```py
+items = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x**2, items))
+```
+输出
+```
+[1, 4, 9, 16, 25]
+```
+
+- map(函数)
+
+```py
+def multiply(x):
+    return (x*x)
+def add(x):
+    return (x+x)
+
+funcs = [multiply, add]
+for i in range(5):
+    value = list(map(lambda x: x(i), funcs))
+    print(value)
+```
+输出
+```
+[0, 0]
+[1, 2]
+[4, 4]
+[9, 6]
+[16, 8]
+```
+
+### filter(): 过滤
+
+- 比`for` 更快
+
+```py
+number_list = range(-5, 5)
+less_than_zero = list(filter(lambda x: x < 0, number_list))
+print(less_than_zero)
+```
+输出
+```
+[-5, -4, -3, -2, -1]
+```
+
+### reduce()
+
+- 常用写法
+
+```py
+fib = 1
+list1 = [1, 2, 3, 4]
+for num in list1:
+    fib = product + num
+```
+
+- 使用reduce
+
+```py
+from functools import reduce
+fib = reduce((lambda x, y: x + y), [1, 2, 3, 4])
+
+max = reduce(lambda a, b:a if a > b else b, [1, 2, 3, 4])
 ```
 
 ### fib(斐波那契)
@@ -1532,8 +1674,6 @@ list1 = [1, 2, 3, 4, 5]
 
 - Deque是优化的列表.更快地从两边append()和pop()操作。
 
-    - Deque的时间复杂度O(1); 列表的时间复杂度为O(n)。
-
 ```py
 from collections import deque
 
@@ -1558,6 +1698,14 @@ deque([1, 2, 3, 4])
 deque([0, 1, 2, 3, 4])
 deque([1, 2, 3])
 ```
+
+- Deque的时间复杂度O(1); 列表的时间复杂度为O(n)。
+
+    - 但timeit的测试结果是list比deque快1.68倍
+
+- [timeit性能对比: list vs deque](./python-debug.md#deque)
+
+    - list 比 deque 快 1.68倍
 
 ### tuple(元组)
 
@@ -1831,9 +1979,41 @@ print(res)
 
 ### set(集合)
 
-```py
+- 匹配元素重复2次以上
 
-```
+    ```py
+    list1 = ['a', 'b', 'c', 'b', 'd', 'm', 'n', 'n']
+    set1 = set([x for x in list1 if list1.count(x) > 1])
+    print(set1)
+    ```
+    输出
+    ```
+    {'n', 'b'}
+    ```
+
+- `intersection()`: 交集
+
+    ```py
+    list1 = range(5)
+    set1 = set([1, 6])
+    print(set1.intersection(list1))
+    ```
+    输出
+    ```
+    {1}
+    ```
+
+- `intersection()`: 差值
+
+    ```py
+    list1 = range(5)
+    set1 = set([1, 6])
+    print(set1.difference(list1))
+    ```
+    输出
+    ```
+    {6}
+    ```
 
 ### 静态类型
 
@@ -2296,6 +2476,85 @@ b = a.cls()
 b.name
 ```
 
+### functools模块
+
+- partial() 封装一个参数
+
+```py
+from functools import partial
+
+def power(a, b):
+    return a**b
+
+pow3 = partial(power, b = 3)
+pow3(2)
+```
+
+- cmp_to_key()
+
+```py
+# 函数转为key,然后进行排序:
+from functools import cmp_to_key
+
+def cmp_fun(a, b):
+    if a[-1] > b[-1]:
+        return 1
+    elif a[-1] < b[-1]:
+        return -1
+    else:
+        return 0
+
+list1 = ['9', '2', '7']
+l = sorted(list1, key = cmp_to_key(cmp_fun))
+print('sorted list :', l)
+```
+
+- lru_cache(): 保存最新的调用, 减少内存
+
+```py
+from functools import lru_cache
+
+@lru_cache(maxsize = None)
+def fib(n):
+    if n == 0:
+        return n
+    return n + fib(n-1)
+
+print([fib(n) for n in range(7)])
+print(fib.cache_info())
+```
+输出
+```
+[0, 1, 3, 6, 10, 15, 21]
+CacheInfo(hits=6, misses=7, maxsize=None, currsize=7)
+```
+
+- singledispatch(): 根据输入参数的类型, 使用不同的函数
+
+```py
+from functools import singledispatch
+
+@singledispatch
+def fun(s):
+    print(s)
+@fun.register(int)
+def _(s):
+    print(s * 2)
+@fun.register(float)
+def _(s):
+    print(s - 1)
+
+fun('GeeksforGeeks')
+fun(10)
+fun(10.0)
+```
+输出
+```
+test
+20
+9.0
+```
+
 ## class(类)
 
 ### @dataclass(简化类的定义)
@@ -2420,7 +2679,7 @@ print(a.__class__.__class__)
     def debugmethods(cls):
         # vars() 字典类型:类的方法, 方法对象
         for key, val in vars(cls).items():
-            # callable() 判断对象是否可执行, 函数, 类都为True
+            # callable() 判断对象能否调用, 函数, 类都为True
             if callable(val):
                 # setattr() 对类添加属性或方法
                 setattr(cls, key, val)
@@ -2532,6 +2791,9 @@ print(a.__class__.__class__)
     # test
     a = people()
     a()
+
+    # callable()判断能否对象调用, 返回True
+    print(callable(a))
     ```
 
 
@@ -2583,31 +2845,55 @@ print(a.__class__.__class__)
 
 - `__str__()` 和 ` __repr__()`
 
-    > __str__: 执行print(class_name), 返回字符串
-
-    > __repr__: 执行print([class_name]), 传入列表, 返回包含字符串的列表
+    - `__str__`: 给用户看的. 执行print(class_name), 返回字符串
 
     ```py
-    # 当使用str(object) 执行 __str__函数
     class people(object):
-        height = 180
+
         def __init__(self, name):
             self.name = name
-        def age(self, n):
-            self.age = n
+
         def __str__(self):
             return 'in __str__: my name is %s' % self.name
-        def __repr__(self):
-            return 'in __repr__: my name is %s' % self.name
 
-    # test
+    print(people('tz'))
+
+    # 给用户看的, 不可以直接调用
+    people('tz')
+    ```
+    输出
+    ```
+    in __str__: my name is tz
+    <__main__.people object at 0x7f250de170a0>
+    ```
+
+    - `__repr__`: 给开发者看的. 执行print([class_name]), 传入列表, 返回包含字符串的列表
+
+    ```py
+    class people(object):
+
+        def __init__(self, name):
+            self.name = name
+
+        def __repr__(self):
+            return 'in __str__: my name is %s' % self.name
+
     print(people('tz'))
     print([people('tz')])
+
+    # 给开发者看的, 可以直接调用
+    people('tz')
+    ```
+    输出
+    ```
+    in __str__: my name is tz
+    [in __str__: my name is tz]
+    in __str__: my name is tz
     ```
 
 - iterator迭代器:
 
-    `__iter__()` 和 `__ next__()`实现简单的`range()`函数
+    - `__iter__()` 和 `__ next__()`实现简单的`range()`函数
 
         ```py
         class range:
@@ -2631,6 +2917,32 @@ print(a.__class__.__class__)
         for i in a:
             print(i)
         ```
+
+    - fib()
+
+        ```py
+        class fib:
+            def __init__(self, n):
+                self.x, self.y = 0, 1
+                self.n = n
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                self.x, self.y = self.x + 1, self.y + self.x
+                if self.y <= self.n:
+                    return self.y
+                else:
+                    raise StopIteration
+
+
+        a = fib(10)
+        for i in a:
+            print(i)
+        ```
+
+- 
 
 ### itertools(迭代器)
 
@@ -2778,6 +3090,19 @@ print(a.__class__.__class__)
     o1()['test']
     ```
 
+    - fib例子
+
+        ```py
+        class fib:
+        def __getitem__(self, n):
+            x, y = 1, 1
+            for i in range(n):
+                x, y = y, x + y
+            return x
+
+        print(fib()[7])
+        ```
+
 - `__class_getitem__` 函数:
     ```py
     class o:
@@ -2790,6 +3115,65 @@ print(a.__class__.__class__)
     # []调用__class_getitem__函数, 并传入参数
     o1[int]
     ```
+
+### `__getattribute__`
+
+```py
+class people:
+    def __init__(self, name):
+        self.name = name
+
+o = people('tz')
+o.name
+
+# 报错
+o.age
+```
+
+- 使用`__getattribute__`
+
+```py
+class people:
+    def __init__(self, name):
+        self.name = name
+
+    def __getattribute__(self, attr):
+        # 如果是age, 就返回对应的值
+        if attr == 'age':
+            return 24
+
+o = people('tz')
+o.name
+o.age
+```
+
+### partialmethod() 只能封装是类里的方法
+
+```py
+from functools import partialmethod
+
+class Demo:
+    def __init__(self):
+        self.color = 'black'
+
+    def _color(self, type):
+        self.color = type
+
+    set_red = partialmethod(_color, type='red')
+    set_blue = partialmethod(_color, type='blue')
+    set_green = partialmethod(_color, type='green')
+
+
+obj = Demo()
+print(obj.color)
+obj.set_blue()
+print(obj.color)
+```
+输出
+```
+black
+blue
+```
 
 ## file
 
@@ -4496,26 +4880,15 @@ image.fromarray(image_merge).show()
 
 - [算法实现](https://zhuanlan.zhihu.com/p/49271189)
 
-## 暂时还没搞懂的程序
-
-- 函数转为key,然后进行排序:
+## [PEP 20: pythonic(python之禅)](https://www.python.org/dev/peps/pep-0020/)
 
 ```py
-from functools import cmp_to_key
-
-# function to sort according to last character
-def cmp_fun(a, b):
-    if a[-1] > b[-1]:
-        return 1
-    elif a[-1] < b[-1]:
-        return -1
-    else:
-        return 0
-
-list1 = ['geeks', 'for', 'geeks']
-l = sorted(list1, key = cmp_to_key(cmp_fun))
-print('sorted list :', l)
+import this
 ```
+
+![image](./imgs/pythonic.png)
+![image](./imgs/pythonic1.png)
+![image](./imgs/pythonic2.png)
 
 ## [process: 进程, 线程, 协程](./python-process.md)
 
@@ -4528,11 +4901,6 @@ print('sorted list :', l)
 # reference article(优秀文章)
 
 - [python官方文档](https://docs.python.org/)
-
-- [PEP 20: python之禅](https://www.python.org/dev/peps/pep-0020/)
-    ```py
-    import this
-    ```
 
 - [Problem Solving with Algorithms and Data Structures using Python: 此书可以在线交互式运行代码](https://runestone.academy/runestone/books/published/pythonds3/index.html)
 

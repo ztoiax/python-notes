@@ -1061,6 +1061,70 @@ print(timeit(stmt = brace, number = 10000))
 0.001179738999780966
 ```
 
+<span id="deque"></span>
+#### list vs deque
+
+list 比 deque 快 1.68倍
+
+```py
+from collections import deque
+
+from timeit import timeit
+
+def time_test(func):
+    print(timeit(stmt = func, number = 10000))
+
+
+print('append_test')
+@time_test
+def deque_test():
+    de = deque([1, 2, 3])
+    de.append(4)
+
+@time_test
+def deque_test():
+    list1 = [1, 2, 3]
+    list1.append(4)
+
+
+print('\nappendleft_test')
+@time_test
+def deque_test():
+    de = deque([1, 2, 3])
+    de.appendleft(0)
+
+@time_test
+def deque_test():
+    list1 = [1, 2, 3]
+    list1.insert(0, 0)
+
+
+print('\npop_test')
+@time_test
+def deque_test():
+    de = deque([1, 2, 3])
+    de.pop()
+
+@time_test
+def deque_test():
+    list1 = [1, 2, 3]
+    list1.pop()
+```
+输出
+```
+append_test
+0.0024033810004766565
+0.0012824490004277322
+
+appendleft_test
+0.0023584799982927507
+0.0013997389996802667
+
+pop_test
+0.002227412000138429
+0.0012563700001919642
+```
+
 ## cProfile
 
 ```py
@@ -1205,6 +1269,102 @@ snapshot_loaded = tracemalloc.Snapshot.load("/tmp/snap.out")
 for stat in snapshot_loaded.statistics("lineno"):
     print(stat)
 ```
+## [py-spy: 查看系统调用](https://github.com/benfred/py-spy)
+
+- record:火焰图
+
+```sh
+# 跟踪pid
+sudo py-spy record -o test.svg --pid 930
+
+# 跟踪程序
+sudo py-spy record -o test.svg -- python ~/test.py
+```
+![image](./imgs/py-spy_record.svg)
+
+- top
+
+```sh
+# 跟踪pid
+sudo py-spy top --pid 930
+
+# 跟踪程序
+sudo py-spy top -- python ~/test.py
+```
+![image](./imgs/py-spy_top.png)
+
+- dump: 每个线程的调用stack
+
+```sh
+# pid 930是用python写的窗口管理器qtile, 类似于dwm
+sudo py-spy dump --pid 930
+```
+输出
+```
+Process 930: qtile
+Python v3.9.7 (/usr/bin/python3.9)
+
+Thread 930 (idle): "MainThread"
+    select (selectors.py:469)
+    _run_once (asyncio/base_events.py:1854)
+    run_forever (asyncio/base_events.py:596)
+    run_until_complete (asyncio/base_events.py:629)
+    run (asyncio/runners.py:44)
+    loop (libqtile/core/manager.py:210)
+    start (libqtile/scripts/start.py:89)
+    main (libqtile/scripts/main.py:55)
+    <module> (qtile:33)
+Thread 44562 (idle): "asyncio_0"
+    _worker (concurrent/futures/thread.py:75)
+    run (threading.py:910)
+    _bootstrap_inner (threading.py:973)
+    _bootstrap (threading.py:930)
+Thread 44565 (idle): "asyncio_1"
+    _worker (concurrent/futures/thread.py:75)
+    run (threading.py:910)
+    _bootstrap_inner (threading.py:973)
+    _bootstrap (threading.py:930)
+Thread 44566 (idle): "asyncio_2"
+    _worker (concurrent/futures/thread.py:75)
+    run (threading.py:910)
+    _bootstrap_inner (threading.py:973)
+    _bootstrap (threading.py:930)
+Thread 44568 (idle): "asyncio_3"
+    _worker (concurrent/futures/thread.py:75)
+    run (threading.py:910)
+    _bootstrap_inner (threading.py:973)
+    _bootstrap (threading.py:930)
+```
+## [objgraph: 对象依赖图](https://github.com/mgedmin/objgraph)
+
+- show_refs()
+
+```py
+import objgraph
+list1 = [1, 2, 3]
+objgraph.show_refs([list1], filename='sample-graph.png')
+```
+
+![image](./imgs/sample-graph.png)
+
+- 递归自身
+
+```py
+list1.append(list1)
+objgraph.show_refs([list1], filename='sample-graph1.png')
+```
+![image](./imgs/sample-graph1.png)
+
+- show_backrefs()
+
+```py
+import objgraph
+list1 = [1, 2, 3]
+list1.append(list1)
+objgraph.show_backrefs([list1], filename='sample-backref-graph.png')
+```
+
+![image](./imgs/sample-backref-graph.png)
 
 ## [pysnooper](https://github.com/cool-RR/PySnooper)
 
