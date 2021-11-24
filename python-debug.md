@@ -443,6 +443,8 @@ dis.dis(c)
                  10 RETURN_VALUE
     ```
 
+- import需要两次字典查询, 一次查math模块, 一次查sqrt函数
+
 ### marshal模块解析pyc文件
 
 - `pyc` 包含python版本号的元数据
@@ -475,6 +477,38 @@ with open(path, "rb") as f:
     metadata = f.read(header_size)
     code_obj = marshal.load(f)
     dis.dis(code_obj)
+```
+
+## sys.settrace
+
+- settrace是很慢的api, 有计划设计一个能在运行时插入字节码的api
+
+```py
+from sys import settrace
+
+
+def my_tracer(frame, event, arg=None):
+    code = frame.f_code
+    func_name = code.co_name
+    line_number = frame.f_lineno
+
+    print(f"A {event} encountered in \
+    {func_name}() at line number {line_number} ")
+
+    return my_tracer
+
+
+def fun():
+    return 0
+
+
+def check():
+    return fun()
+
+
+settrace(my_tracer)
+
+check()
 ```
 
 ## timeit
@@ -1125,7 +1159,7 @@ pop_test
 0.0012563700001919642
 ```
 
-## cProfile
+## cProfile: 统计每个函数的执行次数, 时间
 
 ```py
 import cProfile
@@ -1163,17 +1197,42 @@ stats.print_stats()
 ```
 
 
-## [Scalene](https://github.com/emeryberger/scalene)
-
-> 适用于 Python 的高性能，高精度 CPU 和内存分析器
+## [Scalene: cpu, gpu, 内存分析器](https://github.com/emeryberger/scalene)
 
 > 注意: gpu的分析,只支持nvidia
 
+![image](./imgs/scalene.png)
+
 ```py
-import psutil
-from subprocess import PIPE
-p = psutil.Popen(["/usr/bin/python", "-c", "print('hello')"], stdout=PIPE)
-p.name()
+list1 = []
+for i in range(1000000):
+    list1.append(i)
+```
+
+```sh
+scalene --reduced profiler ./test.py
+```
+输出
+```
+               Memory usage: ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ (max:   0.00MB, growth rate:   0%)
+                             ./test.py: % of time =  94.47% out of   0.20s.
+       ╷       ╷       ╷       ╷       ╷       ╷       ╷              ╷       ╷
+  Line │Time   │–––––– │–––––– │–––––– │Memory │–––––– │–––––––––––   │Copy   │
+       │Python │native │system │GPU    │Python │avg    │timeline/%    │(MB/s) │./test.py
+╺━━━━━━┿━━━━━━━┿━━━━━━━┿━━━━━━━┿━━━━━━━┿━━━━━━━┿━━━━━━━┿━━━━━━━━━━━━━━┿━━━━━━━┿━━━━━━━━━━━━━━━━━━━━━━━━━╸
+     1 │       │       │       │       │       │       │              │       │#!/bin/python3
+     2 │       │       │       │       │       │       │              │       │
+     3 │       │       │       │       │       │       │              │       │list1 = []
+     4 │   24% │       │   4%  │       │       │       │              │    92 │for i in range(1000000):
+     5 │   53% │       │  13%  │       │   3%  │   13M │▁▁▁▁▁▁▁▁▁ 10… │    87 │    list1.append(i)
+     6 │       │       │       │       │       │       │              │       │
+       ╵       ╵       ╵       ╵       ╵       ╵       ╵              ╵       ╵
+Top average memory consumption, by line:
+```
+
+- 生成html
+```sh
+scalene --html --outfile prof.html ./test.py
 ```
 
 ## tracemalloc: 查看内存使用
@@ -1365,6 +1424,205 @@ objgraph.show_backrefs([list1], filename='sample-backref-graph.png')
 ```
 
 ![image](./imgs/sample-backref-graph.png)
+
+## [line_profiler: 统计每行代码的cpu时间](https://github.com/rkern/line_profiler)
+
+```py
+@profile
+def f():
+    list1 = []
+    for i in range(100):
+        list1.append(i)
+
+f()
+```
+在终端下输入以下命令
+```sh
+kernprof -l -v test.py
+```
+输出
+```
+Wrote profile results to test.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 5.8e-05 s
+File: test.py
+Function: f at line 2
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     2                                           @profile
+     3                                           def f():
+     4         1          1.0      1.0      1.7      list1 = []
+     5       101         24.0      0.2     41.4      for i in range(100):
+     6       100         33.0      0.3     56.9          list1.append(i)
+```
+
+
+## [memory_profiler: 统计每行代码的内存使用量](https://github.com/pythonprofilers/memory_profiler)
+
+- `@profile` 装饰器
+
+```py
+from memory_profiler import profile
+
+@profile
+def f():
+    list1 = []
+    for i in range(100):
+        list1.append(i)
+
+f()
+```
+输出
+```
+Filename: ./test.py
+
+Line #    Mem usage    Increment  Occurences   Line Contents
+============================================================
+     6   41.590 MiB   41.590 MiB           1   @profile
+     7                                         def f():
+     8   41.590 MiB    0.000 MiB           1       list1 = []
+     9   41.590 MiB    0.000 MiB         101       for i in range(100):
+    10   41.590 MiB    0.000 MiB         100           list1.append(i)
+```
+
+- `mprof`
+
+```sh
+# 生成mprofile文件
+mprof run ./test.py
+
+# 查看线性图
+mprof plot
+```
+
+![image](./imgs/mprof.png)
+
+## [guppy3: 查看heap上的对象数量和大小](https://github.com/zhuyifei1999/guppy3)
+
+- `h.heap()` 查看堆中的可访问对象
+
+```py
+from guppy import hpy; h=hpy()
+
+print(h.heap())
+```
+输出
+```
+Partition of a set of 42162 objects. Total size = 4978497 bytes.
+ Index  Count   %     Size   % Cumulative  % Kind (class / dict of class)
+     0  12831  30  1131370  23   1131370  23 str
+     1   8350  20   577392  12   1708762  34 tuple
+     2   2898   7   511920  10   2220682  45 types.CodeType
+     3    603   1   508808  10   2729490  55 type
+     4   5756  14   403291   8   3132781  63 bytes
+     5   2662   6   362032   7   3494813  70 function
+     6    603   1   295576   6   3790389  76 dict of type
+     7    105   0   190744   4   3981133  80 dict of module
+     8    374   1   140336   3   4121469  83 dict (no owner)
+     9     88   0    97856   2   4219325  85 set
+<142 more rows. Type e.g. '_.more' to view.>
+```
+
+- `h.iso(list1)` 只查看list1
+```py
+from guppy import hpy; h=hpy()
+
+list1 = []
+for i in range(10):
+    list1.append(i)
+
+print(h.iso(list1))
+```
+输出
+```
+Partition of a set of 1 object. Total size = 184 bytes.
+ Index  Count   %     Size   % Cumulative  % Kind (class / dict of class)
+     0      1 100      184 100       184 100 list
+```
+
+
+
+## ipython 分析代码
+
+- [Profiling and Timing Code](https://jakevdp.github.io/PythonDataScienceHandbook/01.07-timing-and-profiling.html)
+
+```py
+# 统计函数调用次数和运行时间
+%prun  sum(range(10))
+
+# time命令
+%time  sum(range(10))
+
+# timeit 默认运行1000000次, 统计每次运行时间
+%timeit  sum(range(10))
+```
+
+- line_profiler
+
+```py
+list1 = [5, 3, 2, 4, 1]
+
+# 冒泡排序
+def sort(list1):
+    lengh = len(list1) - 1
+    for i in range(lengh, 0, -1):
+        for j in range(i):
+            if list1[j] > list1[j+1]:
+                list1[j], list1[j+1] = list1[j+1], list1[j]
+
+# 加载模块
+%load_ext line_profiler
+
+# -f 指定函数. 统计每一行的cpu时间
+%lprun -f sort sort(list1)
+```
+
+- memory_profiler
+
+```py
+# 加载模块
+%load_ext memory_profiler
+
+# 查看int的内存使用量
+%memit int
+
+# 查看string的内存使用量
+%memit f'a'
+
+# 查看list的内存使用量
+%memit list('a')
+
+# 查看tuple的内存使用量
+%memit [i for i in range(100)]
+
+# -f 指定函数. 统计每一行的内存使用量
+%mprun -f sort sort(list1)
+```
+
+### 性能测试
+
+#### array vs deque vs list
+
+```py
+from array import array
+from collections import deque
+
+def array_test():
+    array1 = array('i', range(100))
+    deque1 = deque(range(100))
+    list1 = [i for i in range(100)]
+    for i in array1:
+        pass
+    for i in deque1:
+        pass
+    for i in list1:
+        pass
+
+# 使用ipython测试
+%lprun -f array_test array_test()
+```
 
 ## [pysnooper](https://github.com/cool-RR/PySnooper)
 

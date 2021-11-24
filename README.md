@@ -7,6 +7,7 @@
         * [pyenv](#pyenv)
         * [常用命令:](#常用命令)
     * [python 慢的原因](#python-慢的原因)
+        * [python加速计划](#python加速计划)
     * [import and from](#import-and-from)
     * [if](#if)
         * [assert](#assert)
@@ -35,23 +36,31 @@
         * [基本概念](#基本概念)
         * [动态类型](#动态类型)
         * [str(字符串)](#str字符串)
+            * [format()](#format)
             * [4种字符串格式化方法](#4种字符串格式化方法)
             * [string模块](#string模块)
         * [list(列表)](#list列表)
-            * [Deque列表](#deque列表)
+            * [Queue(队列)](#queue队列)
+            * [Deque(双向链表)](#deque双向链表)
+            * [array 模块](#array-模块)
+            * [bisect(二分排序列表)](#bisect二分排序列表)
+            * [headp: 二进制列表](#headp-二进制列表)
+                * [优先级队列](#优先级队列)
         * [tuple(元组)](#tuple元组-1)
             * [namedtuple](#namedtuple)
         * [Dictionaries(字典)](#dictionaries字典)
             * [collections模块](#collections模块)
         * [set(集合)](#set集合)
-        * [静态类型](#静态类型)
+        * [图](#图)
+        * [静态类型(static type)](#静态类型static-type)
             * [静态类型检查工具:mypy](#静态类型检查工具mypy)
             * [静态类型检查工具:pytype](#静态类型检查工具pytype)
             * [基本使用](#基本使用)
+    * [sorted](#sorted)
     * [def(函数)](#def函数)
         * [参数`*argv`, `**kwargs`](#参数argv-kwargs)
         * [内置函数,属性](#内置函数属性)
-        * [装饰器(decorater)](#装饰器decorater)
+        * [装饰器(decorator)](#装饰器decorator)
         * [functools模块](#functools模块)
     * [class(类)](#class类)
         * [@dataclass(简化类的定义)](#dataclass简化类的定义)
@@ -100,14 +109,11 @@
         * [typer](#typer)
         * [click](#click)
         * [prompt_toolkit](#prompt_toolkit)
-    * [向量计算](#向量计算)
-        * [numpy](#numpy)
-            * [numpy 处理图片](#numpy-处理图片)
-        * [pygal](#pygal)
     * [cython](#cython)
-    * [sort(排序)](#sort排序)
+    * [mingshe: 语法糖](#mingshe-语法糖)
     * [PEP 20: pythonic(python之禅)](#pep-20-pythonicpython之禅)
     * [process: 进程, 线程, 协程](#process-进程-线程-协程)
+    * [scientific computing: 科学计算](#scientific-computing-科学计算)
     * [network: 网络](#network-网络)
     * [spider: 网络爬虫和自动化测试](#spider-网络爬虫和自动化测试)
     * [debug: 调试](#debug-调试)
@@ -119,6 +125,20 @@
 # python
 
 - 强类型的动态类型语言
+
+- 编程语言流行排行榜:python在以下排行榜都是第一
+
+    - [TIOBE](https://www.tiobe.com/tiobe-index/)
+
+    - [PYPL](https://pypl.github.io/PYPL.html)
+
+        - 根据Google搜索的排行榜
+
+    - [IEEE](https://spectrum.ieee.org/top-programming-languages/#toggle-gdpr)
+
+    - [O'reilly](https://www.oreilly.com/radar/where-programming-ops-ai-and-the-cloud-are-headed-in-2021/)
+
+- [编程语言benchmarks](https://github.com/kostya/benchmarks)
 
 ## 环境配置
 
@@ -311,6 +331,14 @@ python -m trustme -i baidu.com
   - [ ] GIL
   - [ ] JIT
 
+  - 有两种执行方式
+
+    - 生成java字节码, 在jvm上执行
+
+    - 生成python字节码, 在jvm上的python解释器上执行
+
+    ![image](./imgs/jython.png)
+
 - Cpython:库是 C 写的
 
   - [x] GIL:没有使用引用计数
@@ -321,9 +349,53 @@ python -m trustme -i baidu.com
   - [x] GIL
   - [x] JIT
 
+- [Pyodide](https://github.com/pyodide/pyodide): 转换成WebAssembly在浏览器运行
+
+- [更多python解释器](https://wiki.python.org/moin/PythonImplementations)
+
 - [Why is Python so slow?](https://medium.com/hackernoon/why-is-python-so-slow-e5074b6fe55b)
 
 - [不同python版本的性能对比](https://hackernoon.com/which-is-the-fastest-version-of-python-2ae7c61a6b2b)
+
+### python加速计划
+
+- [Implementation plan for speeding up CPython](https://github.com/markshannon/faster-cpython/blob/master/plan.md)
+
+    - 微软资助的5人开发团队(包括python之父)
+
+    - 要让cpython提升5倍, 分为4个阶段:
+
+    - (1) 3.10 不再生成运行时代码
+    - (2) 3.11 缩小int类型的位数; 提升运算符, 调用和返回的速度; 改进内存布局, 减少内存管理开销; 零开销的异常处理...
+    - (3) 3.12 增加JIT
+    - (4) 3.13 生成高级机械语言
+
+    ![image](./imgs/faster.png)
+
+
+    - 最终目标是加几个[执行层(tiers)](https://github.com/markshannon/faster-cpython/blob/master/tiers.md)
+
+        - 程序分为两部分:
+
+            - 热的(经常执行的): 只要执行速度提升, 即使加载慢一些, 消耗多一点内存也是有意义的
+
+            - 冷的(不经常执行的): 只要加载速度提升, 即使执行慢一些, 也是有意义的
+
+        - 冷热并不容易区分开了, 为了解决这一冷热范围的运行时特征(characteristics), 就要加入执行层
+
+        - 目前考虑0-3层, 层数越高, 代码越热:
+
+            - cpython3.9被视为0-1层之间
+
+            - 开始时, 所有代码都是0层, 随着运行时间的增长进入更高层
+
+            - 0层: 更少的磁盘加载到内存的成本, 更少的内存使用
+
+                - 只运行一次和从不运行的代码, 超过1次进入1层
+
+                    - 比如: 加载模块, 异常处理...
+
+            - 越往高层, 有着更多的优化, 对资源的使用限制更少
 
 ## import and from
 
@@ -525,7 +597,11 @@ print(array)
 
 - 定义: 起点, 终点, 步进
     ```py
-    for i in range(1, 12, 2)
+    for i in range(1, 12, 2):
+        print(i)
+
+    # 步进为负数, 表示反转(reverse)
+    for i in range(12, 1, -2):
         print(i)
 
     for i in range(10_000, 1_000_001, 20_000):
@@ -906,6 +982,8 @@ for i in range(5):
 ```
 
 ### filter(): 过滤
+
+- 返回生成器
 
 - 比`for` 更快
 
@@ -1392,7 +1470,14 @@ count(rlist, 1)
 
     - `str1.upper()`
         > 此时返回的是一个新字符串对象
-- 语法糖
+
+- python 访问变量, 函数, 模块时
+
+    - 1.首先会去查locals(), 这是个本地变量字典
+
+    - 2.如果没有就会去查globals(), 全局变量字典
+
+- 类的特殊方法
     ```py
     a, b = 1, 2
     a + b 等同于 a.__add__(b)
@@ -1480,14 +1565,24 @@ dict1 = {'hello': 1, 'world': 2}
 
 - strip()
 
-```py
-# 去除空格符号
-'   \t123\n  '.strip()
+    - rstrip() 只去除右边
 
-'####123####'.strip('#')
+    - lstrip() 只去除左边
 
-'####123####'.strip('#13')
-```
+    ```py
+    # 去除空格符号
+    '   \t123\n  '.strip()
+
+    '####123####'.strip('#')
+
+    '####123####'.strip('#13')
+    ```
+
+- 比较运算
+
+    ```py
+    str(10) > str(9) # False
+    ```
 
 - startswith()
 
@@ -1512,6 +1607,41 @@ True
 False
 True
 ```
+
+- int转字符串 比较运算
+
+```py
+str(10) > str(9)
+False
+```
+
+#### format()
+
+- [格式化输出](https://python3-cookbook.readthedocs.io/zh_CN/latest/c03/p03_format_numbers_for_output.html)
+
+- 插入变量
+    ```py
+    s = 'name: {name} age: {age}'
+    s.format(name='tz', age=24)  # name: tz age: 24
+    ```
+    - vars()
+    ```py
+    name = 'tz'
+    age = 24
+    s.format_map(vars())  # name: tz age: 24
+    ```
+
+    - format_map() 将变量插入class
+
+    ```py
+    class people:
+        def __init__(self, name, age):
+            self.name = name
+            self.age = age
+
+    p = people('tz', 24)
+    s.format_map(vars(p))   # name: tz age: 24
+    ```
 
 #### 4种字符串格式化方法
 
@@ -1608,10 +1738,11 @@ list1[-2::]
 [4, 5]
 ```
 
-```
-list1 = [1, 2, 3, 4, 5]
-', '.join(x for i in list1)
-```
+- 切割
+    ```py
+    a1, a2, a3 = [1, 2, 3]
+    a1, a2, a3 = "123"
+    ```
 
 - 切割头, 中间, 尾
     ```py
@@ -1670,9 +1801,146 @@ list1 = [1, 2, 3, 4, 5]
     3
     ```
 
-#### Deque列表
+- 去重, 并保持原有列表顺序
 
-- Deque是优化的列表.更快地从两边append()和pop()操作。
+    - 直接set(), 并不能保持原有列表顺序
+        ```py
+        list1 = [1, 2, 2, 8, 1, 5, 3, 5]
+
+        # set()会自动排序
+        set1=set(list1) # {1, 2, 3, 5, 8}
+        ```
+
+    - 使用set() 作过滤
+    ```py
+        def dedupe(data):
+            set1 = set()
+            for i in data:
+                if i not in set1:
+                    yield i
+                    set1.add(i)
+
+
+        list1 = [1, 2, 2, 8, 1, 5, 3, 5]
+        list(dedupe(list1)) # [1, 2, 8, 5, 3]
+        ```
+
+- 挑选列表内的int值
+
+    - compress() 返回生成器: 挑选列表内True的值
+    ```py
+    from itertools import compress
+
+    list1 = [2, '8', 1, '9', '+', 3]
+
+    # 输出生成器: [True, False, True, False, False, True]
+    list2 = [isinstance(i, int) for i in list1]
+
+    # 输出生成器: [2, 1, 3]
+    list(compress(list1, list2))
+    ```
+
+- 挑选列表内的int值, 字符串内是int的值
+    ```py
+    def is_int(i):
+        try:
+            tmp = int(i)
+            return True
+        except ValueError:
+            return False
+
+
+    list1 = [2, '8', '-', 1, '9', '+', 3]
+
+    # 输出生成器: [2, '8', 1, '9', 3]
+    list(filter(is_int, list1))
+    ```
+
+#### Queue(队列)
+
+- list实现
+```py
+class Queue(object):
+    def __init__(self, maxsize=0):
+        self.list = []
+        self.maxsize = maxsize
+        self.size = 0
+
+    def put(self, data):
+        if self.maxsize <= 0 or self.size < self.maxsize:
+            self.size += 1
+            self.list.append(data)
+        else:
+            raise ValueError("size is max")
+
+    def get(self):
+        self.size -= 1
+        return self.list.pop(0)
+
+    def isempty(self):
+        return len(self.list) == 0
+
+
+q = Queue(maxsize=0)
+q.put(1)
+q.put(2)
+print(q.get())
+print(q.get())
+print(q.isempty())
+
+q = queue(maxsize=1)
+q.put(1)
+try:
+    q.put(2)
+except ValueError:
+    print('error')
+```
+
+- Queue: FIFO
+```py
+from queue import Queue
+
+# maxsize 队列限制, 小于或等于0, 表示无限制
+s = Queue(maxsize=0)
+s.put("1")
+s.put("2")
+s.put("3")
+
+# 队列长度
+s.qsize()
+
+s.get()
+s.get()
+s.get()
+
+# 队列是否为空
+s.empty()
+# 队列是否满
+s.full()
+```
+
+- LifoQueue: LIFO等同于stack
+```py
+from queue import LifoQueue
+
+s = LifoQueue()
+s.put("1")
+s.put("2")
+s.put("3")
+
+s.get()
+s.get()
+s.get()
+```
+
+
+#### Deque(双向链表)
+
+- Deque 支持FIFO, LIFO
+
+- 两边的元素append()和pop()的时间复杂度是: O(1)
+
+    - 但随机访问的中间元素是: O(n)
 
 ```py
 from collections import deque
@@ -1698,14 +1966,125 @@ deque([1, 2, 3, 4])
 deque([0, 1, 2, 3, 4])
 deque([1, 2, 3])
 ```
+- maxlen: 维护一个固定长度, 新的元素会挤掉旧的
+```py
+de = deque(maxlen=3)
+de.append(1)
+de.append(2)
+de.append(3)
 
-- Deque的时间复杂度O(1); 列表的时间复杂度为O(n)。
-
-    - 但timeit的测试结果是list比deque快1.68倍
+print(de)
+de.append(4)
+print(de)
+```
+输出
+```
+deque([1, 2, 3], maxlen=3)
+deque([2, 3, 4], maxlen=3)
+```
 
 - [timeit性能对比: list vs deque](./python-debug.md#deque)
 
-    - list 比 deque 快 1.68倍
+    - Deque的append, pop操作是O(1); 而列表是O(n)。
+
+    - 但timeit的测试结果是list比deque快1.68倍
+
+#### array 模块
+
+- 连续内存
+```py
+from array import array
+
+# i 表示int类型
+array1 = array('i', range(3))
+# d 表示float类型
+array1 = array('d', [1.1, 2.2, 3.3])
+```
+
+#### bisect(二分排序列表)
+
+- 通过插入并排序的时间复杂度O(n log n), 来维持查找的时间复杂度O(log(n))
+
+```py
+import bisect
+
+list1 = [1, 3, 4, 4, 4, 6, 7]
+
+# 查找元素, 返回最右. 时间复杂度O(log(n))
+print(bisect.bisect(list1, 4))
+
+# 返回最左
+print(bisect.bisect_left(list1, 4))
+
+# 返回最右
+print(bisect.bisect_right(list1, 4))
+
+# 插入元素并排序. 时间复杂度O(n log n)
+bisect.insort(list1, 5)
+print(list1)
+
+# 在从0开始, 在第4个元素插入元素5
+bisect.insort_right(list1, 5, 0, 4)
+print(list1)
+```
+
+#### headp: 二进制列表
+
+- append()和pop()的时间复杂度是: O(log n)
+
+```py
+import heapq
+
+q = []
+heapq.heappush(q, (1, "a"))
+heapq.heappush(q, (3, "b"))
+heapq.heappush(q, (2, "c"))
+
+while q:
+    print(heapq.heappop(q))
+```
+
+- heapify()找到列表里最小的值. 时间复杂度是: O(log n)
+```py
+list1 = [4, 2, 1, 6, 4, 7, 5]
+heapq.heapify(list1)
+print(list1)
+print(list1[0])
+print(heapq.heappop(list1))
+```
+输出
+```
+[1, 2, 4, 6, 4, 7, 5]
+1
+1
+```
+
+##### 优先级队列
+```py
+class PriorityQueue:
+    def __init__(self):
+        self.queue = []
+        self._index = 0
+
+    def push(self, data, priority):
+        # 最小的数会先pop, 因此要加负数priority
+        heapq.heappush(self.queue, (-priority, self._index, data))
+        self._index += 1
+
+    def pop(self):
+        # 返回(-3, 1, 'b'), 所以要加[-1]
+        return heapq.heappop(self.queue)[-1]
+
+
+q = PriorityQueue()
+q.push('a', 1)
+q.push('b', 3)
+q.push('c', 2)
+q.push('d', 3)
+
+while q.queue:
+    print(q.pop())
+```
 
 ### tuple(元组)
 
@@ -1760,7 +2139,17 @@ n = ('hello', 'Worrld', '!', 'in', 'Python')
 ninsert(n, 3, 'test')
 ```
 
+- 第一个元素可以比较大小. 列表也一样可以
+```py
+a = (1, 'a')
+b = (2, 'b')
+print(a < b)
+print(a > b)
+```
+
 #### namedtuple
+
+- 可以代替字典, 有着比字典更小的空间
 
 ```py
 from collections import namedtuple
@@ -1796,9 +2185,41 @@ print(list1)
 ['tz', 24]
 ```
 
+- `_replace()` 修改value.  会创建一个新的实例
+
+```py
+# 报错: AttributeError: can't set attribute
+a.age = 20
+```
+
+```py
+# 会创建一个新的实例
+a = a._replace(age=20)
+```
+
+- 定义函数, 输入字典, 将nametuple的实例, 修改字典值
+```py
+from collections import namedtuple
+
+
+def replace(dict1):
+    return a._replace(**dict1)
+
+
+people = namedtuple('people', ('name', 'age'))
+a = people('tz', 24)
+
+dict1 = {'name': 'tz', 'age': 21}
+
+# 输出: people(name='tz', age=21)
+a = replace(dict1)
+```
+
+
 ### Dictionaries(字典)
 
 - [dict每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Dictionaries.html)
+
 
 > key不能重复
 
@@ -1822,17 +2243,67 @@ a.update(b)
 # or
 a |= b
 ```
+- 去重key值. 通过set()作过滤器
+
+    ```py
+    def dedupe(data, key=None):
+        set1 = set()
+        for i in data:
+            val = i if key is None else key(i)
+            if val not in set1:
+                yield i
+                set1.add(val)
+
+    dict1 = [{'x': 1, 'y': 2},  {'x': 3, 'y': 4}, {'x': 1, 'y': 2}, {'x': 1, 'y': 3}]
+
+    # 去重key. 提取key值后保存进set
+    list(dedupe(dict1, key=lambda d: d['x']))
+
+    # 去重key, value. 转换成tuple后保存进set
+    list(dedupe(dict1, key=lambda d: (d['x'], d['y'])))
+    ```
+    输出
+    ```
+    [{'x': 1, 'y': 2}, {'x': 3, 'y': 4}]
+    [{'x': 1, 'y': 2}, {'x': 3, 'y': 4}, {'x': 1, 'y': 3}]
+    ```
+
+- 去重文件重复行
+    ```py
+    with open('/tmp/test', 'r') as file:
+        for line in dedupe(file):
+            print(line.strip('\n'))
+    ```
 
 - 通过转换kv, 去除重复value
 
 ```py
-test_dict = { 'gfg' : 10, 'is' : 15, 'best' : 20, 'for' : 10, 'geeks' : 20}
-temp = {val : key for key, val in test_dict.items()}
-res = {val : key for key, val in temp.items()}
+test_dict = {'a': 10, 'b': 15, 'c': 20, 'd': 10, 'e': 20}
+temp = {val: key for key, val in test_dict.items()}
+res = {val: key for key, val in temp.items()}
 print(res)
 ```
+输出
+```
+{'d': 10, 'b': 15, 'e': 20}
+```
 
-- zip()两个数组转换为字典
+- zip()
+    - 找到最大, 小值的value, 以及对value进行排序
+        ```py
+        dict1 = {
+                'x': 1,
+                'y': 2,
+                'z': 3,
+                'o': 3
+                }
+
+        dict1_zip = zip(dict1.values(), dict1.keys())
+        min(dict1_zip)
+        max(dict1_zip)
+        sorted(dict1_zip)
+        ```
+    - 两个数组转换为字典
     ```py
     k = ['k1', 'k2']
     v = ['v1', 'v2']
@@ -1878,6 +2349,55 @@ print(res)
     ('k2', 'v2')
     ```
 
+- 一个key保存多个value:
+
+    - 字典包字典
+        ```py
+        dict1 = {
+                'a': {'1', '2', '3'},
+                'b': {'2', '3', '4'}
+                }
+        dict1['a']
+        ```
+
+    - setdefault():
+        ```py
+        dict1 = {}
+        dict1.setdefault('a', []).append(1)
+        dict1.setdefault('a', []).append(2)
+        ```
+
+    - defaultdict()
+        ```py
+        from collections import defaultdict
+
+        d = defaultdict(list)
+        d['a'].append(1)
+        d['a'].append(2)
+        ```
+
+- 集合运算. keys支持集合运算, values不支持, items带keys所以支持
+    ```py
+    dict1 = {
+            'x': 1,
+            'y': 2,
+            'z': 3
+            }
+
+    dict2 = {
+            'x': 1,
+            'y': 20,
+            'o': 3
+            }
+
+    # & 交集
+    dict1.keys() & dict2.keys()   # {'x', 'y'}
+    dict1.items() & dict2.items() # {('x', 1)}
+
+    # - 差集
+    dict1.keys() - dict2.keys() # {'z'}
+    ```
+
 #### collections模块
 
 - [geeksforgeeks文档](https://www.geeksforgeeks.org/python-collections-module/)
@@ -1915,12 +2435,12 @@ print(res)
 
 - defaultdict
 
-    - append().  value为列表
+    - append()
 
         ```py
         from collections import defaultdict
 
-        # 定义list
+        # 定义value为list
         d = defaultdict(list)
 
         for i in range(5):
@@ -1977,7 +2497,55 @@ print(res)
         print(d)
         ```
 
+    - OrderedDict: 双向链表, 新元素会加入末尾, 内存比普通字典大2倍多
+        ```py
+        from collections import OrderedDict
+
+        d = OrderedDict()
+        d['a'] = 1
+        d['b'] = 2
+        d['c'] = 3
+
+        for key in d:
+            print(key, d[key])
+        ```
+- ChainMap():
+
+```py
+from collections import ChainMap
+
+dict1 = {'x': 0, 'y': 1}
+dict2 = {'x': 2, 'z': 3}
+
+c = ChainMap(dict1, dict2)
+
+# 只会输出第一个key的值
+# 输出: 0
+c['x']
+
+# 输出: ['x', 'z', 'y']
+list(c.keys())
+
+# 输出: [0, 3, 1]
+list(c.values())
+```
+
+- new_child() 手动创建
+```
+c = ChainMap()
+c['x'] = 0
+c['y'] = 1
+c = c.new_child()
+c['x'] = 2
+c['z'] = 3
+
+# 输出: ChainMap({'x': 2, 'z': 3}, {'x': 0, 'y': 1})
+print(c)
+```
+
 ### set(集合)
+
+- 比list使用更多的内存, 但查询速度更快
 
 - 匹配元素重复2次以上
 
@@ -2015,7 +2583,47 @@ print(res)
     {6}
     ```
 
-### 静态类型
+### 图
+
+![image](./imgs/dawg.png)
+- 减少内存
+
+- DAWG(有向无环图)
+
+    - 共享前缀, 后缀
+
+    - 不能修改
+
+    ```py
+    import dawg
+
+    str1 = 'hello world'
+
+    dawg1 = dawg.DAWG('str1')
+    ```
+
+- trie只共享前缀
+
+    - `marisa_trie`
+
+        - 不能修改
+
+    ```py
+    import marisa_trie
+    trie = marisa_trie.Trie('str1')
+    ```
+
+    - `datrie`
+
+        - 可以修改
+
+    ```py
+    import datrie
+    set1 = set('str1')
+    datrie1 = datrie.BaseTrie(set1)
+    ```
+
+### 静态类型(static type)
 
 #### [静态类型检查工具:mypy](https://github.com/python/mypy)
 
@@ -2074,21 +2682,30 @@ test('123')
 
     - 相当于解耦
 
-- 源码:
-    ```py
-    class o:
-        def __init__(self, x):
-            self.x = []
-    ```
+    - 1.源码:
 
-- `pyi`文件:
-    ```py
-    from typing import List
+        ```py
+        class o:
+            def __init__(self, x):
+                self.x = []
+        ```
 
-    class o:
-        x: List[nothing]
-        def __init__(self, x) -> None: ...
-    ```
+
+    - 2.生成`pyi`文件. 文件保存在`.pytype/pyi/`下
+
+        ```sh
+        pytype test.py
+        ```
+
+    - 3.`pyi`文件:
+
+        ```py
+        from typing import List
+
+        class o:
+            x: List[nothing]
+            def __init__(self, x) -> None: ...
+        ```
 
 #### 基本使用
 
@@ -2335,6 +2952,119 @@ r = resource()
 close_all([f, r])
 ```
 
+## sorted
+
+- 找出列表内元素组合的最大值. 通过字符串的比较, 使其变成一个排序问题
+
+    - 普通方法
+        ```py
+        list1 = [10, 9, 33, 62, 31]
+        list2 = [str(i) for i in list1]
+        print(''.join(sorted(list2, reverse=True))) # 962333110
+        ```
+    - 通过cmp_to_key(), 让sorted的key参数(指定排序规则)接受2个值
+        ```py
+        from functools import cmp_to_key
+
+        # 只能是int(y+x)-int(x+y), 而不能是 int(x+y)-int(x+y)
+        list2 = sorted(list2, key=cmp_to_key(lambda x, y:int(y+x)-int(x+y)))
+        print(''.join(list2))
+        ```
+
+- dict内的value排序
+
+    - lambda方法
+        ```py
+        users = [
+                {'name': 'user0', 'age': 24, 'uid': 1000},
+                {'name': 'user1', 'age': 22, 'uid': 1002},
+                {'name': 'user2', 'age': 22, 'uid': 1001},
+                {'name': 'user3', 'age': 21, 'uid': 1003}
+                ]
+
+        # 排序age
+        print(sorted(users, key=lambda x: x['age']))
+        # 先排序age, 再排序uid
+        print(sorted(users, key=lambda x: (x['age'], x['uid'])))
+        ```
+    - itemgetter()
+        ```py
+        from operator import itemgetter
+
+        print(sorted(users, key=itemgetter('age')))
+        print(sorted(users, key=itemgetter('age', 'uid')))
+        ```
+
+- 对dict的val进行分组
+
+    - groupy()
+        ```py
+        users = [
+        {'name': 'user0', 'age': 24, 'scores': 60},
+        {'name': 'user1', 'age': 22, 'scores': 100},
+        {'name': 'user2', 'age': 22, 'scores': 50},
+        {'name': 'user3', 'age': 21, 'scores': 60}
+        ]
+
+        from itertools import groupby
+        from operator import itemgetter
+
+        # 排序
+        users.sort(key=itemgetter('scores'))
+
+        for k, items in groupby(users, key=itemgetter('scores')):
+            print(k)
+            for i in items:
+                print(i)
+        ```
+        输出
+        ```
+        50
+        {'name': 'user2', 'age': 22, 'scores': 50}
+        60
+        {'name': 'user0', 'age': 24, 'scores': 60}
+        {'name': 'user3', 'age': 21, 'scores': 60}
+        100
+        {'name': 'user1', 'age': 22, 'scores': 100}
+        ```
+    - defaultdict()
+        ```py
+        from collections import defaultdict
+
+        dict1 = defaultdict(list)
+        for i in users:
+            dict1[i['scores']].append(i)
+
+        for i in dict1[60]:
+            print(i)
+        ```
+        输出
+        ```
+        {'name': 'user0', 'age': 24, 'scores': 60}
+        {'name': 'user3', 'age': 21, 'scores': 60}
+        ```
+
+- class内属性排序
+
+    - lambda方法
+        ```py
+        class User:
+        def __init__(self, id):
+            self.uid = id
+
+        def __repr__(self):
+            return f'{self.uid}'
+
+        users = [User(3), User(2), User(1)]
+        sorted(users, key=lambda u: u.uid) # [1 2 3]
+        ```
+    - itemgetter()
+        ```py
+        from operator import attrgetter
+
+        sorted(users, key=attrgetter('uid')) # [1 2 3]
+        ```
+
 ## def(函数)
 
 ### 参数`*argv`, `**kwargs`
@@ -2407,7 +3137,7 @@ test()
 test.__dict__
 ```
 
-### 装饰器(decorater)
+### 装饰器(decorator)
 
 > 输入输出函数
 
@@ -2845,7 +3575,7 @@ print(a.__class__.__class__)
 
 - `__str__()` 和 ` __repr__()`
 
-    - `__str__`: 给用户看的. 执行print(class_name), 返回字符串
+    - `__str__`: 给用户看的. print()或str(), 才会被调用
 
     ```py
     class people(object):
@@ -3245,6 +3975,50 @@ with open(f, 'r') as file:
     except:
         pass
 ```
+
+- 字符串写入
+
+    - 如果两个字符串很小，第一个更好，因为I/O系统调用天生就慢
+
+    - 如果两个字符串很大，第二个更好，因为它避免了创建一个很大的临时结果并且要复制大量的内存块数据
+
+    ```py
+    # Version 1
+    f.write(str1 + str2)
+
+    # Version 2
+    f.write(str1)
+    f.write(str2)
+    ```
+    - 定义写入大小函数
+
+    ```py
+    def sample():
+        yield 'Is'
+        yield 'Chicago'
+        yield 'Not'
+        yield 'Chicago?'
+
+
+    def combine(source, maxsize):
+        parts = []
+        size = 0
+        for part in source:
+            parts.append(part)
+            size += len(part)
+            if size > maxsize:
+                print('#')
+                yield ''.join(parts)
+                parts = []
+                size = 0
+        yield ''.join(parts)
+
+
+    with open('/tmp/file', 'w') as f:
+        for part in combine(sample(), 32768):
+            f.write(part)
+    ```
+
 
 ### json
 
@@ -4616,229 +5390,6 @@ main()
 
     > 打造像ipython, mycli的交互REPL
 
-## 向量计算
-
-### numpy
-
-- [官方文档](https://numpy.org/doc/stable/user/quickstart.html)
-
-> 默认数据类型是 `float64`
-
-```py
-import numpy as np
-
-# zeros() 创建3行2列数组,全0的数组
-a = np.zeros((3, 2))
-
-# astype 对现有转换数据类型
-a.astype(int)
-
-# 或者 dtype 指定数据类型
-a = np.zeros((3, 2), dtype=np.int32)
-
-# random.rand() 创建3行2列的随机数组
-np.random.rand(3, 2)
-
-# shape 获取数组行列
-a.shape
-
-# arange()创建0到8的数组
-np.arange(0, 9)
-
-# arange()创建0到9的数组
-np.arange(10)
-
-# arange() 每个元素 * 2
-np.arange(10) * 2
-
-# arange() 每个元素平方
-np.arange(10) ** 2
-
-
-# linspace() 创建有步进的数组
-np.linspace(0, 9, 4)
-np.linspace(0, 1, 5)
-
-# r_ 自定义数组.把0放在中间
-np.r_[1:5,0,6:10]
-
-# array()自定义数组
-
-# 1行2列
-np.array([2, 4])
-
-# 3行1列
-np.array([[10], [20], [30]])
-
-# 配合arange()
-np.array([np.arange(1, 9),
-          np.arange(0, 8)])
-```
-
-- 计算
-
-```py
-a = np.arange(10)
-
-# 左右交换
-np.append(a[4:],a[:4])
-
-# 或者
-b = int(a.size / 2)
-np.append(a[b:],a[:b])
-
-# 或者使用split()
-b, c = np.split(a, 2)
-np.append(c, b)
-
-# 左右交换后,分别翻转
-np.append(a[b::-1], a[9:b:-1])
-
-# 以步进为2,左右交换后,分别翻转
-np.append(a[b::-1][::2], a[9:b:-1][::2])
-```
-
-- 维度变换
-
-```py
-a= np.array([[ 0,  1,  2,  3],
-               [10, 11, 12, 13],
-               [20, 21, 22, 23],
-               [30, 31, 32, 33],
-               [40, 41, 42, 43]])
-
-# 转换为单行单维
-a.ravel()
-np.hstack(a)
-
-# 转换成2行
-a.reshape(2,-1)
-# 或者手动转换,并重新赋值
-a.resize((2,10))
-
-# 行列交换
-a.T
-
-# column_stack()列表类型转数组,并进行同维度的合并
-a = [[0,0],[1,1],[2,2]]
-b = [[9,9],[8,8],[7,7]]
-np.column_stack((a,b))
-# 或者
-np.c_[a, b]
-```
-
-- 以数组i,j的行列分布,获取数组a值
-
-```py
-a = np.arange(10)
-i = np.array([0,1])
-j = np.array([[0],[1]])
-a[i]
-a[j]
-a[l]
-
-# 以i为行, j为列截取数组b(像截图一样)
-b = np.arange(12).reshape(3,4)
-l = (i, j)
-b[l]
-
-i = np.array([[0, 1],[1, 2]])
-j = np.array([[2, 1],[3, 3]])
-b[:,i]
-b[:,j]
-```
-
-```py
-a = np.arange(2, 4)
-b = np.arange(3, 5)
-```
-
-- a + b
-
-    ```py
-    [2, 3]
-      +
-    [3, 4]
-      =
-    [5, 7]
-    ```
-
-- np.dot(a, b)
-
-    ```py
-    ??
-    ```
-
-- np.sum()
-
-    ```py
-    a = np.array([np.arange(1, 9),
-              np.arange(0, 8)])
-
-    # axis=0 行相加
-    a.sum(axis=0)
-
-    # axis=1 列相加
-    a.sum(axis=1)
-    ```
-
-- 不同尺寸也能计算
-
-    > 自动扩展相同尺寸
-
-    - a + b
-
-    ```py
-    a = np.array([2, 4])
-    b = np.array([[10], [20], [30]])
-    ```
-
-    ```py
-    [2, 4] + [10, 10] = [12, 14]
-    [2, 4] + [20, 20] = [22, 24]
-    [2, 4] + [30, 30] = [32, 34]
-    ```
-#### numpy 处理图片
-
-- [Image Processing with Numpy](https://www.degeneratestate.org/posts/2016/Oct/23/image-processing-with-numpy/)
-
-```py
-import numpy as np
-from PIL import Image
-
-# 打开图片并转换数组
-image = np.array(Image.open('/tmp/test.jpg'))
-image.shape
-
-# 提取红色
-image_red = image[:,:,0]
-# 显示
-Image.fromarray(image_blue).show()
-```
-
-- 合并图片
-
-```py
-image1 = Image.open('/home/tz/1.jpg')
-image2 = Image.open('/home/tz/2.jpg')
-
-# 裁剪为800 * 600
-rect = 0, 0, 600, 800
-image1 = image1.crop(rect)
-image2 = image2.crop(rect)
-image1 = np.array(image1)
-image2 = np.array(image2)
-
-# 合并
-image_merge = image1 * 0.5 + image2 * 0.5
-# 转换整数
-image_merge = image_merge.astype(np.uint8)
-
-image.fromarray(image_merge).show()
-```
-
-### pygal
-
 ## cython
 
 - [官方文档](https://cython.readthedocs.io/en/latest/src/tutorial/cython_tutorial.html)
@@ -4876,9 +5427,11 @@ image.fromarray(image_merge).show()
 
     - 使用cython静态类型快16倍
 
-## sort(排序)
-
-- [算法实现](https://zhuanlan.zhihu.com/p/49271189)
+## [mingshe: 语法糖](https://mingshe.aber.sh/)
+- `|>` 管道
+```py
+10 |> range |> list |> print
+```
 
 ## [PEP 20: pythonic(python之禅)](https://www.python.org/dev/peps/pep-0020/)
 
@@ -4892,6 +5445,8 @@ import this
 
 ## [process: 进程, 线程, 协程](./python-process.md)
 
+## [scientific computing: 科学计算](./python-sc.md)
+
 ## [network: 网络](./python-network.md)
 
 ## [spider: 网络爬虫和自动化测试](./python-spider.md)
@@ -4902,11 +5457,20 @@ import this
 
 - [python官方文档](https://docs.python.org/)
 
+- [awesome-python-books](https://github.com/Junnplus/awesome-python-books/blob/master/README-ZH_CN.md)
+
+- [CPython-Internals](https://github.com/zpoint/CPython-Internals/blob/master/README_CN.md)
+
+
 - [Problem Solving with Algorithms and Data Structures using Python: 此书可以在线交互式运行代码](https://runestone.academy/runestone/books/published/pythonds3/index.html)
 
-- [Python Built-in Functions: 内置函数用法](https://www.programiz.com/python-programming/methods/built-in)
+    - [Problem Solving with Algorithms and Data Structures using Python 中文版](https://github.com/facert/python-data-structure-cn)
+
+- [Python Built-in Functions: 搜索内置函数的用法](https://www.programiz.com/python-programming/methods/built-in)
 
 - [free-python-books](https://github.com/pamoroso/free-python-books)
+
+- [CPython-Internals](https://github.com/zpoint/CPython-Internals/blob/master/README_CN.md)
 
 - [python - 100 天从新手到大师](https://github.com/jackfrued/Python-100-Days)
 
@@ -4916,7 +5480,7 @@ import this
 
 - [Python/Golang Web 入坑指南](https://python-web-guide.readthedocs.io/zh/latest/)
 
-- [新潮小众的 Python 最新语法合集](https://zhuanlan.zhihu.com/p/363157743)
+- [腾讯技术工程: 新潮小众的 Python 最新语法合集](https://zhuanlan.zhihu.com/p/363157743)
 
 # 第三方软件资源
 
