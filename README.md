@@ -14,9 +14,13 @@
         * [PEP 572: 海象运算符(:=)](#pep-572-海象运算符)
         * [三元运算符(Ternary)](#三元运算符ternary)
     * [while, for(循环)](#while-for循环)
-        * [`enumerate()` index的语法糖](#enumerate-index的语法糖)
-        * [yield](#yield)
+        * [enumerate() index的语法糖](#enumerate-index的语法糖)
+        * [iter(迭代器)](#iter迭代器)
+            * [itertools模块](#itertools模块)
+        * [yield(生成器)](#yield生成器)
+            * [yield from(递归生成器)](#yield-from递归生成器)
             * [send() 类似协程](#send-类似协程)
+        * [zip() 迭代多个对象](#zip-迭代多个对象)
     * [match case(模式匹配): 需要python 3.10](#match-case模式匹配-需要python-310)
     * [函数式编程](#函数式编程)
         * [map()](#map)
@@ -36,11 +40,14 @@
         * [基本概念](#基本概念)
         * [动态类型](#动态类型)
         * [str(字符串)](#str字符串)
+            * [print()](#print)
             * [format()](#format)
             * [4种字符串格式化方法](#4种字符串格式化方法)
             * [string模块](#string模块)
+            * [io模块的StringIO, BytesIO](#io模块的stringio-bytesio)
         * [list(列表)](#list列表)
             * [Queue(队列)](#queue队列)
+            * [CircularQueue(环形队列)](#circularqueue环形队列)
             * [Deque(双向链表)](#deque双向链表)
             * [array 模块](#array-模块)
             * [bisect(二分排序列表)](#bisect二分排序列表)
@@ -58,31 +65,40 @@
             * [基本使用](#基本使用)
     * [sorted](#sorted)
     * [def(函数)](#def函数)
+        * [闭包(closure)函数](#闭包closure函数)
         * [参数`*argv`, `**kwargs`](#参数argv-kwargs)
         * [内置函数,属性](#内置函数属性)
         * [装饰器(decorator)](#装饰器decorator)
         * [functools模块](#functools模块)
     * [class(类)](#class类)
+        * [继承](#继承)
         * [@dataclass(简化类的定义)](#dataclass简化类的定义)
         * [setattr(添加实例化后的属性)](#setattr添加实例化后的属性)
         * [元类(metaclass)](#元类metaclass)
         * [内置函数,属性](#内置函数属性-1)
-        * [itertools(迭代器)](#itertools迭代器)
         * [class的内置装饰器](#class的内置装饰器)
-        * [`__getitem__` 和 `__class_getitem__` 函数](#__getitem__-和-__class_getitem__-函数)
-        * [`__getattribute__`](#__getattribute__)
-        * [partialmethod() 只能封装是类里的方法](#partialmethod-只能封装是类里的方法)
+        * [`__enter__()`, `__exit__()`: 定义with上下文](#__enter__-__exit__-定义with上下文)
+        * [`__getitem__` 和 `__class_getitem__`: 定义带[]的调用 `object['arg']`](#__getitem__-和-__class_getitem__-定义带的调用-objectarg)
+        * [`__getattribute__`: 当访问不存在的属性时调用](#__getattribute__-当访问不存在的属性时调用)
+        * [functools.partialmethod() 只能封装是类里的方法](#functoolspartialmethod-只能封装是类里的方法)
     * [file](#file)
+        * [readinto()](#readinto)
+        * [hdf5](#hdf5)
+        * [自定义数据块读写, 而不是行读写](#自定义数据块读写-而不是行读写)
+        * [读写压缩文件](#读写压缩文件)
         * [json](#json)
         * [yaml](#yaml)
+        * [toml](#toml)
         * [pickle](#pickle)
             * [pickletools](#pickletools)
         * [shelve](#shelve)
-    * [lib(库)](#lib库)
-        * [time](#time)
-        * [logging](#logging)
         * [pathlib](#pathlib)
         * [os](#os)
+    * [日志](#日志)
+        * [logging](#logging)
+        * [loguru](#loguru)
+    * [lib(库)](#lib库)
+        * [time](#time)
         * [subprocess](#subprocess)
             * [Popen](#popen)
                 * [asyncio(异步)](#asyncio异步)
@@ -623,7 +639,7 @@ print(array)
     [4, 5]
     ```
 
-### `enumerate()` index的语法糖
+### enumerate() index的语法糖
 
 - 基本使用
     ```py
@@ -657,10 +673,208 @@ print(array)
     3 2
     ```
 
+### iter(迭代器)
 
-### yield
+- iter()
 
-> 生成器. 像`return`那样返回后,函数会暂停运行,可使用`__next__()`方法让函数继续执行
+```py
+list1 = [0, 1, 2]
+it = iter(list1)
+
+next(it) # 0
+next(it) # 1
+next(it) # 2
+next(it) # StopIteration
+```
+
+- `__iter__()` 将迭代请求传递给内部的 `_list` 属性
+- `__next__()` 返回下一个迭代
+
+- 迭代文件的每一行
+
+```py
+# 相当于cat /home/tz/test.py
+
+with open('/home/tz/test.py') as file:
+    while True:
+        try:
+            line = next(file)
+            print(line)
+        except StopIteration:
+            exit(0)
+```
+
+- iter() 控制读取大小
+
+```py
+import sys
+
+with open('/home/tz/test.py') as file:
+    # 每次读10
+    for chunk in iter(lambda: file.read(10), ''):
+        sys.stdout.write(chunk)
+```
+
+- iter() 实现`range()`
+
+```py
+class range:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.x <= self.y:
+            x = self.x
+            self.x += 1
+            return x
+        else:
+            raise StopIteration
+
+
+a = range(1, 10)
+for i in a:
+    print(i)
+```
+
+#### itertools模块
+
+- [itertools模块代码](https://docs.python.org/3/library/itertools.html#itertools.product)
+
+- islice() 实现切片
+    ```py
+    from itertools import islice
+
+    # 等同于a[1:6]
+    a = range(1, 10)
+    for i in islice(a, 1, 6):
+        print(i)
+    ```
+
+- permutations() 组合所有元素(不包含自身)
+    ```py
+    from itertools import permutations
+
+    list1 = ['a', 'b', 'c']
+    for i in permutations(list1):
+        print(i)
+    ```
+    输出
+    ```
+    ('a', 'b', 'c')
+    ('a', 'c', 'b')
+    ('b', 'a', 'c')
+    ('b', 'c', 'a')
+    ('c', 'a', 'b')
+    ('c', 'b', 'a')
+    ```
+
+    - 定义组合的数量
+    ```py
+    from itertools import permutations
+
+    list1 = ['a', 'b', 'c']
+    for i in permutations(list1, 2):
+        print(i)
+    ```
+    输出
+    ```
+    ('a', 'b')
+    ('a', 'c')
+    ('b', 'a')
+    ('b', 'c')
+    ('c', 'a')
+    ('c', 'b')
+    ```
+
+- combinations_with_replacement() 组合所有元素(包含自身)
+    ```py
+    from itertools import combinations_with_replacement
+
+    list1 = ['a', 'b', 'c']
+    for i in combinations_with_replacement(list1, 3):
+        print(i)
+    ```
+
+<span id="zip_longest"></span>
+- zip_longest() 解决两个对象元素不等
+
+    ```py
+    from itertools import zip_longest
+
+    # 对象元素不等
+    list1 = [1, 2, 3, 4]
+    list2 = [10, 20, 30, 40, 50]
+
+    # 设置填充元素的值为0
+    for i in zip_longest(list1, list2, fillvalue=0):
+        print(i)
+    ```
+
+- chain() 更好的 for x in list1 + list2:
+    ```py
+    from itertools import chain
+
+    list1 = [1, 2, 3, 4]
+    list2 = [10, 20, 30, 40]
+
+    for x in chain(list1, list2):
+        print(x)
+    ```
+    输出
+    ```
+    1
+    2
+    3
+    4
+    10
+    20
+    30
+    40
+    ```
+
+### yield(生成器)
+
+- 返回一个迭代器, 函数会暂停运行
+
+    - 生成器和普通函数不同, 只能用于迭代操作
+
+- `next()` 或 `__next__()`迭代下一次
+
+```py
+def count(start, stop):
+    while True:
+        yield start
+        start += stop
+
+yd = count(10, 1)
+yd.__next__()
+next(yd)
+```
+
+- yield 实现fib
+```py
+class fib:
+    def __init__(self, n):
+        self.x, self.y = 0, 1
+        self.n = n
+
+    def __iter__(self):
+        x, y = self.x, self.y
+        while y <= self.n:
+            x, y = x + 1, y + x
+            yield y
+
+
+a = fib(10)
+for i in a:
+    print(i)
+```
+
+- yield 实现grep
 
 ```py
 def grep(pattern, filename):
@@ -671,20 +885,31 @@ def grep(pattern, filename):
 
 get_elem = grep('2', '/tmp/test')
 
-# 让函数继续执行
+# 迭代下一次
 get_elem.__next__()
-get_elem.__next__()
+next(get_elem)
 ```
 
-```py
-def count(start, stop):
-    while True:
-        yield start
-        start += stop
+#### yield from(递归生成器)
 
-yd = count(10, 1)
-yd.__next__()
-yd.__next__()
+```py
+from collections import Iterable
+
+
+def flatten(items):
+    for x in items:
+        # 如果x是生成器, 就迭代自身
+        if isinstance(x, Iterable):
+            yield from flatten(x)
+        else:
+            yield x
+
+
+list1 = [1, 2, [3, 4, [5, 6], 7], 8]
+
+# 输出 1 2 3 4 5 6 7 8
+for x in flatten(list1):
+    print(x)
 ```
 
 #### send() 类似协程
@@ -735,6 +960,42 @@ r = xicheng()
 r.__next__()
 r.send('123,321')
 ```
+
+### zip() 迭代多个对象
+
+- 两个index, 迭代两个对象
+```py
+list1 = [1, 2, 3, 4]
+list2 = [10, 20, 30, 40]
+
+for x, y in zip(list1, list2):
+    print(x, y)
+```
+输出
+```
+1 10
+2 20
+3 30
+4 40
+```
+
+- 只有单个index的时候, 输出元组
+```py
+list1 = [1, 2, 3, 4]
+list2 = [10, 20, 30, 40]
+
+for i in zip(list1, list2):
+    print(i)
+```
+输出
+```
+(1, 10)
+(2, 20)
+(3, 30)
+(4, 40)
+```
+
+- [itertools.zip_longest() 解决两个对象元素不等的情况](#zip_longest)
 
 ## match case(模式匹配): 需要python 3.10
 
@@ -1272,6 +1533,7 @@ def square_root(x):
 square_root(256)
 ```
 
+<++>
 牛顿法:
 
 ```py
@@ -1615,6 +1877,43 @@ str(10) > str(9)
 False
 ```
 
+#### print()
+
+- sep: 分隔符, end: 末尾字符
+```py
+print(1, 2, 3, 4) # 1 2 3 4
+print(1, 2, 3, 4, sep=',') # 1,2,3,4
+print(1, 2, 3, 4, sep=',', end='!!') # 1,2,3,4!!
+```
+
+- end 合并为一行
+```py
+for i in range(3):
+    print(i)
+
+for i in range(3):
+    print(i, end='')
+```
+输出
+```
+0
+1
+2
+
+012
+```
+
+- 类型转换. 使用 `*` 代替join()
+```py
+list1 = [1, 2, 3, 4]
+
+# join写法
+print(','.join(str(i) for i in list1)) # 1,2,3,4
+
+# *写法
+print(*list1, sep=',') # 1,2,3,4
+```
+
 #### format()
 
 - [格式化输出](https://python3-cookbook.readthedocs.io/zh_CN/latest/c03/p03_format_numbers_for_output.html)
@@ -1685,6 +1984,51 @@ str1 = f'name {0} age {1}'.format(name, age)
 from string import Template
 str1 = Template("name $name age $age")
 print(str1.substitute(name = 'tz', age = '24'))
+```
+
+#### io模块的StringIO, BytesIO
+
+- 使用操作文件方式, 来操作文本, 二进制字符串
+
+    - StringIO 和 BytesIO 并没有文件描述符
+    - 可以用于单元测试
+
+- io.StringIO(): 文本字符串
+
+```py
+import io
+
+s = io.StringIO()
+
+# 写入
+s.write('Hello World')
+# print写入
+print('Hello World', file=s)
+
+# 读取
+s.getvalue()
+
+# 读取前4个字符
+s.read(4)
+```
+
+- io.BytesIO(): 文本字符串
+
+    - 不能使用print()写入
+
+```py
+import io
+
+s = io.BytesIO()
+
+# 写入
+s.write(b'Hello World')
+# print写入
+
+# 读取
+s.getvalue()
+# 读取前4个字符
+s.read(4)
 ```
 
 ### list(列表)
@@ -1933,6 +2277,62 @@ s.get()
 s.get()
 ```
 
+#### CircularQueue(环形队列)
+```py
+class CircularQueue():
+    def __init__(self, maxsize):
+        self.maxsize = maxsize
+        self.queue = [None] * maxsize
+        # -1表示队列为空
+        self.head = self.tail = -1
+
+    def enqueue(self, data):
+        if (self.tail + 1) % self.maxsize == self.head:
+            print("The circular queue is full\n")
+
+        # 第一次添加元素
+        elif self.head == -1:
+            self.head = 0
+            self.tail = 0
+            self.queue[self.tail] = data
+        else:
+            self.tail = (self.tail + 1) % self.maxsize
+            self.queue[self.tail] = data
+
+    def dequeue(self):
+        if self.head == -1:
+            print("The circular queue is empty\n")
+
+        # 当队列只剩一个元素时
+        elif self.head == self.tail:
+            temp = self.queue[self.head]
+            self.head = self.tail = -1
+            return temp
+        else:
+            temp = self.queue[self.head]
+            self.head = (self.head + 1) % self.maxsize
+            return temp
+
+    def print(self):
+        if self.head == -1:
+            print("No element in the circular queue")
+        else:
+            for i in range(self.head, self.tail + 1):
+                print(self.queue[i], end=" ")
+            print()
+
+
+q = CircularQueue(5)
+
+# 加入队列
+for i in range(5):
+    q.enqueue(i)
+q.print()
+
+# 出队列
+q.dequeue()
+q.print()
+```
 
 #### Deque(双向链表)
 
@@ -1941,6 +2341,45 @@ s.get()
 - 两边的元素append()和pop()的时间复杂度是: O(1)
 
     - 但随机访问的中间元素是: O(n)
+
+- list实现
+```py
+class Deque:
+    def __init__(self):
+        self.items = []
+
+    def isEmpty(self):
+        return self.items == []
+
+    def appendright(self, item):
+        self.items.append(item)
+
+    def appendleft(self, item):
+        self.items.insert(0, item)
+
+    def popleft(self):
+        return self.items.pop(0)
+
+    def popright(self):
+        return self.items.pop()
+
+    def qsize(self):
+        return len(self.items)
+
+
+d = Deque()
+d.appendright(8)
+d.appendright(5)
+d.appendleft(7)
+d.appendleft(10)
+print(d.items)
+
+d.popright()
+d.popleft()
+print(d.items)
+```
+
+- deque()
 
 ```py
 from collections import deque
@@ -2288,21 +2727,25 @@ print(res)
 {'d': 10, 'b': 15, 'e': 20}
 ```
 
-- zip()
-    - 找到最大, 小值的value, 以及对value进行排序
+- zip(): 迭代多个对象
+
+    - 对value进行排序
         ```py
         dict1 = {
-                'x': 1,
+                'o': 3,
                 'y': 2,
-                'z': 3,
-                'o': 3
+                'x': 1,
+                'z': 3
                 }
 
         dict1_zip = zip(dict1.values(), dict1.keys())
-        min(dict1_zip)
-        max(dict1_zip)
-        sorted(dict1_zip)
+        print(sorted(dict1_zip))
         ```
+        输出
+        ```
+        [(1, 'x'), (2, 'y'), (3, 'o'), (3, 'z')]
+        ```
+
     - 两个数组转换为字典
     ```py
     k = ['k1', 'k2']
@@ -3067,6 +3510,68 @@ close_all([f, r])
 
 ## def(函数)
 
+- 返回多个值
+
+```py
+def f():
+    return 1, 2, 3
+
+tuple1 = f()
+a, b, c = f()
+```
+
+- lambda: 匿名函数
+
+```py
+# x是自由变量, 运行时绑定, 而不是定义时绑定
+x = 10
+f = lambda y: x + y
+
+# 30
+f(20)
+```
+- 推导式的自由变量
+```py
+# 错误, n没有绑定, 在这里会一直等于4
+funcs = [lambda x: x+n for n in range(5)]
+
+# 绑定n
+funcs = [lambda x, n=n: x+n for n in range(5)]
+
+for f in funcs:
+    print(f(0))
+```
+
+- [回调函数](https://python3-cookbook.readthedocs.io/zh_CN/latest/c07/p10_carry_extra_state_with_callback_functions.html)
+    - 函数, 类, 协程. 三个例子
+
+### 闭包(closure)函数
+
+```py
+def closure():
+    n = 0
+
+    # 闭包函数
+    def func():
+        print('n=', n)
+
+    # nonlocal可以修改函数内部变量
+    def set_n(value):
+        nonlocal n
+        n = value
+
+    func.set_n = set_n
+    return func
+
+
+# f = func()
+f = closure()
+f() # 0
+
+f.set_n(1)
+f() # 1
+```
+
 ### 参数`*argv`, `**kwargs`
 
 - `*argv`: 表示剩下的元组元素
@@ -3213,11 +3718,11 @@ b.name
 ```py
 from functools import partial
 
-def power(a, b):
-    return a**b
+def p(a, b):
+    print(a, b)
 
-pow3 = partial(power, b = 3)
-pow3(2)
+p1 = partial(p, b = 3)
+p1(2) # 2 3
 ```
 
 - cmp_to_key()
@@ -3286,6 +3791,23 @@ test
 ```
 
 ## class(类)
+
+### 继承
+
+- `__` 私有不能被继承; `_` 可以被继承
+```py
+class A():
+    def __f(self):
+        print('in A')
+
+
+class B(A):
+    def __init__(self):
+        super().__f()
+
+# 报错
+B()
+```
 
 ### @dataclass(简化类的定义)
 
@@ -3621,64 +4143,6 @@ print(a.__class__.__class__)
     in __str__: my name is tz
     ```
 
-- iterator迭代器:
-
-    - `__iter__()` 和 `__ next__()`实现简单的`range()`函数
-
-        ```py
-        class range:
-            def __init__(self, x, y):
-                self.x = x
-                self.y = y
-
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                if self.x <= self.y:
-                    x = self.x
-                    self.x += 1
-                    return x
-                else:
-                    raise StopIteration
-
-
-        a = range(1, 10)
-        for i in a:
-            print(i)
-        ```
-
-    - fib()
-
-        ```py
-        class fib:
-            def __init__(self, n):
-                self.x, self.y = 0, 1
-                self.n = n
-
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                self.x, self.y = self.x + 1, self.y + self.x
-                if self.y <= self.n:
-                    return self.y
-                else:
-                    raise StopIteration
-
-
-        a = fib(10)
-        for i in a:
-            print(i)
-        ```
-
-- 
-
-### itertools(迭代器)
-
-- [默认迭代函数实现](https://docs.python.org/3/library/itertools.html#itertools.product)
-
-
 ### class的内置装饰器
 
 - @property
@@ -3689,6 +4153,7 @@ print(a.__class__.__class__)
     class people(object):
         def __init__(self, name = 'tz'):
             self.name = name
+
         @property
         def age(self):
             return 24
@@ -3704,8 +4169,10 @@ print(a.__class__.__class__)
     ```py
     class people(object):
         __age = 24
+
         def __init__(self, name = 'tz'):
             self.name = name
+
         @property
         def age(self):
             return self.__age
@@ -3806,7 +4273,10 @@ print(a.__class__.__class__)
     a.name
     ```
 
-### `__getitem__` 和 `__class_getitem__` 函数
+### `__enter__()`, `__exit__()`: 定义with上下文
+
+### `__getitem__` 和 `__class_getitem__`: 定义带[]的调用 `object['arg']`
+
 - `__getitem__` 函数:
     ```py
     class o:
@@ -3846,7 +4316,7 @@ print(a.__class__.__class__)
     o1[int]
     ```
 
-### `__getattribute__`
+### `__getattribute__`: 当访问不存在的属性时调用
 
 ```py
 class people:
@@ -3877,7 +4347,7 @@ o.name
 o.age
 ```
 
-### partialmethod() 只能封装是类里的方法
+### functools.partialmethod() 只能封装是类里的方法
 
 ```py
 from functools import partialmethod
@@ -3909,17 +4379,18 @@ blue
 
 | 权限 | 操作
 |------|--------------------------------------|
-| r    | 只读                                 |
-| w    | 只写                                 |
+| r    | 只读(不会覆盖文件)                   |
+| w    | 只写(如果文件不存在就创建, 覆盖文件) |
+| x    | 只写(文件不存在才写入)               |
 | r+   | 读写(不会覆盖文件)                   |
 | w+   | 读写(如果文件不存在就创建, 覆盖文件) |
 | rb+  | 读写二进制文件                       |
 | wb+  | 只写二进制文件                       |
+| xb   | 只写二进制文件(文件不存在才写入)     |
 | a    | 只写追加尾部                         |
 | a+   | 读写追加尾部(如果文件不存在就创建)   |
 
 - 写入文件
-
 ```py
 with open('/tmp/test', 'w') as file:
     data = "123 321 abc ABC"
@@ -3931,39 +4402,39 @@ with open('/tmp/test', 'w') as file:
 ```
 
 - 读取文件
-
 ```py
 # 指定编码 file = open('/tmp/test', 'r', encoding='utf-8')
 
 # 文件必须存在
 file = open('/tmp/test')
+
 # 只能读取一次
 print(file.read())
 file.close()
 
-# with格式, 能多次读取, 并且自动close()
+# with 能读取多次
 with open('/tmp/test') as file:
         data = file.read()
-        print(data)
+```
 
-# 简单修改后写入到test1
-data = data.swapcase()
-with open('/tmp/test1', 'w') as file:
-        file.write(data)
-
+- 读取多个文件
+```py
 # 边读边写,将首字符转为大写
 with open('/tmp/test', 'r') as intf, open('/tmp/test1', 'w') as outf:
     for line in intf:
         print([word.capitalize() for word in line.split()], file=outf)
 
-# 读取多文件
+# for 读取
 file = ('test', 'test1')
 for i in file:
     f = open(i)
     print(f.read())
 
 f.close()
+```
 
+- 防止读取错误
+```py
 # 防止文件不存在, 报错
 if not os.path.exists(file):
     os.mknod(file)
@@ -3976,7 +4447,137 @@ with open(f, 'r') as file:
         pass
 ```
 
-- 字符串写入
+- 读写二进制文件
+```py
+# 读取需要解码, 写入需要编码
+with open('somefile.bin', 'rb') as f:
+    data = f.read(16)
+    text = data.decode('utf-8')
+
+with open('somefile.bin', 'wb') as f:
+    text = 'Hello World'
+    f.write(text.encode('utf-8'))
+```
+
+### readinto()
+
+- 和 read() 不同的是, readinto() 填充已存在的缓冲区, 而不是为新对象重新分配内存再返回它们
+
+    - 可以避免大量的内存分配操作
+
+    - 返回实际读取的字节数
+
+- 二进制io, 可以直接读写C结构, 比如array(数组)
+```py
+import array
+
+nums_write = array.array('i', [1, 2, 3, 4])
+with open('/tmp/test.bin', 'wb') as f:
+    f.write(nums_write)
+
+nums_read = array.array('i', [0, 0, 0, 0])
+with open('/tmp/test.bin', 'rb') as f:
+    f.readinto(nums_read)
+
+print(nums_read)
+```
+
+- 读取文件到一个数组里
+```py
+import os.path
+
+def read_into_buffer(filename):
+    # 设置缓冲区为文件的大小
+    buf = bytearray(os.path.getsize(filename))
+
+    with open(filename, 'rb') as f:
+        f.readinto(buf)
+    return buf
+
+# /tmp/file 内容为: 1234567890
+array = read_into_buffer('/tmp/file')
+
+# 使用数组切片
+print(array[0:5]) # b'12345'
+```
+
+- 使用mmap 模块内存映射文件, 实现数组切片
+```py
+import os
+import mmap
+
+def memory_map(filename, access=mmap.ACCESS_WRITE):
+    size = os.path.getsize(filename)
+    fd = os.open(filename, os.O_RDWR)
+    return mmap.mmap(fd, size, access=access)
+
+# mmap.ACCESS_COPY 只写内存, 而不会写入文件
+file = memory_map('/tmp/file', mmap.ACCESS_COPY)
+
+# 修改第一个字符, 57是字符串9的ascii码
+file[0] = 57
+print(file[0:5]) # b'92345'
+```
+
+### hdf5
+
+- [Quick Start Guide](https://docs.h5py.org/en/latest/quick.html)
+
+- 序列化数组
+
+```py
+import numpy as np
+import h5py
+
+# 生成一个大数据集
+arr = np.random.randn(1000)
+
+# 写入. 数组的名字为arary1
+with h5py.File('/tmp/test.hdf5', 'w') as f:
+    dset = f.create_dataset("array1", data=arr)
+
+# 读取
+with h5py.File('/tmp/test.hdf5', 'r') as f:
+    data = f['array1']
+
+    print(min(data))
+    print(max(data))
+    print(data[:15])
+```
+
+- 压缩文件
+```py
+# 默认压缩等级是4
+with h5py.File('/tmp/test.hdf5', 'w') as f:
+    dset = f.create_dataset('array1', data=arr1, compression="gzip", compression_opts=9)
+```
+
+- 一个文件保存多个数组
+```py
+import numpy as np
+import h5py
+
+arr1 = np.random.randn(1000)
+arr2 = np.random.randn(1000)
+
+# 写入两个数组
+with h5py.File('/tmp/test.hdf5', 'w') as f:
+    dset = f.create_dataset("array1", data=arr1)
+    dset = f.create_dataset("array2", data=arr2)
+
+# 读取两个数组
+with h5py.File('/tmp/test.hdf5', 'r') as f:
+    arr1 = f['array1']
+    arr2 = f['array2']
+
+    # 查询arr1大于0的值的位置, 再读取arr2所对应的位置. [:]表示加载到内存
+    data = arr2[arr1[:]>0]
+```
+
+
+### 自定义数据块读写, 而不是行读写
+
+- 多个字符串写入
 
     - 如果两个字符串很小，第一个更好，因为I/O系统调用天生就慢
 
@@ -4019,6 +4620,44 @@ with open(f, 'r') as file:
             f.write(part)
     ```
 
+- 二进制读
+
+    - functools.partial: 每次被调用时读取固定字节的可调用对象
+
+```py
+from functools import partial
+
+# 数据块大小
+SIZE = 32
+
+with open('/tmp/file', 'rb') as f:
+    records = iter(partial(f.read, SIZE), b'')
+    for r in records:
+        print(r)
+```
+
+### 读写压缩文件
+```py
+import gzip
+
+# 必须是二进制字符串
+data = b'test'
+
+# 写入
+with gzip.open('/tmp/file.gz', 'w') as f:
+        f.write(data)
+
+# 读取
+with gzip.open('/tmp/file.gz', 'r') as f:
+        data = f.read()
+```
+
+- compresslevel: 设置压缩等级
+
+```py
+with gzip.open('/tmp/file.gz', 'w', compresslevel=5) as f:
+    f.write(data)
+```
 
 ### json
 
@@ -4051,6 +4690,51 @@ with open('test.json', 'w') as file:
   json.dump(dict1, file, ensure_ascii=False)
 ```
 
+- 通过object_hook参数, 将json字典转为对象
+```py
+class JSONObject:
+    def __init__(self, d):
+        self.__dict__ = d
+
+s = '{"name": "tz", "age": 24}'
+data = json.loads(s, object_hook=JSONObject)
+
+# 读取属性
+data.name # tz
+data.age # 24
+```
+
+- 通过object_pairs_hook参数(json只有list, dict), 传递给其他类型
+
+```py
+from collections import OrderedDict
+
+s = '{"name": "tz", "age": 24}'
+
+# 创建OrderedDict类型
+data = json.loads(s, object_pairs_hook=OrderedDict)
+print(data) # OrderedDict([('name', 'tz'), ('age', 24)])
+```
+
+- pprint.pprint(): 更好的显示
+
+```py
+from pprint import pprint
+
+data = {
+        'completed_in': 0.074,
+        'max_id': 264043230692245504,
+        'max_id_str': '264043230692245504',
+        'next_page': '?page=2&max_id=264043230692245504&q=python&rpp=5',
+        'page': 1
+        }
+
+print(json.dumps(data, indent=4))
+# 或者
+json_str = json.dumps(data)
+pprint(json_str)
+```
+
 - 没有代码注入的安全问题
 
 ### yaml
@@ -4081,6 +4765,8 @@ with open('test.yaml', 'w') as file:
     yaml.safe_load(f)
     ```
 
+### [toml](https://github.com/toml-lang/toml)
+
 ### pickle
 
 - 安全问题
@@ -4089,7 +4775,7 @@ with open('test.yaml', 'w') as file:
 
     - [思辨｜浅谈Python的Pickle模块](https://mp.weixin.qq.com/s?src=11&timestamp=1636190790&ver=3420&signature=eUxnKBaczfVeupHnz1AQTW6rKwqztJQovwcukJQGLp1m58IcvKfnyDu-dSLWHJRQkO3yJJE6QbcWa3duD7gEKGdmhRpN1e3HD*kWLmk0DrbeBn0rhB-vz9hl7G7fsqFi&new=1)
 
-    - 数据和指令保存在一起不加区分, 会有代码注入风险, 因此不要对未知来源的数据进行unpickle操作
+    - 数据和指令保存在一起不加区分, 会有代码注入风险, 因此不要对未知来源的数据进行loads(反序列化)
 
 
 - 序列化对象
@@ -4207,59 +4893,6 @@ file['a']
 file.close()
 ```
 
-## lib(库)
-
-### time
-
-| time | 符号 |
-|------|------|
-| 年   | %Y   |
-| 月   | %m   |
-| 日   | %d   |
-| 时   | %H   |
-| 分   | %M   |
-| 秒   | %S   |
-
-```py
-import time
-
-# 年 月 日 时 分 秒
-current_time = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
-print(current_time)
-```
-
-- 统计函数运行的时间
-
-```py
-from time import time, sleep
-
-start = time()
-sleep(1)
-end = time()
-print('%.2f秒' % (end - start))
-```
-
-### logging
-
-```py
-import logging
-
-logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
-
-# 设置日志输出文件
-# filemode='w' 为重头输出, 'a' 追加输出
-logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-
-# 设置等级debug以上才输出
-logging.basicConfig(level=logging.DEBUG)
-
-# 设置时间格式
-logging.basicConfig(filename='app.log', filemode='w',format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-
-# 禁用等级CRITICAL以下的输出
-logging.disable(logging.CRITICAL)
-```
-
 ### pathlib
 
 - [你应该使用 pathlib 替代 os.path](https://zhuanlan.zhihu.com/p/87940289)
@@ -4351,6 +4984,7 @@ os.unlink(filepath)
 
 ```py
 from os import walk
+
 # 输出文件和目录
 for root, dirs, files in os.walk(".", topdown=False):
    for name in files:
@@ -4365,6 +4999,66 @@ for root, dirs, files in os.walk(".", topdown=False):
           src = (os.path.join(root, name))
           dst = (os.path.join(root, 'AAA'))
           os.rename(src,dst)
+```
+## 日志
+
+### logging
+
+```py
+import logging
+
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
+
+# 设置日志输出文件
+# filemode='w' 为重头输出, 'a' 追加输出
+logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+
+# 设置等级debug以上才输出
+logging.basicConfig(level=logging.DEBUG)
+
+# 设置时间格式
+logging.basicConfig(filename='app.log', filemode='w',format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
+# 禁用等级CRITICAL以下的输出
+logging.disable(logging.CRITICAL)
+```
+
+### [loguru](https://github.com/Delgan/loguru)
+
+- [腾讯技术工程: Python 中日志记录新技能](https://zhuanlan.zhihu.com/p/436603775)
+
+- 不需要繁琐的配置
+
+## lib(库)
+
+### time
+
+| time | 符号 |
+|------|------|
+| 年   | %Y   |
+| 月   | %m   |
+| 日   | %d   |
+| 时   | %H   |
+| 分   | %M   |
+| 秒   | %S   |
+
+```py
+import time
+
+# 年 月 日 时 分 秒
+current_time = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
+print(current_time)
+```
+
+- 统计函数运行的时间
+
+```py
+from time import time, sleep
+
+start = time()
+sleep(1)
+end = time()
+print('%.2f秒' % (end - start))
 ```
 
 ### subprocess
@@ -5460,7 +6154,6 @@ import this
 - [awesome-python-books](https://github.com/Junnplus/awesome-python-books/blob/master/README-ZH_CN.md)
 
 - [CPython-Internals](https://github.com/zpoint/CPython-Internals/blob/master/README_CN.md)
-
 
 - [Problem Solving with Algorithms and Data Structures using Python: 此书可以在线交互式运行代码](https://runestone.academy/runestone/books/published/pythonds3/index.html)
 

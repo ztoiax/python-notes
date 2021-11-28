@@ -53,7 +53,7 @@
 
 - [geeksforgeeks: sorting-algorithms](https://www.geeksforgeeks.org/sorting-algorithms/)
 
-- [programiz: 数据结构](https://www.programiz.com/dsa)
+- [排序算法](https://big-o.io/)
 
 - [zhihu: 算法实现](https://zhuanlan.zhihu.com/p/49271189)
 
@@ -65,8 +65,8 @@
 
 ```py
 def bubbleSort(list1):
-    lengh = len(list1) - 1
-    for i in range(lengh, 0, -1):
+    length = len(list1) - 1
+    for i in range(length, 0, -1):
         for j in range(i):
             if list1[j] > list1[j+1]:
                 list1[j], list1[j+1] = list1[j+1], list1[j]
@@ -83,8 +83,8 @@ def bubbleSort(list1):
 
     ```py
     def bubbleSort(list1):
-        lengh = len(list1)
-        for i in range(1, lengh):
+        length = len(list1)
+        for i in range(1, length):
             for j in range(i, 0, -1):
                 if list1[j-1] > list1[j]:
                     exchange(list1, j-1, j)
@@ -108,13 +108,90 @@ def bubbleSort(list1):
 
 
     def bubbleSort(list1):
-        lengh = len(list1)
-        for i in range(1, lengh):
+        length = len(list1)
+        for i in range(1, length):
             iter(list1, i)
     ```
 
+#### comb sort(梳子排序)
+
+- 优化的冒泡算法: 每个元素并不是传统的与后一个元素(i+1)对比, 而是对比不断缩小的长度系数(i+gap)
+
+![image](./imgs/combSort.png)
+
+```py
+def getNextGap(gap):
+    # 系数为1.3
+    gap = gap / 1.3
+    if gap < 1:
+        return 1
+    else:
+        return int(gap)
+
+
+def combSort(list1):
+    length = len(list1)
+    gap = length
+
+    while gap > 1:
+        gap = getNextGap(gap)
+
+        for i in range(0, length-gap):
+            # 对比加上系数的元素
+            if list1[i] > list1[i + gap]:
+                list1[i], list1[i + gap] = list1[i + gap], list1[i]
+```
+
+#### cocktail Sort(混合排序)
+
+- 冒泡排序的变种. 先从左到右, 再从右到左
+
+```py
+def cocktailSort(list1):
+    length = len(list1)
+    start = 0
+    end = length - 1
+
+    while length > 1:
+        # 从左到右
+        for i in range(start, end):
+            if (list1[i] > list1[i + 1]):
+                list1[i], list1[i + 1] = list1[i + 1], list1[i]
+
+        # 从右到左
+        for i in range(end-1, start-1, -1):
+            if (list1[i] > list1[i + 1]):
+                list1[i], list1[i + 1] = list1[i + 1], list1[i]
+
+        start += 1
+        end -= 1
+        length -= 2
+```
+
+#### oddEvenSort
+
+- 冒泡排序的变种. 奇数排序一次, 偶数排序一次
+
+![image](./imgs/odd-even-sort.png)
+```py
+def oddEvenSort(list1):
+    length = len(list1)
+    half = length // 2
+    while half > 0:
+        for i in range(1, length-1, 2):
+            if list1[i] > list1[i+1]:
+                list1[i], list1[i+1] = list1[i+1], list1[i]
+
+        for i in range(0, length-1, 2):
+            if list1[i] > list1[i+1]:
+                list1[i], list1[i+1] = list1[i+1], list1[i]
+        half -= 1
+```
+
 ### insertion sort(插入排序)
+
 ![image](./imgs/insertionSort.png)
+
 ```py
 def insert(list1, j, i):
     tmp = list1[i]
@@ -126,8 +203,8 @@ def insert(list1, j, i):
 
 ```py
 def insertionSort(list1):
-lengh = len(list1)
-for i in range(1, lengh):
+length = len(list1)
+for i in range(1, length):
     for j in range(i, -1, -1):
         if list1[j-1] > list1[i]:
             pass
@@ -149,8 +226,8 @@ def iter(list1, j, i):
 
 
 def insertionSort(list1):
-    lengh = len(list1)
-    for i in range(1, lengh):
+    length = len(list1)
+    for i in range(1, length):
         iter(list1, i - 1, i)
 ```
 #### 二分插入排序
@@ -161,8 +238,8 @@ def insertionSort(list1):
 
 ```py
 def insertionSort(list1):
-    lengh = len(list1)
-    for i in range(lengh):
+    length = len(list1)
+    for i in range(length):
         key = list1[i]
         l = 0
         r = i - 1
@@ -188,10 +265,10 @@ def insertionSort(list1):
 
 ```py
 def selectSort(list1):
-    lengh = len(list1)
-    for i in range(lengh):
+    length = len(list1)
+    for i in range(length):
         index = i
-        for j in range(i+1, lengh):
+        for j in range(i+1, length):
             if list1[index] > list1[j]:
                 index = j
 
@@ -201,10 +278,10 @@ def selectSort(list1):
 - 选取最小值, 加入新的列表. 迭代方法
 ```py
 def sort(list1):
-    lengh = len(list1)
-    if lengh > 1:
+    length = len(list1)
+    if length > 1:
         small, small_index = list1[0], 0
-        for i in range(1, lengh):
+        for i in range(1, length):
             if list1[i] < small:
                 small = list1[i]
                 small_index = i
@@ -220,6 +297,33 @@ list2 = []
 list1 = [9, 7, 8, 10, 1, 5]
 sort(list1)
 print(list2)
+```
+
+#### pancake Sort(煎饼排序)
+
+- 选择排序的变种, 找到最大值, 移动至末尾
+
+![image](./imgs/pancakeSort.png)
+
+```py
+# 查询列表内最大值的偏移量
+def findMax(list1, length):
+    max_index = 0
+    for i in range(0, length):
+        if list1[i] > list1[max_index]:
+            max_index = i
+    return max_index
+
+
+def pancakeSort(list1):
+    length = len(list1)
+    for i in range(length, 1, -1):
+        max_index = findMax(list1, i)
+
+        # 移动至末尾
+        if max_index != i - 1:
+            list1[0], list1[max_index] = list1[max_index], list1[0]
+            list1[0], list1[i-1] = list1[i-1], list1[0]
 ```
 
 ### merge sort(归并排序)
@@ -261,10 +365,10 @@ def merge(left, right, compare):
     result = []
 
     l = r = 0
-    lengh_left, lengh_right = len(left), len(right)
+    length_left, length_right = len(left), len(right)
 
     # 对比两个列表的第一个元素, 将小的元素移动到目标列表(result)的末尾
-    while l < lengh_left and r < lengh_right:
+    while l < length_left and r < length_right:
         if compare(left[l], right[r]):
             result.append(left[l])
             l += 1
@@ -273,11 +377,11 @@ def merge(left, right, compare):
             r += 1
 
     # 检查剩余元素
-    while l < lengh_left:
+    while l < length_left:
         result.append(left[l])
         l += 1
 
-    while r < lengh_right:
+    while r < length_right:
         result.append(right[r])
         r += 1
 
@@ -285,28 +389,66 @@ def merge(left, right, compare):
 
 
 def mergeSort(list1, compare=lambda x, y: x < y):
-    lengh = len(list1)
-    if lengh < 2:
+    length = len(list1)
+    if length < 2:
         return list1[:]
     else:
-        mid = lengh // 2
+        mid = length // 2
         left = mergeSort(list1[:mid], compare)
         right = mergeSort(list1[mid:], compare)
         return merge(left, right, compare)
 ```
+### bitonic Sort(双音排序)
+
+![image](./imgs/bitonicSort.png)
+
+```py
+def compAndSwap(list1, i, j, dire):
+    if dire==1 and list1[i] > list1[j]\
+            or dire==0 and list1[i] < list1[j]:
+        list1[i], list1[j] = list1[j], list1[i]
+
+
+def bitonicMerge(list1, low, length, dire):
+    if length > 1:
+        mid = length // 2
+        for i in range(low, low+mid):
+            compAndSwap(list1, i, i+mid, dire)
+        bitonicMerge(list1, low, mid, dire)
+        bitonicMerge(list1, low+mid, mid, dire)
+
+
+def bitonic(list1, low, length, dire):
+    if length > 1:
+          mid = length // 2
+          bitonic(list1, low, mid, 1)
+          bitonic(list1, low+mid, mid, 0)
+          bitonicMerge(list1, low, length, dire)
+
+
+def bitonicSort(list1):
+    up = 1
+    bitonic(list1, 0, len(list1), up)
+
+
+list1 = [3, 7, 4, 8, 6, 2, 1, 5]
+bitonicSort(list1)
+print(list1)
+```
+
 
 ### shell sort(希尔排序)
 
 ![image](./imgs/shellSort.gif)
 ```py
 def shellSort(list1):
-    lengh = len(list1)
-    partition = lengh // 2
+    length = len(list1)
+    partition = length // 2
     while partition > 0:
         i = 0
         j = partition
 
-        while j < lengh:
+        while j < length:
             if list1[i] > list1[j]:
                 list1[i], list1[j] = list1[j], list1[i]
 
@@ -314,9 +456,9 @@ def shellSort(list1):
             j += 1
 
             k = i
-            while k-lengh > -1:
-                if list1[k-lengh] > list1[k]:
-                    list1[k-lengh], list1[k] = list1[k], list1[k-lengh]
+            while k-length > -1:
+                if list1[k-length] > list1[k]:
+                    list1[k-length], list1[k] = list1[k], list1[k-length]
                 k -= 1
 
         partition //= 2
@@ -331,8 +473,8 @@ def partition(start, end, list1):
     pivot = list1[start]
 
     while start < end:
-        lengh = len(list1)
-        while start < lengh and list1[start] <= pivot:
+        length = len(list1)
+        while start < length and list1[start] <= pivot:
             start += 1
 
         while list1[end] > pivot:
@@ -357,8 +499,8 @@ def quickSort(list1):
 ```py
 def quickSort(list1):
     i = l = 0
-    lengh = len(list1)
-    r = lengh - 1
+    length = len(list1)
+    r = length - 1
 
     while i <= r:
         if list1[i] < 1:
@@ -387,31 +529,31 @@ print(list1)
 ![image](./imgs/heapSort.gif)
 
 ```py
-def heapify(list1, lengh, i):
+def heapify(list1, length, i):
     root = i
     l = 2 * i + 1 # 左节点 = 2*i + 1
     r = 2 * i + 2 # 右节点 = 2*i + 2
 
     # 查找比root数大的节点
-    if l < lengh and list1[root] < list1[l]:
+    if l < length and list1[root] < list1[l]:
         root = l
 
     # 先对比右节点
-    if r < lengh and list1[root] < list1[r]:
+    if r < length and list1[root] < list1[r]:
         root = r
 
     # 如果找到比root数大的节点后, 就交换和递归
     if root != i:
         list1[i], list1[root] = list1[root], list1[i]
-        heapify(list1, lengh, root)
+        heapify(list1, length, root)
 
 
 def heapSort(list1):
-    lengh = len(list1)
-    for i in range(lengh//2-1, -1, -1):
-        heapify(list1, lengh, i)
+    length = len(list1)
+    for i in range(length//2-1, -1, -1):
+        heapify(list1, length, i)
 
-    for i in range(lengh-1, 0, -1):
+    for i in range(length-1, 0, -1):
         list1[i], list1[0] = list1[0], list1[i]  # swap
         heapify(list1, i, 0)
 ```
@@ -422,8 +564,8 @@ import heapq
 
 def heapSort(list1):
     result = []
-    lengh = len(list1)
-    for i in range(lengh):
+    length = len(list1)
+    for i in range(length):
         # 将最小值移动到list1[0]
         heapq.heapify(list1)
         result.append(list1[0])
@@ -514,6 +656,55 @@ def radixSort(list1):
         exp *= 10
 ```
 
+### pigeonhole Sort(范围排序)
+
+- 类似于计数排序
+
+```py
+def pigeonholeSort(list1):
+    my_min = min(list1)
+    my_max = max(list1)
+    size = my_max - my_min + 1
+
+    # 生成桶
+    buckets = [0] * size
+
+    # 每个元素的值减去最小值, 分配对应的桶
+    for x in list1:
+        buckets[x - my_min] += 1
+
+    # 将桶的值返回给列表
+    i = 0
+    for count in range(size):
+        while buckets[count] > 0:
+            buckets[count] -= 1
+            # 桶值加上最小值
+            list1[i] = count + my_min
+            i += 1
+```
+
+### stooge sort
+
+![image](./imgs/stoogeSort.png)
+
+```py
+def stooge(list1, l, r):
+    if l >= r:
+        return
+
+    # left 对比 right
+    if list1[l]>list1[r]:
+        list1[l], list1[r] = list1[r], list1[l]
+
+    if r - l + 1 > 2:
+        stooge(list1, l, r-1)
+        stooge(list1, l+1, r)
+
+
+def stoogeSort(list1):
+    stooge(list1, 0, len(list1)-1)
+```
+
 ### Timsort
 
 > 是python, java...等默认的排序算法
@@ -567,6 +758,9 @@ def radixSort(list1):
         [(1, 2, 3, 4, 5, 7,)]
         ```
 ### 煎饼翻转
+
+- 输入一个数n, 对列表内的前n个元素翻转
+
 ```py
 def switch(list1):
     l = 0
@@ -584,6 +778,102 @@ def sort(list1, n):
 
 list1 = [3, 2, 4, 1]
 print(sort(list1, 4))
+```
+
+## search(搜索)
+
+### binary search(二分搜索)
+
+```py
+def binarySearch(list1, x):
+    low = 0
+    high = len(list1) - 1
+
+    while low <= high:
+
+        mid = low + (high - low)//2
+
+        if list1[mid] == x:
+            return mid
+
+        elif list1[mid] < x:
+            low = mid + 1
+
+        else:
+            high = mid - 1
+
+    return -1
+
+
+list1 = [3, 4, 5, 6, 7, 8, 9]
+result = binarySearch(list1, 5)
+print(result)
+```
+
+### hash tab(hash表)
+
+- 桶越多, 碰撞次数越少
+
+    - 没有碰撞复杂度为O(1)
+
+    - 完全碰撞复杂度为O(n)
+
+```py
+class intdict(object):
+    def __init__(self, numBuckets):
+        self.buckets = []
+        self.numBuckets = numBuckets
+
+        # 一个列表代表一个桶
+        for _ in range(numBuckets):
+            self.buckets.append([])
+
+    def add(self, key, val):
+        hashlist = self.buckets[key%self.numBuckets]
+        length = len(hashlist)
+        for i in range(length):
+            if hashlist[i][0] == key:
+                hashlist[i] = (key, val)
+                return
+
+        hashlist.append((key, val))
+
+    def get(self, key):
+        hashlist = self.buckets[key%self.numBuckets]
+        for i in hashlist:
+            if i[0] == key:
+                return i[1]
+
+
+# 16个桶
+dict1 = intdict(16)
+
+# 20个值
+for i in range(20):
+    dict1.add(i, i)
+
+for i in dict1.buckets:
+    print(i)
+
+```
+输出
+```
+[(0, 0), (16, 16)]
+[(1, 1), (17, 17)]
+[(2, 2), (18, 18)]
+[(3, 3), (19, 19)]
+[(4, 4)]
+[(5, 5)]
+[(6, 6)]
+[(7, 7)]
+[(8, 8)]
+[(9, 9)]
+[(10, 10)]
+[(11, 11)]
+[(12, 12)]
+[(13, 13)]
+[(14, 14)]
+[(15, 15)]
 ```
 
 ## Linked List(链表)
@@ -807,9 +1097,21 @@ link1.search(0)
 
 ### Blockchain(区块链)
 
-## binary tree(二叉树)
+## graph(图)
 
-### 判断是否为二叉树
+- [图介绍](https://www.section.io/engineering-education/graph-data-structure-python/)
+
+### 图的应用
+
+- [pagerank](https://en.wikipedia.org/wiki/PageRank)
+
+    > 为网页的每个链接分配权重, 测量网页内部连接的相对重要性
+
+## tree(树)
+
+### binary tree(二叉树)
+
+#### 判断是否为二叉树
 
 ```py
 class SearchTree(object):
@@ -864,78 +1166,21 @@ False
 True
 ```
 
-## hash tab(hash表)
-
-- 桶越多, 碰撞次数越少
-
-    - 没有碰撞复杂度为O(1)
-
-    - 完全碰撞复杂度为O(n)
-
-```py
-class intdict(object):
-    def __init__(self, numBuckets):
-        self.buckets = []
-        self.numBuckets = numBuckets
-
-        # 一个列表代表一个桶
-        for _ in range(numBuckets):
-            self.buckets.append([])
-
-    def add(self, key, val):
-        hashlist = self.buckets[key%self.numBuckets]
-        lengh = len(hashlist)
-        for i in range(lengh):
-            if hashlist[i][0] == key:
-                hashlist[i] = (key, val)
-                return
-
-        hashlist.append((key, val))
-
-    def get(self, key):
-        hashlist = self.buckets[key%self.numBuckets]
-        for i in hashlist:
-            if i[0] == key:
-                return i[1]
-
-
-# 16个桶
-dict1 = intdict(16)
-
-# 20个值
-for i in range(20):
-    dict1.add(i, i)
-
-for i in dict1.buckets:
-    print(i)
-
-```
-输出
-```
-[(0, 0), (16, 16)]
-[(1, 1), (17, 17)]
-[(2, 2), (18, 18)]
-[(3, 3), (19, 19)]
-[(4, 4)]
-[(5, 5)]
-[(6, 6)]
-[(7, 7)]
-[(8, 8)]
-[(9, 9)]
-[(10, 10)]
-[(11, 11)]
-[(12, 12)]
-[(13, 13)]
-[(14, 14)]
-[(15, 15)]
-```
+### complete binary tree(完全二叉树)
 
 # reference
 
-- [problem-solving-with-algorithms-and-data-structure-using-python 中文版](https://github.com/facert/python-data-structure-cn)
+- [hackerearth: 数据结构](https://www.hackerearth.com/practice/algorithms/sorting/)
 
-- [Problem Solving with Algorithms and Data Structures using Python: 此书可以在线交互式运行代码](https://runestone.academy/runestone/books/published/pythonds3/index.html)
+    - 支持数据可视化
+
+- [programiz: 数据结构](https://www.programiz.com/dsa)
+
+- [Problem Solving with Algorithms and Data Structures using Python(英文版, 可在线交互运行代码)](https://runestone.academy/runestone/books/published/pythonds3/index.html)
+
+    - [problem-solving-with-algorithms-and-data-structure-using-python(中文版)](https://github.com/facert/python-data-structure-cn)
+
 
 - [TheAlgorithms: Python](https://github.com/TheAlgorithms/Python)
 
-- [leetcode-master](https://github.com/youngyangyang04/leetcode-master)
+- [LeetCode 刷题攻略](https://github.com/youngyangyang04/leetcode-master)

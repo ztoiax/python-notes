@@ -1626,4 +1626,81 @@ def array_test():
 
 ## [pysnooper](https://github.com/cool-RR/PySnooper)
 
+- with语句
+```py
+import pysnooper
+
+with pysnooper.snoop():
+    pass
+```
+输出: 可以看到初始化的过程
+```
+Source path:... /home/tz/test.py
+New var:....... __name__ = '__main__'
+New var:....... __doc__ = None
+New var:....... __package__ = None
+New var:....... __loader__ = <_frozen_importlib_external.SourceFileLoader object at 0x7fa12c82bc10>
+New var:....... __spec__ = None
+New var:....... __annotations__ = {}
+New var:....... __builtins__ = <module 'builtins' (built-in)>
+New var:....... __file__ = '/home/tz/test.py'
+New var:....... __cached__ = None
+New var:....... pysnooper = <module 'pysnooper' from '/home/tz/.local/lib/python3.9/site-packages/pysnooper/__init__.py'>
+02:16:16.492121 line        28     pass
+Elapsed time: 00:00:00.000184
+```
+
+- @pysnooper.snoop(): 跟踪函数
+```py
+import pysnooper
+
+@pysnooper.snoop()
+def fib(n):
+    a, b = 0, 1
+    while b < n:
+        a, b = b, a + b
+
+fib(10)
+```
+输出
+```
+Source path:... /home/tz/test.py
+Starting var:.. n = 10
+02:12:10.327351 call        28 def fib(n):
+02:12:10.327468 line        29     a, b = 0, 1
+New var:....... a = 0
+New var:....... b = 1
+02:12:10.327494 line        30     while b < n:
+02:12:10.327529 line        31         a, b = b, a + b
+省略...
+Modified var:.. a = 8
+Modified var:.. b = 13
+02:12:10.327799 line        30     while b < n:
+02:12:10.327828 return      30     while b < n:
+Return value:.. None
+Elapsed time: 00:00:00.000523
+```
+
+- @pysnooper.snoop(normalize=True): 移除不必要的信息, 时间戳, 内存, 路径
+
+- @pysnooper.snoop(depth=3): 递归函数
+```py
+def f2():
+    print('in f2')
+
+def f1():
+    print('in f1')
+    f2()
+
+# 设置递归深度为3
+@pysnooper.snoop(depth=3)
+def f():
+    print('in f')
+    f1()
+
+f()
+```
+
+## [pudb: tui调试](https://www.kimsereylam.com/python/2020/01/17/debug-python-with-pudb.html)
+
 ## [vardbg](https://github.com/CCExtractor/vardbg)
