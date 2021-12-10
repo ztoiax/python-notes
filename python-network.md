@@ -1,6 +1,200 @@
+
+<!-- vim-markdown-toc GFM -->
+
+* [Network](#network)
+    * [RPC(远程调用)](#rpc远程调用)
+        * [xmlrpc.server.SimpleXMLRPCServer() 实现kv服务器](#xmlrpcserversimplexmlrpcserver-实现kv服务器)
+        * [自定义序列化格式](#自定义序列化格式)
+    * [http](#http)
+        * [requests](#requests)
+        * [httpx](#httpx)
+            * [httpx vs aiohttp](#httpx-vs-aiohttp)
+                * [httpxproxy: 堆栈跟踪, 性能可视化](#httpxproxy-堆栈跟踪-性能可视化)
+        * [aiohttp](#aiohttp)
+            * [基本使用](#基本使用)
+            * [websocket](#websocket)
+    * [scapy](#scapy)
+        * [基本使用](#基本使用-1)
+        * [sr(send and receive)](#srsend-and-receive)
+        * [DNS(需要root用户)](#dns需要root用户)
+        * [snipp 抓包, 类似tcpdump](#snipp-抓包-类似tcpdump)
+        * [其它命令](#其它命令)
+        * [自定义数据包](#自定义数据包)
+    * [paramiko(ssh)](#paramikossh)
+    * [telnetlib](#telnetlib)
+    * [事件驱动io](#事件驱动io)
+    * [传输层: TCP/UDP](#传输层-tcpudp)
+        * [TCP](#tcp)
+            * [server](#server)
+            * [client](#client)
+        * [UDP](#udp)
+            * [server](#server-1)
+            * [client](#client-1)
+    * [网络层](#网络层)
+        * [IPy(解析ip地址)](#ipy解析ip地址)
+
+<!-- vim-markdown-toc -->
+
 # Network
 
 > 自顶向下
+
+## RPC(远程调用)
+
+### xmlrpc.server.SimpleXMLRPCServer() 实现kv服务器
+
+- 缺点: 单线程; 所有数据都会序列化为xml(比较慢)
+
+- server:
+```py
+from xmlrpc.server import SimpleXMLRPCServer
+
+
+class KeyValueServer:
+    # 函数列表
+    _rpc_methods_ = ['get', 'set', 'delete', 'exists', 'keys']
+
+    def __init__(self, address):
+        self._data = {}
+        self._serv = SimpleXMLRPCServer(address, allow_none=True)
+        # 注册函数
+        for name in self._rpc_methods_:
+            self._serv.register_function(getattr(self, name))
+
+    # 函数体
+    def get(self, name):
+        return self._data[name]
+
+    def set(self, name, value):
+        self._data[name] = value
+
+    def delete(self, name):
+        del self._data[name]
+
+    def exists(self, name):
+        return name in self._data
+
+    def keys(self):
+        return list(self._data)
+
+    def serve_forever(self):
+        self._serv.serve_forever()
+
+
+if __name__ == '__main__':
+    kvserv = KeyValueServer(('', 15000))
+    kvserv.serve_forever()
+```
+
+- client:
+```py
+from xmlrpc.client import ServerProxy
+s = ServerProxy('http://localhost:15000', allow_none=True)
+
+# 设置kv
+s.set('foo', 'bar')
+s.set('spam', [1, 2, 3])
+
+# 查看所有kv
+s.keys()
+
+# 通过k获取v
+s.get('foo')
+s.get('spam')
+
+# 删除k
+s.delete('spam')
+
+# 查看k是否存在
+s.exists('spam')
+```
+
+### 自定义序列化格式
+
+- 以pickle为例. 序列化函数可以换成其它如:json...
+
+- server:
+```py
+from multiprocessing.connection import Listener
+from threading import Thread
+import pickle
+
+
+class RPCHandler:
+    # 通过字典保存注册函数
+    def __init__(self):
+        self._functions = { }
+
+    # 注册函数
+    def register_function(self, func):
+        self._functions[func.__name__] = func
+
+    # 使用pickle序列化
+    def handle_connection(self, connection):
+        try:
+            while True:
+                # Receive a message
+                func_name, args, kwargs = pickle.loads(connection.recv())
+                # Run the RPC and send a response
+                try:
+                    r = self._functions[func_name](*args, **kwargs)
+                    connection.send(pickle.dumps(r))
+                except Exception as e:
+                    connection.send(pickle.dumps(e))
+        except EOFError:
+             pass
+
+def rpc_server(handler, address, authkey):
+    sock = Listener(address, authkey=authkey)
+    while True:
+        client = sock.accept()
+        t = Thread(target=handler.handle_connection, args=(client,))
+        t.daemon = True
+        t.start()
+
+# 函数体
+def add(x, y):
+    return x + y
+
+def sub(x, y):
+    return x - y
+
+if __name__ == '__main__':
+    # 注册函数
+    handler = RPCHandler()
+    handler.register_function(add)
+    handler.register_function(sub)
+
+    # 启动rpc服务器
+    rpc_server(handler, ('localhost', 17000), authkey=b'passwd')
+```
+
+- client:
+
+```py
+from multiprocessing.connection import Client
+import pickle
+
+
+class RPCProxy:
+    def __init__(self, connection):
+        self._connection = connection
+
+    def __getattr__(self, name):
+        def do_rpc(*args, **kwargs):
+            self._connection.send(pickle.dumps((name, args, kwargs)))
+            result = pickle.loads(self._connection.recv())
+            if isinstance(result, Exception):
+                raise result
+            return result
+        return do_rpc
+
+
+if __name__ == '__main__':
+    c = Client(('localhost', 17000), authkey=b'passwd')
+    proxy = RPCProxy(c)
+    proxy.add(2, 3)
+```
 
 ## http
 
@@ -818,9 +1012,251 @@ for port in range(65535):
         pass
 ```
 
-## IPy
+## 事件驱动io
 
-> 解析ip地址
+- 当数据在某个socket上被接受后，它会转换成一个 receive 事件
+
+- server
+```py
+import select
+import socket
+import time
+
+# 事件循环, 使用select()
+def event_loop(handlers):
+    while True:
+        can_recv, can_send, _ = select.select(handlers, handlers, [])
+        for h in can_recv:
+            h.handle_receive()
+
+
+class UDPServer():
+    def __init__(self, address):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(address)
+
+    def fileno(self):
+        return self.sock.fileno()
+
+    def wants_to_receive(self):
+        return True
+
+
+class UDPTimeServer(UDPServer):
+    def handle_receive(self):
+        msg, addr = self.sock.recvfrom(1)
+        self.sock.sendto(time.ctime().encode('ascii'), addr)
+
+
+class UDPEchoServer(UDPServer):
+    def handle_receive(self):
+        msg, addr = self.sock.recvfrom(8192)
+        self.sock.sendto(msg, addr)
+
+
+if __name__ == '__main__':
+    handlers = [ UDPTimeServer(('',14000)), UDPEchoServer(('',15000))  ]
+    event_loop(handlers)
+```
+
+- client:
+```py
+from socket import *
+
+s = socket(AF_INET, SOCK_DGRAM)
+s.sendto(b'', ('localhost',14000))
+
+s.recvfrom(128)
+s.sendto(b'Hello', ('localhost',15000))
+
+s.recvfrom(128)
+```
+
+## 传输层: TCP/UDP
+
+### TCP
+
+#### server
+
+- socket库实现
+```py
+from socket import socket, SOCK_STREAM, AF_INET
+
+
+def main(ip, port):
+    server = socket(family=AF_INET, type=SOCK_STREAM)
+    server.bind((ip, port))
+    # 512队列大小
+    server.listen(512)
+    print("listen...")
+
+    while True:
+        # 有连接就输出信息
+        client, addr = server.accept()
+        print(str(addr) + ' connect')
+
+        # 接受客户端的消息
+        msg = client.recv(1024).decode('utf-8')
+        print("received message: %s" % msg)
+
+        # 发送消息给客户端
+        client.send(b"hello client")
+        client.close()
+
+
+if __name__ == '__main__':
+    ip = '127.0.0.1'
+    port = 6666
+    main(ip, port)
+```
+
+- socketserver库实现tcpserver(单线程)
+```py
+from socketserver import BaseRequestHandler, TCPServer
+
+
+class EchoHandler(BaseRequestHandler):
+    def handle(self):
+        print(self.client_address, ' connect')
+
+        while True:
+            # 接受客户端的消息
+            msg = self.request.recv(1024).decode('utf-8')
+            print(msg)
+
+            if not msg:
+                break
+
+            # 发送消息给客户端
+            self.request.send(b"hello client")
+
+
+if __name__ == '__main__':
+    serv = TCPServer(('', 6666), EchoHandler)
+    print("listen...")
+    serv.serve_forever()
+```
+
+- 多线程: `TCPServer` 改为 `ThreadingTCPServer`
+```py
+from socketserver import BaseRequestHandler, ThreadingTCPServer
+serv = ThreadingTCPServer(('', 6666), EchoHandler)
+```
+
+#### client
+
+- socket库实现
+```py
+from socket import socket
+
+
+def main(ip, port, msg):
+    client = socket()
+    client.connect((ip, port))
+
+    # 发送消息给服务器
+    client.send(msg)
+    # 接受服务器的消息
+    print('server: ' + client.recv(1024).decode('utf-8'))
+
+    client.close()
+
+
+if __name__ == '__main__':
+    ip = '127.0.0.1'
+    port = 6666
+    msg = b"I'm a client"
+    main(ip, port, msg)
+```
+
+### UDP
+
+#### server
+
+- socket库实现
+```py
+import socket
+
+
+def main(ip, port):
+
+    sock = socket.socket(socket.AF_INET, # Internet
+                         socket.SOCK_DGRAM) # UDP
+    sock.bind((ip, port))
+
+    print("listen...")
+    while True:
+        # 接受客户端消息
+        msg, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
+        print("received message: %s" % msg)
+
+        # 发送消息给客户端
+        sock.sendto(b'hello client', addr)
+
+
+if __name__ == '__main__':
+    ip = '127.0.0.1'
+    port = 5005
+    main(ip, port)
+```
+
+- socketserver库实现
+```py
+from socketserver import BaseRequestHandler, UDPServer
+
+
+class EchoHandler(BaseRequestHandler):
+    def handle(self):
+        # 有连接就输出信息
+        print(self.client_address, ' connect')
+
+        # 接受客户端消息
+        msg, sock = self.request
+        print("received message: %s" % msg)
+
+        # 发送消息给客户端
+        sock.sendto(b'hello client', self.client_address)
+
+
+if __name__ == '__main__':
+    serv = UDPServer(('', 5005), EchoHandler)
+    print("listen...")
+    serv.serve_forever()
+```
+
+- 多线程: `UDPServer` 改为 `ThreadingUDPServer`
+```py
+from socketserver import BaseRequestHandler, ThreadingUDPServer
+serv = ThreadingUDPServer(('', 5005), EchoHandler)
+```
+
+#### client
+
+- socket库实现
+```py
+import socket
+
+
+def main(ip, port, msg):
+    sock = socket.socket(socket.AF_INET, # Internet
+                         socket.SOCK_DGRAM) # UDP
+    # 发送消息给服务器
+    sock.sendto(msg, (ip, port))
+
+    # 接受服务器的消息
+    print(sock.recvfrom(1024))
+
+
+if __name__ == '__main__':
+    ip = '127.0.0.1'
+    port = 5005
+    msg = b"I'm a client"
+    main(ip, port, msg)
+```
+
+## 网络层
+
+### IPy(解析ip地址)
 
 - 列出网段内的所有ip
 

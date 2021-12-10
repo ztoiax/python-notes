@@ -1,4 +1,76 @@
-# 进程, 线程, 异步I/O
+
+<!-- vim-markdown-toc GFM -->
+
+* [并发](#并发)
+    * [Thread(线程)](#thread线程)
+        * [Lock(线程锁)](#lock线程锁)
+        * [RLock(Reentrant Lock)可重入锁](#rlockreentrant-lock可重入锁)
+        * [semaphore(信号量)](#semaphore信号量)
+        * [Condition(条件)](#condition条件)
+        * [threading.Event(事件)](#threadingevent事件)
+        * [测试每种锁使用with, 和不使用with](#测试每种锁使用with-和不使用with)
+        * [Queue(线程队列)](#queue线程队列)
+            * [使用Queue实现Pool(线程池)](#使用queue实现pool线程池)
+        * [Barrier](#barrier)
+        * [死锁](#死锁)
+    * [Process(进程)](#process进程)
+        * [共享变量](#共享变量)
+        * [Queue(进程队列)](#queue进程队列)
+        * [Pipe](#pipe)
+        * [Barrier](#barrier-1)
+        * [Pool(进程池)](#pool进程池)
+        * [concurrent.futures进程, 线程池](#concurrentfutures进程-线程池)
+    * [yiled 实现协程](#yiled-实现协程)
+    * [asyncio(异步I/O): 协程(Coroutines)](#asyncio异步io-协程coroutines)
+        * [基本使用](#基本使用)
+        * [从调用function_1到function_3, 一共3次循环](#从调用function_1到function_3-一共3次循环)
+        * [协程: 从调用function_1到function_3, 并返回值](#协程-从调用function_1到function_3-并返回值)
+        * [asyncio.Task()](#asynciotask)
+    * [gevent(异步)](#gevent异步)
+        * [`gevent.select.select([], [], [], 2)`: 轮询](#geventselectselect---2-轮询)
+        * [与普通的同步阻塞执行对比](#与普通的同步阻塞执行对比)
+        * [`gevent.monkey`补丁修改标准库内阻塞的系统调用](#geventmonkey补丁修改标准库内阻塞的系统调用)
+        * [gevent.pool.Pool()(gevent池), 能维持数据一致性](#geventpoolpoolgevent池-能维持数据一致性)
+        * [gevent.Timeout()](#geventtimeout)
+        * [gevent.event.Event(事件)](#geventeventevent事件)
+        * [gevent.event.AsyncResult 是Event()的拓展, 允许唤醒后发送值](#geventeventasyncresult-是event的拓展-允许唤醒后发送值)
+        * [gevent.queue.Queue(队列)](#geventqueuequeue队列)
+            * [gevent与进程通信](#gevent与进程通信)
+    * [分布式](#分布式)
+        * [Celery](#celery)
+        * [Scoop](#scoop)
+* [reference](#reference)
+
+<!-- vim-markdown-toc -->
+# 并发
+
+- 进程的开销:需要复制内存, 创建进程需要系统调用
+
+    - copy on write(写时复制)技术: 子进程修改时, 再进行内存复制, 减少开销
+
+- 线程的开销:相比于进程不需要复制内存, 但创建线程仍然需要系统调用, 以及分配内存
+
+- 从开销的角度来看, 操作系统所提供的进程和线程并不理想
+
+- 因此一些编程语言有独特的并发控制技术
+
+    - Erlang的"进程":
+
+        - 比操作系统的进程, 线程更轻量
+
+        - 在用户空间创建, 没有系统调用
+
+        - 这个"进程"概念类似于Actor模型的Actor
+
+    - Go的goroutine:
+
+        - 类似于Erlang的进程 [Quora: How are Erlang processes different from Golang goroutines?](https://www.quora.com/How-are-Erlang-processes-different-from-Golang-goroutines)
+
+    - Clojure的STM(Software Transactional Memory)软件事务内存:
+
+        - 类似于关系性数据库的acid事务概念. [Clojure STM - What? Why? How?](https://sw1nn.com/blog/2012/04/11/clojure-stm-what-why-how/)
+
+- 内存模型
 
 | 内存模型       | 概念                   | 数据一致性                                             |
 |----------------|------------------------|--------------------------------------------------------|
@@ -16,7 +88,6 @@
 - 和同一进程的其它线程共享资源: 文件描述符(句柄), 内存空间
 
 - 状态: ready, running, blocked
-
 
 - class:
     ```py
@@ -51,6 +122,7 @@
 | start()  | 启动线程, 设置alive为True. 多次启动会异常:RuntimeError   |
 | run()    | 启动线程, 设置alive为True. 多次启动会异常:AttributeError |
 | join()   | 主线程等待(阻塞)线程结束(alive为False)                   |
+| local()  | 只保存当前运行线程的状态, 对其它线程不可见(原理是维护一个字典)                   |
 
 - 基本使用
 
@@ -113,7 +185,11 @@ t2.join()
 | release()  | 释放锁: 状态从locked -> unlocked. 如果状态是unlocked: 则RuntimError           |
 | locked()   | 状态为locked时, 返回true                                                      |
 
-- 没有锁
+- 为了防止出现Lock死锁, 最好设置为每个线程一次只允许获取一个锁
+
+    - 或者使用更高级的锁同步机制 **`RLock(可重入锁)`** 和 **`Semaphore(信号量)`**
+
+- 没有锁:
 
 ```py
 import threading
@@ -143,11 +219,11 @@ if __name__ == '__main__':
     t1.join()
     t2.join()
 
-    #  查看是否为0. 多运行几次
+    # 结果不等于0, 并且每次运行的结果都不一样
     print(share)
 ```
 
-- 有锁
+- Lock锁:
 
 ```py
 import threading
@@ -185,44 +261,54 @@ if __name__ == '__main__':
     t1.join()
     t2.join()
 
-    # 查看是否为0
+    # 设置Lock后, 结果为0
     print(share)
 ```
 
 - 将上面例子的代码修改为:只获取,释放一次锁
 
-源代码:
+    源代码:
 
-```py
-for _ in range(count):
+    ```py
+    for _ in range(count):
+        # 获取锁
+        lock.acquire()
+        share += 1
+        # 释放锁
+        lock.release()
+    ```
+
+    修改为:
+
+    ``` py
     # 获取锁
     lock.acquire()
-    share += 1
+    for _ in range(count):
+        share += 1
     # 释放锁
     lock.release()
-```
+    ```
 
-修改为:
+    性能对比:
 
-``` py
-# 获取锁
-lock.acquire()
-for _ in range(count):
-    share += 1
-# 释放锁
-lock.release()
-```
+    ```
+    1.91秒
+    0.11秒
+    ```
 
-结果对比:
+- 使用with语句, 可以防止忘记lock.release()
 
-```
-1.91秒
-0.11秒
-```
+    ```py
+    lock = threading.Lock()
+    with lock:
+        pass
+    ```
 
-### RLock(Reentrant Lock)
+### RLock(Reentrant Lock)可重入锁
 
-> 递归锁: 同一线程可以多次 `acquire`,  `release`. 只有最后一次 `release` 状态才会变成 `unlocked`
+- 同一线程可以多次 `acquire`,  `release`. 只有最后一次 `release` 状态才会变成 `unlocked`
+
+    - 但一次只有一个线程可以执行
 
 ```py
 import threading
@@ -279,10 +365,11 @@ if __name__ == '__main__':
 
 | 信号量      | 操作                               |
 |-------------|------------------------------------|
-| acquire()   | 对信号量减一                       |
-| release()   | 对信号量加一                       |
-| 信号量为0时 | 就会阻塞acquire()                  |
+| acquire()   | 对信号量减一. 信号量不为1时会执行  |
+| release()   | 对信号量加一. 信号量为0时会阻塞    |
 | 死锁        | 线程1: 等待信号2; 线程2: 等待信号1 |
+
+- 信号量增加了复杂性, 会影响程序性能, 只适合需要在线程之间引入信号或者限制的程序
 
 ```py
 import threading
@@ -291,7 +378,7 @@ import random
 
 def consumer():
         print("consumer is waiting.")
-        # 信号量加1
+        # 信号量减1
         semaphore.acquire()
         print("Consumer notify : consumed item number %s " % item)
 
@@ -300,7 +387,7 @@ def producer():
         time.sleep(1)
         item = random.randint(0, 1000)
         print("producer notify : produced item number %s" % item)
-        # 信号量减1
+        # 信号量加1
         semaphore.release()
 
 if __name__ == '__main__':
@@ -317,12 +404,13 @@ if __name__ == '__main__':
 ```
 ### Condition(条件)
 
-| Condition | 操作       |
-|-----------|------------|
-| acquire() | 获取锁     |
-| wait()    | 等待通知   |
-| notify()  | 通知生产者 |
-| release() | 释放锁     |
+| Condition    | 操作                         |
+|--------------|------------------------------|
+| acquire()    | 获取锁                       |
+| release()    | 释放锁                       |
+| wait()       | 等待通知                     |
+| notify()     | 通知线程(生产者和消费者)     |
+| notify_all() | 通知所有线程(生产者和消费者) |
 
 ```py
 from threading import Thread, Condition
@@ -436,99 +524,168 @@ if __name__ == '__main__':
     c.join()
 ```
 
-### threading.Event(事件)
-
-| 事件    | 操作     |
-|---------|----------|
-| set()   | 发送信号 |
-| clear() | 发送信号 |
-| wait()  | 等待信号 |
+- 一个时间间隔器的线程, 每隔一段时间就通知两个消费者线程
 
 ```py
+import threading
 import time
-from threading import Thread, Event
 
-class consumer(Thread):
-    def __init__(self, event):
-        Thread.__init__(self)
-        self.event = event
-
-    def run(self):
-        for _ in range(5):
-            # 等待信号
-            self.event.wait()
-            print('Consumer notify : get i number %d\n' % (i))
-
-class producer(Thread):
-    def __init__(self, event):
-        Thread.__init__(self)
-        self.event = event
+class Timer(threading.Thread):
+    def __init__(self, interval):
+        self._interval = interval
+        threading.Thread.__init__(self)
 
     def run(self):
-        global i
-        for i in range(5):
-            print('Producer notify : event set i number %d' % (i))
-            # 发送信号
-            self.event.set()
-            print('Producer notify : event cleared')
-            # 阻塞
-            self.event.clear()
-            # 防止在发送i之前, 进入下一轮循环
-            time.sleep(1)
+        while True:
+            # sleep
+            time.sleep(self._interval)
+            # notify_all通知所有生产者
+            with condition:
+                condition.notify_all()
+
+
+def wait_for_tick(condition):
+    with condition:
+        condition.wait()
+
+# 设置两个消费者
+def countdown(n):
+    for i in range(n, 0, -1):
+        wait_for_tick(condition)
+        print('down:', i)
+
+def countup(n):
+    for i in range(n):
+        wait_for_tick(condition)
+        print('up:', i)
+
 
 if __name__ == '__main__':
-    event = Event()
-    t1 = producer(event)
-    t2 = consumer(event)
-    t1.start()
-    t2.start()
-    t1.join()
-    t2.join()
+    condition = threading.Condition()
+
+    threading.Thread(target=countdown, args=(10,)).start()
+    threading.Thread(target=countup, args=(5,)).start()
+
+    # 每隔1秒通知所有消费者
+    timer = Timer(1)
+    timer.run()
 ```
 
-### with
+### threading.Event(事件)
+
+| 事件    | 操作           |
+|---------|----------------|
+| set()   | 将信号设置为真 |
+| clear() | 将信号设置为假 |
+| wait()  | 等待信号       |
+
+- 1.初始的event 对象中的信号被设置为假
+
+- 2.消费者线程等待(阻塞) event 对象，直至信号为真
+
+- 3.生产者线程将 event 对象的信号设置为真后，会唤醒所有等待这个 event 对象的消费者线程
+
+- event对象的一个重要特点是可以唤醒所有等待它的线程
+
+    - 如果只想唤醒单个线程，最好是使用**信号量**或者 **Condition** 对象来替代
+
+- 将conditon的时间间隔器例子改为event
+```py
+import threading
+import time
+
+class Timer(threading.Thread):
+    def __init__(self, interval):
+        self._interval = interval
+        threading.Thread.__init__(self)
+
+    def run(self):
+        while True:
+            # sleep
+            time.sleep(self._interval)
+            # 改为set()和clear()
+            event.set()
+            event.clear()
+
+
+# 设置两个消费者
+def countdown(n):
+    for i in range(n, 0, -1):
+        # 改为wait()
+        event.wait()
+        print('down:', i)
+
+def countup(n):
+    for i in range(n):
+        event.wait()
+        print('up:', i)
+
+
+if __name__ == '__main__':
+    event = threading.Event()
+
+    threading.Thread(target=countdown, args=(10,)).start()
+    threading.Thread(target=countup, args=(5,)).start()
+
+    # 每隔1秒通知所有消费者
+    timer = Timer(1)
+    timer.run()
+```
+
+### 测试每种锁使用with, 和不使用with
 
 ```py
 import threading
 import logging
 logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-10s) %(message)s',)
 
-def threading_with(statement):
-    with statement:
-        logging.debug('%s acquired via with' % statement)
+# 使用with语句获取释放锁
+def threading_with(lock):
+    with lock:
+        logging.debug('%s acquired via with' % lock)
 
-def threading_not_with(statement):
-    statement.acquire()
+# 不使用with语句获取释放锁
+def threading_not_with(lock):
+    lock.acquire()
     try:
-        logging.debug('%s acquired directly' % statement )
+        logging.debug('%s acquired not with' % lock)
     finally:
-        statement.release()
+        lock.release()
 
 if __name__ == '__main__':
-    # let's create a test battery
-    lock = threading.Lock()
+    # 测试所有锁机制
+    lock_thread = threading.Lock()
     rlock = threading.RLock()
     condition = threading.Condition()
     mutex = threading.Semaphore(1)
-    threading_synchronization_list = [lock, rlock, condition, mutex]
-    # in the for cycle we call the threading_with e threading_no_with function
-    for statement in threading_synchronization_list :
-       t1 = threading.Thread(target=threading_with, args=(statement,))
-       t2 = threading.Thread(target=threading_not_with, args=(statement,))
+
+    # 把锁放入列表, 逐个测试
+    locks = [lock_thread, rlock, condition, mutex]
+
+    # 测试每种锁的with和no_with
+    for lock in locks:
+       t1 = threading.Thread(target=threading_with, args=(lock,))
+       t2 = threading.Thread(target=threading_not_with, args=(lock,))
        t1.start()
        t2.start()
        t1.join()
        t2.join()
+       print('\n')
 ```
 
 ### Queue(线程队列)
 
-| Queue       | 操作                                      |
-|-------------|-------------------------------------------|
-| put()       | 往queue中放一个item                       |
-| get()       | 从queue删除一个item，并返回删除的这个item |
-| task_done() | 每次item被处理的时候需要调用这个方法      |
-| join()      | 所有item都被处理之前一直阻塞              |
+| Queue       | 操作                                                                  |
+|-------------|-----------------------------------------------------------------------|
+| put()       | 往queue中放一个item                                                   |
+| get()       | 从queue删除一个item，并返回删除的这个item. 可设置时间get(timeout=5.0) |
+| task_done() | 每次item被处理的时候需要调用这个方法                                  |
+| join()      | 所有item都被处理之前一直阻塞                                          |
+| qsize()     | 队列长度                                                              |
+| full()      | 队列是否满了                                                          |
+| empty()     | 队列是否为空                                                          |
+
+- Queue 对象已经包含了必要的锁
 
 ```py
 from threading import Thread
@@ -572,6 +729,60 @@ if __name__ == '__main__':
     t2.join()
     t3.join()
     t4.join()
+```
+
+- 协调生产者和消费者的退出问题: 生产者在队列中put一个特殊的值，当消费者get到后，就退出
+
+    - 这样的退出方法, 只能有一个消费者, 而且是生产者对消费者的单向退出
+
+```py
+from threading import Thread
+from queue import Queue
+import time
+
+class consumer(Thread):
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        while True:
+            item = self.queue.get()
+
+            # 当get到哨兵就退出
+            if item == _sentinel:
+                break
+
+            print('Consumer notify: get item %d by %s\n' % (item, self.name))
+            self.queue.task_done()
+
+class producer(Thread):
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+
+    def run(self) :
+        for i in range(10):
+            item = i
+            self.queue.put(item)
+            print('Producer notify: item number %d by %s' % (item, self.name))
+            time.sleep(1)
+
+        # put哨兵, 让消费者退出
+        self.queue.put(_sentinel)
+
+if __name__ == '__main__':
+    queue = Queue()
+    # 设置哨兵值
+    _sentinel = object()
+
+    # 这样的退出方法, 只能有一个消费者
+    t1 = producer(queue)
+    t2 = consumer(queue)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
 ```
 
 #### 使用Queue实现Pool(线程池)
@@ -657,9 +868,62 @@ if __name__ == '__main__':
     p4.join()
 ```
 
+### 死锁
+
+- 死锁很大一部分是由于线程同时获取多个锁造成的
+
+    - 尽可能保证每一个线程只能同时保持一个锁
+
+看门狗计数器。当线程正常 运行的时候会每隔一段时间重置计数器，在没有发生死锁的情况下，一切都正常进行。一旦发生死锁，由于无法重置计数器导致定时器 超时，这时程序会通过重启自身恢复到正常状态。
+
+- 一种解决方案:为程序中的每一个锁分配一个唯一的id，然后只允许按照升序规则来使用多个锁(可以使用contextmanager实现)
+
+```py
+import threading
+from contextlib import contextmanager
+
+# @contextmanager实现with语句
+@contextmanager
+def acquire(*locks):
+    # 对锁进行排序. 即使用户以不同顺序获取锁, 最后也可以按顺序获取锁
+    locks = sorted(locks, key=lambda x: id(x))
+
+    try:
+        for lock in locks:
+            lock.acquire()
+        yield
+    finally:
+        for lock in reversed(locks):
+            lock.release()
+
+
+def thread_1():
+    with acquire(x_lock, y_lock):
+        for _ in range(5):
+            print('Thread-1')
+
+def thread_2():
+    with acquire(y_lock, x_lock):
+        for _ in range(5):
+            print('Thread-2')
+
+
+if __name__ == '__main__':
+    # 设置两个Lock
+    x_lock = threading.Lock()
+    y_lock = threading.Lock()
+
+    t1 = threading.Thread(target=thread_1)
+    t2 = threading.Thread(target=thread_2)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+```
+
 ## Process(进程)
 
-> 不受cpython的GIL的限制
+> 曾经是每个进程一个解释器和GIL, 因此多线程会有GIL的限制, 人们往往就用多进程而不是多线程. 但现如今每个进程内部有多个解释器和GIL, 解决了多线程并发的问题
 
 - 把线程方法,改为进程方法:
 
@@ -997,6 +1261,25 @@ if __name__ == '__main__':
 
 ### concurrent.futures进程, 线程池
 
+- requests.get url例子
+```py
+from concurrent.futures import ThreadPoolExecutor
+import requests
+
+def fetch_url(url):
+    u = requests.get(url)
+    return u.content
+
+pool = ThreadPoolExecutor(10)
+a = pool.submit(fetch_url, 'http://www.baidu.com')
+b = pool.submit(fetch_url, 'http://www.sogou.com')
+
+# result()阻塞进程直到函数返回
+print(len(a.result()))
+print(len(b.result()))
+```
+
+
 ```py
 import concurrent.futures
 import time
@@ -1041,6 +1324,48 @@ if __name__ == "__main__":
         print ("Process pool execution in " + str(time.time() - start_time_2), "seconds")
 ```
 
+## yiled 实现协程
+
+```py
+def countdown(n):
+    for i in range(n, 0, -1):
+        print('down:', i)
+        yield
+
+def countup(n):
+    for i in range(n):
+        print('up:', i)
+        yield
+
+
+from collections import deque
+
+class TaskScheduler:
+    def __init__(self):
+        # 双向链表
+        self._task_queue = deque()
+
+    def new_task(self, task):
+        self._task_queue.append(task)
+
+    def run(self):
+        while self._task_queue:
+            task = self._task_queue.popleft()
+            try:
+                # Run until the next yield statement
+                next(task)
+                self._task_queue.append(task)
+            except StopIteration:
+                # Generator is no longer executing
+                pass
+
+if __name__ == '__main__':
+    sched = TaskScheduler()
+    sched.new_task(countdown(10))
+    sched.new_task(countup(5))
+    sched.run()
+```
+
 ## asyncio(异步I/O): 协程(Coroutines)
 
 > 异步I/O不是多进程, 多线程. 是一种特殊的单线程, 通过中断机制,让线程给人一种并发的感觉
@@ -1077,7 +1402,7 @@ def test():
 
 ### 从调用function_1到function_3, 一共3次循环
 
-- 非异步
+- 非异步:
 
 ```py
 import time
@@ -1112,7 +1437,7 @@ if __name__ == '__main__':
     function_1()
 ```
 
-- 异步
+- 异步. asyncio.get_event_loop()实现事件循环:
 
 ```py
 import asyncio

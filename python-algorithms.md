@@ -1,3 +1,62 @@
+
+<!-- vim-markdown-toc GFM -->
+
+* [algorithms(算法)](#algorithms算法)
+    * [复杂度](#复杂度)
+        * [O(n): 线性复杂度](#on-线性复杂度)
+    * [sort(排序)](#sort排序)
+        * [bubble sort(冒泡排序)](#bubble-sort冒泡排序)
+            * [comb sort(梳子排序)](#comb-sort梳子排序)
+            * [cocktail Sort(混合排序)](#cocktail-sort混合排序)
+            * [oddEvenSort](#oddevensort)
+        * [insertion sort(插入排序)](#insertion-sort插入排序)
+            * [二分插入排序](#二分插入排序)
+        * [select sort(选择排序)](#select-sort选择排序)
+            * [pancake Sort(煎饼排序)](#pancake-sort煎饼排序)
+        * [merge sort(归并排序)](#merge-sort归并排序)
+        * [bitonic Sort(双音排序)](#bitonic-sort双音排序)
+        * [shell sort(希尔排序)](#shell-sort希尔排序)
+        * [quick sort (快速排序)](#quick-sort-快速排序)
+            * [0, 1, 2三路快速排序](#0-1-2三路快速排序)
+        * [heap sort(堆排序)](#heap-sort堆排序)
+            * [使用heapq模块的heapify函数](#使用heapq模块的heapify函数)
+        * [bucket sort(桶排序)](#bucket-sort桶排序)
+        * [counting sort(计数排序)](#counting-sort计数排序)
+        * [radix sort(基数排序)](#radix-sort基数排序)
+        * [pigeonhole Sort(范围排序)](#pigeonhole-sort范围排序)
+        * [stooge sort](#stooge-sort)
+        * [Timsort](#timsort)
+        * [煎饼翻转](#煎饼翻转)
+    * [search(搜索)](#search搜索)
+        * [binary search(二分搜索)](#binary-search二分搜索)
+        * [hash tab(hash表)](#hash-tabhash表)
+    * [Linked List(链表)](#linked-list链表)
+        * [Linked List(单向链表)](#linked-list单向链表)
+            * [单向链表归并排序](#单向链表归并排序)
+        * [DoublyList(双向链表)](#doublylist双向链表)
+        * [Blockchain(区块链)](#blockchain区块链)
+    * [graph(图)](#graph图)
+        * [图的应用](#图的应用)
+    * [tree(树)](#tree树)
+        * [binary tree(二叉树)](#binary-tree二叉树)
+        * [full binary tree](#full-binary-tree)
+            * [判断是否为full binary tree](#判断是否为full-binary-tree)
+        * [perfect binary tree](#perfect-binary-tree)
+            * [判断是否为perfect binary tree](#判断是否为perfect-binary-tree)
+        * [complete binary tree(完全二叉树)](#complete-binary-tree完全二叉树)
+            * [判断是否为complete binary tree](#判断是否为complete-binary-tree)
+        * [balanced binary tree(平衡二叉树)](#balanced-binary-tree平衡二叉树)
+        * [binary search tree(二叉搜索树)](#binary-search-tree二叉搜索树)
+            * [判断是否为二叉搜索树](#判断是否为二叉搜索树)
+        * [AVL tree(自平衡二叉搜索树)](#avl-tree自平衡二叉搜索树)
+    * [string](#string)
+        * [统计两个字符串中的重复字符](#统计两个字符串中的重复字符)
+    * [动态规划](#动态规划)
+        * [UnlyNum(丑数)](#unlynum丑数)
+* [reference](#reference)
+
+<!-- vim-markdown-toc -->
+
 # algorithms(算法)
 
 ## 复杂度
@@ -74,22 +133,15 @@ def bubbleSort(list1):
 
 - 反向:
 
-    ```py
-    def exchange(list1, j, i):
-        list1[j], list1[i] = list1[i], list1[j]
-    ```
-
     - 循环:
 
     ```py
     def bubbleSort(list1):
         length = len(list1)
-        for i in range(1, length):
-            for j in range(i, 0, -1):
+        for i in range(length):
+            for j in range(length-1, i, -1):
                 if list1[j-1] > list1[j]:
-                    exchange(list1, j-1, j)
-                else:
-                    break
+                    list1[j], list1[j-1] = list1[j-1], list1[j]
     ```
 
     - 函数式编程:
@@ -101,10 +153,9 @@ def bubbleSort(list1):
 
         j = i - 1
         if list1[j] > list1[i]:
-            exchange(list1, j, i)
-            iter(list1, j)
-        else:
-            return
+            list1[j], list1[i] = list1[i], list1[j]
+
+        iter(list1, j)
 
 
     def bubbleSort(list1):
@@ -194,42 +245,39 @@ def oddEvenSort(list1):
 
 ```py
 def insert(list1, j, i):
-    tmp = list1[i]
-    list1.pop(i)
+    tmp = list1.pop(i)
     list1.insert(j, tmp)
 ```
 
 - 循环:
 
 ```py
-def insertionSort(list1):
-length = len(list1)
-for i in range(1, length):
-    for j in range(i, -1, -1):
-        if list1[j-1] > list1[i]:
-            pass
-        else:
-            break
-    insert(list1, j, i)
+def sort(list1):
+    length = len(list1)
+    for i in range(1, length):
+        for j in range(i):
+            if list1[i] < list1[j]:
+                insert(list1, j, i)
 ```
 
 - 函数式编程:
 
 ```py
 def iter(list1, j, i):
-    # j != -1 表示j迭代到0, 就执行else
-    if list1[j] > list1[i] and j != -1:
-        j -= 1
-        iter(list1, j, i)
-    else:
-        insert(list1, j + 1, i)
+    if list1[i] < list1[j]:
+        insert(list1, j, i)
+        return
+
+    if j < i:
+        iter(list1, j+1, i)
 
 
-def insertionSort(list1):
+def sort(list1):
     length = len(list1)
-    for i in range(1, length):
-        iter(list1, i - 1, i)
+    for i in range(length):
+        iter(list1, 0, i)
 ```
+
 #### 二分插入排序
 
 - 时间复杂度依然是O(n^2)
@@ -240,25 +288,18 @@ def insertionSort(list1):
 def insertionSort(list1):
     length = len(list1)
     for i in range(length):
-        key = list1[i]
         l = 0
         r = i - 1
 
         # 二分查找插入的位置
         while l <= r:
             mid = (l + r) // 2
-            if list1[mid] <= key:
+            if list1[mid] <= list1[i]:
                 l += 1
-            elif list1[mid] >= key:
+            elif list1[mid] >= list1[i]:
                 r -= 1
 
-        # 移动元素
-        j = i - 1
-        while j >= l:
-            list1[j+1] = list1[j]
-            j -= 1
-
-        list1[l] = key
+        insert(list1, l, i)
 ```
 
 ### select sort(选择排序)
@@ -391,12 +432,12 @@ def merge(left, right, compare):
 def mergeSort(list1, compare=lambda x, y: x < y):
     length = len(list1)
     if length < 2:
-        return list1[:]
-    else:
-        mid = length // 2
-        left = mergeSort(list1[:mid], compare)
-        right = mergeSort(list1[mid:], compare)
-        return merge(left, right, compare)
+        return list1
+
+    mid = length // 2
+    left = mergeSort(list1[:mid], compare)
+    right = mergeSort(list1[mid:], compare)
+    return merge(left, right, compare)
 ```
 ### bitonic Sort(双音排序)
 
@@ -443,30 +484,54 @@ print(list1)
 ```py
 def shellSort(list1):
     length = len(list1)
-    partition = length // 2
-    while partition > 0:
-        i = 0
-        j = partition
-
-        while j < length:
-            if list1[i] > list1[j]:
-                list1[i], list1[j] = list1[j], list1[i]
-
-            i += 1
-            j += 1
-
-            k = i
-            while k-length > -1:
-                if list1[k-length] > list1[k]:
-                    list1[k-length], list1[k] = list1[k], list1[k-length]
-                k -= 1
-
-        partition //= 2
+    half = length // 2
+    while half > 0:
+        for i in range(half, length):
+            while i >= half:
+                if list1[i-half] > list1[i]:
+                    list1[i], list1[i-half] = list1[i-half], list1[i]
+                i -= half
+        half //= 2
 ```
+
+- 以上代码是指针是从half到lenght. 现在改为指针从0开始到half
+
+    - 这样的修改是致命的
+
+    ```py
+    def shellSort(list1):
+        length = len(list1)
+        half = length // 2
+        while half > 0:
+            # 指针改为从0开始移动
+            for i in range(0, half):
+                while i <= half:
+                    if list1[i] > list1[i+half]:
+                        list1[i], list1[i+half] = list1[i+half], list1[i]
+                    i += 1
+            half //= 2
+
+    # 结果不准确
+    list1 = [1, 3, 7, 4, 8, 6, 2, 1, 5]
+    shellSort(list1)
+    print(list1)
+
+    # 偶数个元素时会报错
+    list1 = [3, 7, 4, 8, 6, 2, 1, 5]
+    shellSort(list1)
+    print(list1)
+    ```
 
 ### quick sort (快速排序)
 
 ![image](./imgs/quickSort.png)
+
+- 分治算法
+
+- 选取一个基准元素, 把比这个基准元素小的移动到左边;大的移动到右边. 这样一轮下来, 就确定了这个基准元素的位置
+
+    - 基准元素一般是取第一个元素
+
 ```py
 def partition(start, end, list1):
     pivot_index = start
@@ -480,14 +545,14 @@ def partition(start, end, list1):
         while list1[end] > pivot:
             end -= 1
 
-        if(start < end):
+        if start < end:
             list1[start], list1[end] = list1[end], list1[start]
 
     list1[end], list1[pivot_index] = list1[pivot_index], list1[end]
     return end
 
 def quick(start, end, list1):
-    if (start < end):
+    if start < end:
         p = partition(start, end, list1)
         quick(start, p - 1, list1)
         quick(p + 1, end, list1)
@@ -615,35 +680,56 @@ print(list1)
 
 ![image](./imgs/CountingSort.webp)
 
+```py
+def countingSort(list1):
+    # 桶的数量为最大值加1
+    size = max(list1) + 1
+    count = [0] * size
+
+    # 对桶进行计数
+    for i in range(size):
+        for j in list1:
+            if i == j:
+                count[i] += 1
+
+    # 排列
+    j = 0
+    for i in range(size):
+        while count[i] > 0:
+            list1[j] = i
+            count[i] -= 1
+            j += 1
+```
+
 ### radix sort(基数排序)
 
 ![image](./imgs/RadixSort.webp)
 
 ```py
 def countingSort(list1, exp1):
-    n = len(list1)
+    length = len(list1)
 
-    output = [0] * (n)
-    count = [0] * (10)
+    output = [0] * length
+    count = [0] * 10
 
-    # 对list1的重复元素进行计数
-    for i in range(0, n):
+    # 对个位数相同的元素进行计数
+    for i in range(0, length):
         index = list1[i] // exp1
         count[index % 10] += 1
 
-    # 累计计数
+    # 加上前面的计数, 得到累计位置
     for i in range(1, 10):
-        count[i] += count[i - 1]
+        count[i] += count[i-1]
 
-    i = n - 1
+    # 对个位数进行排列
+    i = length - 1
     while i >= 0:
         index = list1[i] // exp1
         output[count[index % 10] - 1] = list1[i]
         count[index % 10] -= 1
         i -= 1
 
-    i = 0
-    for i in range(0, len(list1)):
+    for i in range(0, length):
         list1[i] = output[i]
 
 def radixSort(list1):
@@ -784,6 +870,7 @@ print(sort(list1, 4))
 
 ### binary search(二分搜索)
 
+- 循环:
 ```py
 def binarySearch(list1, x):
     low = 0
@@ -808,6 +895,25 @@ def binarySearch(list1, x):
 list1 = [3, 4, 5, 6, 7, 8, 9]
 result = binarySearch(list1, 5)
 print(result)
+```
+
+- 函数式编程:
+```py
+def iter(low, high, n):
+    if low >= high:
+        return -1
+
+    mid = (high - low) // 2
+    if list1[mid] == n:
+        return mid
+    elif list1[mid] > n:
+        iter(low, mid-1, n)
+    else:
+        iter(mid+1, high, n)
+
+
+def search(list1, n):
+    return iter(0, len(list1), n)
 ```
 
 ### hash tab(hash表)
@@ -1109,9 +1215,129 @@ link1.search(0)
 
 ## tree(树)
 
+![image](./imgs/bigO_link.png)
+![image](./imgs/tree_benchmark.png)
+
 ### binary tree(二叉树)
 
-#### 判断是否为二叉树
+```py
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.left = None
+        self.right = None
+```
+
+### full binary tree
+
+> 每个结点要么有两个结点, 要么两个结点都是None
+
+#### 判断是否为full binary tree
+```py
+def isFullTree(root):
+
+    if root is None:
+        return True
+
+    if root.left is None and root.right is None:
+        return True
+
+    if root.left is not None and root.right is not None:
+        return (isFullTree(root.left) and isFullTree(root.right))
+
+    return False
+
+
+root = Node(1)
+root.right = Node(3)
+root.left = Node(2)
+
+root.left.left = Node(4)
+root.left.right = Node(5)
+root.left.right.left = Node(6)
+root.left.right.right = Node(7)
+print(isFullTree(root))
+```
+
+### perfect binary tree
+
+> 左右结点高度相等
+
+#### 判断是否为perfect binary tree
+
+```py
+# 树的深度
+def depth(node):
+    d = 0
+    while node is not None:
+        d += 1
+        node = node.left
+    return d
+
+
+def is_perfect(root, d, level=0):
+
+    if root is None:
+        return True
+
+    if root.left is None and root.right is None:
+        return (d == level + 1)
+    elif root.left is None or root.right is None:
+        return False
+
+    return (is_perfect(root.left, d, level + 1) and
+           is_perfect(root.right, d, level + 1))
+
+
+root = Node(1)
+root.left = Node(2)
+root.right = Node(3)
+
+print(is_perfect(root, depth(root)))
+```
+
+### complete binary tree(完全二叉树)
+
+> 树向左结点倾斜的
+
+#### 判断是否为complete binary tree
+
+```py
+# 结点总数
+def count_nodes(root):
+    if root is None:
+        return 0
+    return (1 + count_nodes(root.left) + count_nodes(root.right))
+
+
+def is_complete(root, index, counts):
+    if root is None:
+        return True
+
+    if index >= counts:
+        return False
+
+    return (is_complete(root.left, 2 * index + 1, counts) and
+            is_complete(root.right, 2 * index + 2, counts))
+
+
+root = Node(1)
+root.left = Node(2)
+root.right = Node(3)
+root.left.left = Node(4)
+
+print(is_complete(root, 0, count_nodes(root)))
+```
+
+### balanced binary tree(平衡二叉树)
+
+> 左右结点高度不能超过1
+
+### binary search tree(二叉搜索树)
+
+> 左结点小于根结点; 右结点大于根结点
+
+#### 判断是否为二叉搜索树
 
 ```py
 class SearchTree(object):
@@ -1166,7 +1392,58 @@ False
 True
 ```
 
-### complete binary tree(完全二叉树)
+### AVL tree(自平衡二叉搜索树)
+
+## string
+
+### 统计两个字符串中的重复字符
+
+```py
+def f(s1, s2):
+    len1 = len(s1)
+    len2 = len(s2)
+    # 矩阵. 横是s2, 纵是s1
+    array = [[0] * (len2+1) for _ in range(len1+1)]
+
+    for i in range(1, len1 + 1):
+        for j in range(1, len2 + 1):
+            if s1[i-1] == s2[j-1]:
+                array[i][j] = array[i-1][j-1] + 1
+            else:
+                array[i][j] = max(array[i][j-1], array[i-1][j])
+
+    return array[len1][len2]
+
+
+s1 = 'abcdefghijk'
+s2 = 'defghi'
+print(f(s1, s2))
+```
+
+## 动态规划
+
+### UnlyNum(丑数)
+
+```py
+def unlyNum(n):
+    dp = [0] * n
+    dp[0] = 1
+    p2 = p3 = p5 = 0
+    for i in range(1, n):
+        dp[i] = min(2*dp[p2], 3*dp[p3], 5*dp[p5])
+        if dp[i] == 2*dp[p2]:
+            p2 += 1
+        if dp[i] == 3*dp[p3]:
+            p3 += 1
+        if dp[i] == 5*dp[p5]:
+            p5 += 1
+
+    return dp[-1]
+
+
+print(unlyNum(8))
+```
+
 
 # reference
 

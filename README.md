@@ -19,7 +19,8 @@
             * [itertools模块](#itertools模块)
         * [yield(生成器)](#yield生成器)
             * [yield from(递归生成器)](#yield-from递归生成器)
-            * [send() 类似协程](#send-类似协程)
+            * [通过send() 唤醒yield, 类似协程](#通过send-唤醒yield-类似协程)
+                * [通过yield和send实现角色模型](#通过yield和send实现角色模型)
         * [zip() 迭代多个对象](#zip-迭代多个对象)
     * [match case(模式匹配): 需要python 3.10](#match-case模式匹配-需要python-310)
     * [函数式编程](#函数式编程)
@@ -69,18 +70,23 @@
         * [参数`*argv`, `**kwargs`](#参数argv-kwargs)
         * [内置函数,属性](#内置函数属性)
         * [装饰器(decorator)](#装饰器decorator)
+            * [类装饰器](#类装饰器)
         * [functools模块](#functools模块)
     * [class(类)](#class类)
         * [继承](#继承)
+        * [多重继承](#多重继承)
         * [@dataclass(简化类的定义)](#dataclass简化类的定义)
-        * [setattr(添加实例化后的属性)](#setattr添加实例化后的属性)
         * [元类(metaclass)](#元类metaclass)
         * [内置函数,属性](#内置函数属性-1)
         * [class的内置装饰器](#class的内置装饰器)
+        * [@property类装饰器的方法: getattr(), setattr()](#property类装饰器的方法-getattr-setattr)
         * [`__enter__()`, `__exit__()`: 定义with上下文](#__enter__-__exit__-定义with上下文)
         * [`__getitem__` 和 `__class_getitem__`: 定义带[]的调用 `object['arg']`](#__getitem__-和-__class_getitem__-定义带的调用-objectarg)
         * [`__getattribute__`: 当访问不存在的属性时调用](#__getattribute__-当访问不存在的属性时调用)
         * [functools.partialmethod() 只能封装是类里的方法](#functoolspartialmethod-只能封装是类里的方法)
+        * [描述器](#描述器)
+            * [实现类的参数类型检查](#实现类的参数类型检查)
+    * [weakerf(弱引用)](#weakerf弱引用)
     * [file](#file)
         * [readinto()](#readinto)
         * [hdf5](#hdf5)
@@ -89,6 +95,7 @@
         * [json](#json)
         * [yaml](#yaml)
         * [toml](#toml)
+        * [ini](#ini)
         * [pickle](#pickle)
             * [pickletools](#pickletools)
         * [shelve](#shelve)
@@ -99,40 +106,29 @@
         * [loguru](#loguru)
     * [lib(库)](#lib库)
         * [time](#time)
-        * [subprocess](#subprocess)
-            * [Popen](#popen)
-                * [asyncio(异步)](#asyncio异步)
-                * [gevent](#gevent)
-            * [clipboard](#clipboard)
-            * [安全问题:代码注入](#安全问题代码注入)
-        * [bandit安全测试](#bandit安全测试)
-        * [argparse(参数)](#argparse参数)
-        * [optparse(参数)](#optparse参数)
         * [re(正则表达式)](#re正则表达式)
         * [fnmatch(列表匹配)](#fnmatch列表匹配)
         * [Image](#image)
         * [pynput.keyboard(自动输入)](#pynputkeyboard自动输入)
         * [pyautogui(自动化键盘, 鼠标)](#pyautogui自动化键盘-鼠标)
-        * [psutil](#psutil)
         * [cursesmenu(tui)](#cursesmenutui)
-        * [pyinotify](#pyinotify)
         * [itchat: 微信库](#itchat-微信库)
         * [wxpy: 微信自动化](#wxpy-微信自动化)
         * [pyecharts: python ECharts数据可视化](#pyecharts-python-echarts数据可视化)
         * [hashlib](#hashlib)
+        * [pyodide: 把python编译成wasm, 在浏览器上运行](#pyodide-把python编译成wasm-在浏览器上运行)
         * [locust: web自动化压力测试](#locust-web自动化压力测试)
-    * [命令行相关](#命令行相关)
-        * [typer](#typer)
-        * [click](#click)
-        * [prompt_toolkit](#prompt_toolkit)
     * [cython](#cython)
     * [mingshe: 语法糖](#mingshe-语法糖)
     * [PEP 20: pythonic(python之禅)](#pep-20-pythonicpython之禅)
-    * [process: 进程, 线程, 协程](#process-进程-线程-协程)
+    * [system: 系统编程](#system-系统编程)
+    * [concurrency: 进程, 线程, 协程](#concurrency-进程-线程-协程)
     * [scientific computing: 科学计算](#scientific-computing-科学计算)
     * [network: 网络](#network-网络)
     * [spider: 网络爬虫和自动化测试](#spider-网络爬虫和自动化测试)
     * [debug: 调试](#debug-调试)
+    * [algorithms: 算法](#algorithms-算法)
+    * [Design Pattern: 设计模式](#design-pattern-设计模式)
 * [reference article(优秀文章)](#reference-article优秀文章)
 * [第三方软件资源](#第三方软件资源)
 
@@ -300,25 +296,27 @@ python -m trustme -i baidu.com
 
   - 变量使用引用计数,次数为 0 时则释放内存
 
+  - GIL只影响重cpu的程序, 对于重io的程序是不影响的
+
   - 当多个线程共享变量, 每次只能一个线程操作变量, 导致并发效率降低
 
   - PEP554: 子解释器(subinterpreters) 解决GIL锁低并发问题:
 
-        - 每个进程有独立的解释器以及GIL
+    - 每个进程有独立的解释器以及GIL
 
-        - 子解释器: 进程内部也可以有多个独立的解释器以及GIL
+    - 子解释器: 进程内部也可以有多个独立的解释器以及GIL
 
-            - 子解释器之间的资源通信: 使用`pickle verison 5` 把资源序列化, 然后通过共享内存进行传输
+        - 子解释器之间的资源通信: 使用`pickle verison 5` 把资源序列化, 然后通过共享内存进行传输
 
-                ![image](./imgs/subinterpreters.png)
+            ![image](./imgs/subinterpreters.png)
 
-                - 全局变量不能被其它子解释器访问
+            - 全局变量不能被其它子解释器访问
 
-                - 开销: 子解释器的初始化
+            - 开销: 子解释器的初始化
 
-                    - 要把模块导入到另一个命名空间
+                - 要把模块导入到另一个命名空间
 
-                    - ...
+                - ...
 
 - JIT(Just-in-time):
 
@@ -912,53 +910,194 @@ for x in flatten(list1):
     print(x)
 ```
 
-#### send() 类似协程
+#### 通过send() 唤醒yield, 类似协程
 
-> yield,通过send()传递值
+> send()函数向yield函数传递值
 
 ```py
-def xicheng():
+def f():
     while True:
-        n = (yield)
+        n = yield
         print(n)
 
 # test
-r = xicheng()
+r = f()
 
 # send之前需要__next__()
 r.__next__()
-r.send('123')
 r.send('hello')
+r.send('world')
+```
+输出
+```
+hello
+world
+```
 
-# 通过装饰器包一层函数,让它自动__next__()
+- 通过装饰器包一层函数,让它自动__next__()
+```py
 def wrapper(func):
-    def newxicheng():
+    def new_func():
         r = func()
         r.__next__()
         return r
-    return newxicheng
+    return new_func
 
+# 消费者
 @wrapper
-def xicheng():
+def consumer():
     while True:
-        n = (yield)
+        # 接送producer
+        n = yield
         print(n)
 
-# test
-r = xicheng()
-r.send('123')
+# 生产者
+def producer(n):
+    r = consumer()
+    for i in range(n):
+        # 发送给consumer
+        r.send(i)
 
-# 生成器
-def xicheng():
-    r = None
+if __name__ == '__main__':
+    producer(10)
+```
+
+- send()给自己
+
+```py
+# 即是生产者也是消费者
+@wrapper
+def producer():
     while True:
-        line = (yield r)
-        r = line.split(',')
+        n = yield
+        if n == 0:
+            break
+        print(n)
+        try:
+            # 发送给自己
+            my = producer()
+            my.send(n-1)
+        except StopIteration:
+            pass
+
+if __name__ == '__main__':
+    r = producer()
+    r.send(10)
+```
+
+- 生产者负责控制步进, 消费者负责print()
+
+```py
+# 消费者负责print()
+@wrapper
+def consumer():
+    while True:
+        # 接送生产者
+        n = yield
+        print(n)
+
+# 生产者负责控制步进
+@wrapper
+def producer():
+    while True:
+        n = yield
+        if n == 0:
+            break
+        try:
+            # 发送给消费者
+            r = consumer()
+            r.send(n)
+
+            # 发送给自己
+            my = producer()
+            my.send(n-1)
+        except StopIteration:
+            pass
+
+if __name__ == '__main__':
+    r = producer()
+    r.send(10)
+```
+
+- yield返回值(生成器)
+```py
+def f():
+    m = None
+    while True:
+        line = yield m
+        m = line.split(',')
 
 # test
-r = xicheng()
+r = f()
 r.__next__()
 r.send('123,321')
+```
+##### 通过yield和send实现角色模型
+```py
+from collections import deque
+
+class ActorScheduler:
+    def __init__(self):
+        # 字典保存actor
+        self._actors = {}
+        # 使用双向链表保存(actor, msg)
+        self._msg_queue = deque()
+
+    # 注册actor
+    def new_actor(self, name, actor):
+        self._msg_queue.append((actor, None))
+        self._actors[name] = actor
+
+    # actor发送给双向链表, 保存(actor, msg)
+    def send(self, name, msg):
+        actor = self._actors.get(name)
+        if actor:
+            self._msg_queue.append((actor, msg))
+
+    def run(self):
+        while self._msg_queue:
+            actor, msg = self._msg_queue.popleft()
+            try:
+                # 发送msg给对应actor. actor函数使用yield作为接收
+                actor.send(msg)
+            except StopIteration:
+                pass
+
+
+def consumer():
+    while True:
+        # 接收run方法的send
+        n = yield
+        print('got:', n)
+
+def producer(sched):
+    while True:
+        # 接收run方法的send
+        n = yield
+        # 退出
+        if n == 0:
+            break
+        # 发送给consumer
+        sched.send('consumer', n)
+        # 发送给自己, 自己也是consumer
+        sched.send('producer', n-1)
+
+
+if __name__ == '__main__':
+    sched = ActorScheduler()
+    sched.new_actor('consumer', consumer())
+    sched.new_actor('producer', producer(sched))
+
+    sched.send('producer', 5)
+    sched.run()
+```
+输出
+```
+got: 5
+got: 4
+got: 3
+got: 2
+got: 1
 ```
 
 ### zip() 迭代多个对象
@@ -3642,6 +3781,19 @@ test()
 test.__dict__
 ```
 
+- inspect.signature(): 获取形式参数
+```py
+from inspect import signature
+
+def f(x, y, z=1):
+    pass
+
+args = signature(f)
+print(args) # (x, y, z=1)
+print(args.parameters) # OrderedDict([('x', <Parameter "x">), ('y', <Parameter "y">), ('z', <Parameter "z=1">)])
+print(args.parameters['z'].default) # 1
+```
+
 ### 装饰器(decorator)
 
 > 输入输出函数
@@ -3689,8 +3841,39 @@ func = wrapper1(wrapper(func))
 
 # test
 func()()()
+```
 
-# 类装饰器
+- functools.wraps(): 传递参数, 复制元信息(__name__, __doc__)
+```py
+import time
+
+from functools import wraps
+
+def timethis(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(func.__name__, end-start)
+        return result
+    return wrapper
+
+@timethis
+def countdown(n):
+    while n > 0:
+        n -= 1
+
+
+countdown(100000)
+
+# __wrapped__获取原来的函数
+origin_func = countdown.__wrapped__
+origin_func(10)
+```
+
+- 装饰类
+```py
 def wrapper(cls):
     class newcls:
         def __init__(self):
@@ -3709,6 +3892,125 @@ a.name
 
 b = a.cls()
 b.name
+```
+
+- 装饰类的方法
+```py
+from functools import wraps
+
+def wrapper(func):
+    @wraps(func)
+    def f(*args, **kwargs):
+        print('我是装饰器')
+        return
+    return f
+
+
+class O:
+    @classmethod
+    @wrapper
+    def f(cls):
+        print('in classmethod')
+
+    @staticmethod
+    @wrapper
+    def f1():
+        print('in staticmethod')
+
+
+# test classmethod
+O.f() # 我是装饰器
+
+s = O()
+
+# test staticmethod
+s.f1() # 我是装饰器
+```
+
+- 根据函数是否存在某参数, 从而执行相应的操作
+```py
+from functools import wraps
+import inspect
+
+def optional_add(func):
+    # 查看函数是否存在arg_, 就输出y参数
+    if 'arg_y' in inspect.getfullargspec(func).args:
+        print('not arg_y')
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@optional_add
+def f(x):
+    pass
+
+@optional_add
+def f1(x, arg_y):
+    pass
+
+f1(1, 2)
+f(1) # not arg_y
+```
+
+#### 类装饰器
+
+- 手动实例化
+```py
+from functools import wraps
+
+class O:
+    # Decorator as an instance method
+    def wrapper(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            print('我是装饰器')
+            return func(*args, **kwargs)
+        return wrapper
+
+# 实例化
+o = O()
+
+@o.wrapper
+def f():
+    pass
+
+f() # 我是装饰器
+```
+
+- 不需要手动实例化
+```py
+import types
+from functools import wraps
+
+class Wrapper:
+    def __init__(self, func):
+        wraps(func)(self)
+        self.ncalls = 0
+
+    def __call__(self, *args, **kwargs):
+        self.ncalls += 1
+        print('我是装饰器', self.ncalls)
+        return self.__wrapped__(*args, **kwargs)
+
+    def __get__(self, instance, cls):
+        if instance is None:
+            return self
+        else:
+            return types.MethodType(self, instance)
+
+    def f1(self):
+        print('我是f1函数')
+
+
+@Wrapper
+def f():
+    pass
+
+f()    # 我是装饰器 1
+f()    # 我是装饰器 2
+f.f1() # 我是f1函数
 ```
 
 ### functools模块
@@ -3809,6 +4111,109 @@ class B(A):
 B()
 ```
 
+- super(): 调用父类方法
+
+    - 通过`__mro__`列表, 从左到右查找基类, 每个方法也只会被调用一次
+
+        - mro列表: 是使用C3线性化算法实现
+
+
+- 查看mro列表
+```py
+int.__mro__
+# (int, object)
+```
+
+- 不使用super(), 调用父类方法
+```py
+class Base:
+    def __init__(self):
+        print('Base.__init__')
+
+class A(Base):
+    def __init__(self):
+        Base.__init__(self)
+        print('A.__init__')
+
+class B(Base):
+    def __init__(self):
+        Base.__init__(self)
+        print('B.__init__')
+
+class C(A,B):
+    def __init__(self):
+        A.__init__(self)
+        B.__init__(self)
+        print('C.__init__')
+
+c = C()
+```
+输出: 会调用两次Base
+```
+Base.__init__
+A.__init__
+Base.__init__
+B.__init__
+C.__init__
+```
+
+- 使用super(), 调用父类方法
+
+```py
+class Base:
+    def __init__(self):
+        print('Base.__init__')
+
+class A(Base):
+    def __init__(self):
+        super().__init__()
+        print('A.__init__')
+
+class B(Base):
+    def __init__(self):
+        super().__init__()
+        print('B.__init__')
+
+class C(A,B):
+    def __init__(self):
+        super().__init__()  # Only one call to super() here
+        print('C.__init__')
+
+c = C()
+```
+输出: 只调用一次Base
+```py
+Base.__init__
+B.__init__
+A.__init__
+C.__init__
+```
+
+- 查看mro列表
+```py
+C.__mro__
+
+# (<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class '__main__.Base'>, <class 'object'>)
+```
+
+### 多重继承
+
+- 如果两个对象之间没有继承关系, 多重继承可以将他们, 关联起来
+
+```py
+class A:
+    def f(self):
+        print(self[0])
+
+# 关联A类, list类
+class B(A, list):
+    pass
+
+list1 = B()
+list1.append(1)
+list1.f()
+```
+
 ### @dataclass(简化类的定义)
 
 ```py
@@ -3865,20 +4270,6 @@ class people:
 
 example = people(name = 'tz')
 print(example)
-```
-
-### setattr(添加实例化后的属性)
-
-```py
-class people:
-    def __init__(self):
-       self.name = 'tz'
-
-cls = people
-
-# 添加age属性
-setattr(cls, 'age', 24)
-cls.age
 ```
 
 ### 元类(metaclass)
@@ -4009,6 +4400,29 @@ print(a.__class__.__class__)
 
     # 以上等同于
     a = cls()
+    ```
+
+    - 通过`__new__` 调用实现类实例缓存, 使相同名字的类实例只有一个
+        - 缺点: 这个方法每次都会调用__init__
+    ```py
+    class O:
+        # 通过字典缓存
+        cache = {}
+        def __new__(cls, name):
+            if name in cls.cache:
+                return cls.cache[name]
+            else:
+                self = super().__new__(cls)
+                cls.cache[name] = self
+                return self
+
+        def __init__(self, name):
+            print('init')
+            self.name = name
+
+    a = O('tz')
+    b = O('tz')
+    print(a is b) # True
     ```
 
 - `__del__()` destructors(析构函数)
@@ -4145,9 +4559,9 @@ print(a.__class__.__class__)
 
 ### class的内置装饰器
 
-- @property
+- @property: 是一个类装饰器
 
-    > 类的方法转换成只读属性
+    > 只读
 
     ```py
     class people(object):
@@ -4181,7 +4595,7 @@ print(a.__class__.__class__)
     people().age
     ```
 
-- @setter
+- @name.setter
 
     > 可以修改`@property`的属性
 
@@ -4242,6 +4656,12 @@ print(a.__class__.__class__)
             return cls.__height
 
     people().height()
+
+    # 继承
+    class new_people(people):
+        pass
+
+    new_people.height()
     ```
 
 - @staticmethod
@@ -4273,7 +4693,65 @@ print(a.__class__.__class__)
     a.name
     ```
 
+    - [实现状态机](https://python3-cookbook.readthedocs.io/zh_CN/latest/c08/p19_implements_stateful_objects_or_state_machines.html)
+
+### @property类装饰器的方法: getattr(), setattr()
+
+- getattr(): 字符串调用类的方法
+    ```py
+    # 例子1
+    class A:
+        def f(self, x):
+            print(x)
+
+    a = A()
+    getattr(a, 'f')(0) # Calls a.f(0)
+
+    # 例子2
+    list1 = []
+    getattr(list1, 'append')(0) # Calls list1.append(0)
+    ```
+    - operator.methodcaller(): 另一种字符串调用类的方法
+        ```py
+        import operator
+
+        list1 = []
+        operator.methodcaller('append', 0)(list1)
+        ```
+
+- setattr()
+```py
+class people:
+    def __init__(self):
+       self.name = 'tz'
+
+# 添加age属性
+setattr(people, 'age', 24)
+
+# 可以直接调用
+people.age
+```
 ### `__enter__()`, `__exit__()`: 定义with上下文
+
+- contextlib.contextmanager() 装饰器
+    - `yield` 之前的代码为`__enter__()`
+    - `yield` 之后的代码为`__exit__()
+
+```py
+from contextlib import contextmanager
+
+@contextmanager
+def list_transaction(list1):
+    print('start', list1)
+    yield list1
+    print('end', list1)
+
+
+list1 = []
+with list_transaction(list1) as list_t:
+    list_t.append(1)
+    list_t.append(2)
+```
 
 ### `__getitem__` 和 `__class_getitem__`: 定义带[]的调用 `object['arg']`
 
@@ -4318,6 +4796,8 @@ print(a.__class__.__class__)
 
 ### `__getattribute__`: 当访问不存在的属性时调用
 
+- 注意:对`__`开头和结尾的属性并不适用
+
 ```py
 class people:
     def __init__(self, name):
@@ -4326,7 +4806,7 @@ class people:
 o = people('tz')
 o.name
 
-# 报错
+# 报错: 不存在age属性
 o.age
 ```
 
@@ -4345,6 +4825,91 @@ class people:
 o = people('tz')
 o.name
 o.age
+```
+
+- 装饰器
+```py
+def new_getattr(cls):
+    orig_getattribute = cls.__getattribute__
+
+    def new_getattribute(self, attr):
+        print(attr)
+        return attr
+
+    cls.__getattribute__ = new_getattribute
+    return cls
+
+
+@new_getattr
+class people:
+    pass
+
+o = people()
+o.age # age
+```
+
+- 代理:
+
+    - 普通写法
+    ```py
+    class A:
+        def f(self):
+            pass
+
+        def f1(self, x):
+            pass
+
+
+    class B:
+        def __init__(self):
+            self._a = a()
+
+        def f(self):
+            return self._a.f()
+
+        def f1(self, x):
+            return self._a.f1(x)
+
+    b = B()
+    b.f()
+    b.f1(1)
+    ```
+    - 使用`__getattr__`
+
+    ```py
+    class Proxy:
+        def __init__(self, obj):
+            self._obj = obj
+
+        def __getattr__(self, name):
+            return getattr(self._obj, name)
+
+    a = A()
+
+    b = Proxy(a)
+    b.f()  # Calls B.__getattr__('f')
+    b.f1(1)
+    ```
+
+- 代理列表对象
+
+```py
+class ListLike:
+    def __init__(self):
+        # 列表对象
+        self._obj = []
+
+    def __getattr__(self, name):
+        # 找不到属性和方法时, 调用列表对象的方法
+        return getattr(self._obj, name)
+
+list1 = ListLike()
+
+# 像列表一样append
+list1.append(1)
+
+# 报错: 不支持__len__, 需要自行写入
+len(list1)
 ```
 
 ### functools.partialmethod() 只能封装是类里的方法
@@ -4373,6 +4938,194 @@ print(obj.color)
 ```
 black
 blue
+```
+### 描述器
+
+- 通过setattr()实现描述器, 将参数转换成属性
+
+```py
+class Descriptor:
+    def __init__(self, name=None, **opts):
+        self.name = name
+        for key, value in opts.items():
+            setattr(self, key, value)
+
+    def __set__(self, instance, value):
+        instance.__dict__[self.name] = value
+
+
+o = Descriptor('test', a=1, b=2)
+o.a = 10
+o.b = 20
+```
+
+- 实现类型检查器
+```py
+class Typed(Descriptor):
+    # 类型
+    expected_type = type(None)
+
+    def __set__(self, instance, value):
+        # 判断类型
+        if not isinstance(value, self.expected_type):
+            raise TypeError('expected ' + str(self.expected_type))
+        super().__set__(instance, value)
+
+class Int(Typed):
+    expected_type = int
+```
+
+- 实现值的判断
+```py
+class Unsigned(Descriptor):
+    def __set__(self, instance, value):
+        if value < 0:
+            raise ValueError('Expected >= 0')
+        super().__set__(instance, value)
+```
+
+#### 实现类的参数类型检查
+
+```py
+# 描述器
+class Descriptor:
+    def __init__(self, name=None, **opts):
+        self.name = name
+        for key, value in opts.items():
+            setattr(self, key, value)
+
+    def __set__(self, instance, value):
+        instance.__dict__[self.name] = value
+
+# 类型检查
+class Typed(Descriptor):
+    expected_type = type(None)
+
+    def __set__(self, instance, value):
+        # 判断类型
+        if not isinstance(value, self.expected_type):
+            print(self.expected_type)
+            raise TypeError('expected ' + str(self.expected_type))
+        super().__set__(instance, value)
+
+# 类型
+class Int(Typed):
+    expected_type = int
+
+class Float(Typed):
+    expected_type = float
+
+class Str(Typed):
+    expected_type = str
+
+class Stock:
+    a = Str('a')
+    b = Int('b')
+    c = Float('c')
+
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+
+
+# 报错: 第二个参数不是int
+Stock('tz', 's', 1.1)
+
+# 不报错
+Stock('tz', 0, 1.1)
+```
+
+- 装饰器写法
+```py
+class Typed:
+    def __init__(self, name, expected_type):
+        self.name = name
+        self.expected_type = expected_type
+
+    def __get__(self, instance, cls):
+        if instance is None:
+            return self
+        else:
+            return instance.__dict__[self.name]
+
+    def __set__(self, instance, value):
+        if not isinstance(value, self.expected_type):
+            raise TypeError('Expected ' + str(self.expected_type))
+        instance.__dict__[self.name] = value
+
+
+# Class decorator that applies it to selected attributes
+def typeassert(**kwargs):
+    def decorate(cls):
+        for name, expected_type in kwargs.items():
+            # Attach a Typed descriptor to the class
+            setattr(cls, name, Typed(name, expected_type))
+        return cls
+    return decorate
+
+# Example use
+@typeassert(name=str, shares=int, price=float)
+class Stock:
+    def __init__(self, name, shares, price):
+        self.name = name
+        self.shares = shares
+        self.price = price
+
+
+# 报错: 第二个参数不是int
+Stock('tz', 's', 1.1)
+
+# 不报错
+Stock('tz', 0, 1.1)
+```
+## weakerf(弱引用)
+
+- gc(垃圾回收)
+
+    - 对象的引用数变成0时才会被gc, 而循环引用导致条件永远不会成立
+
+```py
+class Data:
+    def __del__(self):
+        print('Data.__del__')
+
+class Node:
+    def __init__(self):
+        self.data = Data()
+        self.parent = None
+        self.children = []
+
+    def add_child(self, child):
+        self.children.append(child)
+        child.parent = self
+
+
+a = Data()
+del a # Data.__del__
+
+a = Node()
+del a # Data.__del__
+
+# 循环引用没有触发del(在交互模式下运行)
+a = Node()
+a.add_child(Node())
+del a
+
+# 需要手动触发
+import gc
+gc.collect()
+```
+
+- weakref.ref(): 通过弱引用消除循环引用
+
+    - 弱引用就是一个对象指针，它不会增加它的引用计数
+
+```py
+# 重新定义方法
+    def add_child(self, child):
+        self.children.append(child)
+        child.parent = weakref.ref(self)
 ```
 
 ## file
@@ -4767,6 +5520,26 @@ with open('test.yaml', 'w') as file:
 
 ### [toml](https://github.com/toml-lang/toml)
 
+### ini
+
+```py
+from configparser import ConfigParser
+
+cfg = ConfigParser()
+cfg.read("/tmp/ini.ini")
+# 查看所有段
+cfg.sections()
+
+# 读取installation段的library键字符串值
+cfg.get("installation", "library")
+
+# 读取debug段的log_errors键布尔值
+cfg.getboolean("debug", "log_errors")
+
+# 读取server段的nworkers键的int值
+cfg.getint("server", "nworkers")
+```
+
 ### pickle
 
 - 安全问题
@@ -4966,6 +5739,11 @@ for i in p.glob('**/*'):
 
 ### os
 
+| 方法        | 操作               |
+|-------------|--------------------|
+| os.fork()   | 创建子进程         |
+| os.setsid() | 创建新会话, 并设置子进程为进程组组长 |
+
 ```py
 import os
 
@@ -5003,24 +5781,86 @@ for root, dirs, files in os.walk(".", topdown=False):
 ## 日志
 
 ### logging
-
 ```py
 import logging
 
-logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
+def main():
+    # 设置为DEBUG, 也就是输出所有等级
+    logging.basicConfig(filename="app.log", level=logging.DEBUG)
 
-# 设置日志输出文件
-# filemode='w' 为重头输出, 'a' 追加输出
-logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+    # 5个等级
+    logging.critical('log')
+    logging.error('log')
+    logging.warning('log')
+    logging.info('log')
+    logging.debug('log')
+
+if __name__ == "__main__":
+    main()
+```
+输出
+```
+CRITICAL:root:log
+ERROR:root:log
+WARNING:root:log
+INFO:root:log
+DEBUG:root:log
+```
+
+- 设置
+```py
+import logging
 
 # 设置等级debug以上才输出
 logging.basicConfig(level=logging.DEBUG)
 
-# 设置时间格式
-logging.basicConfig(filename='app.log', filemode='w',format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-
 # 禁用等级CRITICAL以下的输出
 logging.disable(logging.CRITICAL)
+
+# filemode='w' 覆盖写入; 默认为'a' 追加写入
+logging.basicConfig(filename='app.log', filemode='w')
+
+# 默认格式
+logging.basicConfig(format='%(levelname)s:%(name)s:%(message)s')
+
+# 修改格式
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
+
+# 设置时间格式
+logging.basicConfig(datefmt='%d-%b-%y %H:%M:%S')
+```
+
+- 配置文件
+```ini
+; /tmp/log.ini
+
+[loggers]
+keys=root
+
+[handlers]
+keys=defaultHandler
+
+[formatters]
+keys=defaultFormatter
+
+[logger_root]
+level=INFO
+handlers=defaultHandler
+qualname=root
+
+[handler_defaultHandler]
+class=FileHandler
+formatter=defaultFormatter
+args=('app.log', 'a')
+
+[formatter_defaultFormatter]
+format=%(levelname)s:%(name)s:%(message)s
+```
+
+- 读取配置文件
+```py
+import logging.config
+logging.config.fileConfig('/tmp/log.ini')
 ```
 
 ### [loguru](https://github.com/Delgan/loguru)
@@ -5061,308 +5901,62 @@ end = time()
 print('%.2f秒' % (end - start))
 ```
 
-### subprocess
-
-- 返回值:
-
-    - subprocess.call 返回$?(是否执行成功)
-
-    - subprocess.check_output 返回 str
-
-        - 如果报错则出现subprocess.CalledProcessError
-
-    - subprocess.run 返回对象(subprocess.CompletedProcess)
-
-    - subprocess.Popen 返回对象(subprocess.Popen)
-
-    - 更建议使用 run, Popen
-
+- 计时器
 ```py
-# 默认以列表类型运行
-subprocess.call(['echo', '123'])
-
-# shell = True 以字符串类型执行
-subprocess.call('echo 123', shell = True)
-
-# 不显示命令执行的输出
-subprocess.call('echo 123', shell = True, stdout=subprocess.PIPE):
-
-# check_output 获取stdout
-output = subprocess.check_output('echo 123', shell=True)
-
-# 将二进制的输出结果转换为str
-output = output.decode('utf-8')
-# 或者
-# universal_newlines=True 将输出转换为str
-output = subprocess.check_output('echo 123', shell=True, universal_newlines=True)
-output.rstrip() # 去除换行符\n
-
-# 获取标准stdout, stderr, return code
-output = subprocess.run('echo 123', shell=True, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-output.stdout
-output.stderr
-output.returncode
-```
-
-#### Popen
-
-- [Popen](https://queirozf.com/entries/python-3-subprocess-examples)
-
-```py
-from subprocess import Popen
-# 在后台以子进程运行
-p = Popen(["ls","-l"])
-
-# wait()则会阻塞,等待并获取返回值.也就是wait()后才能获取returncode
-p.wait()
-
-# pid返回子进程pid
-p.pid
-
-# terminate()终止运行
-p.terminate()
-
-# 获取stdout, error.注意:必须stdout=subprocess.PIPE,不然output为空
-p = Popen("echo 123",shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-output, error = p.communicate()
-
-# 重定向输入输出
-test = '/tmp/test'
-file = open(test,'w+')
-# stdout=file.重定向输出
-p = Popen("echo 123",shell=True, stdout=file, stderr=subprocess.PIPE, universal_newlines=True)
-
-# p2 stdin=p1.stdout.重定向输出
-
-# PIPE ls -lha | grep foo bar
-from subprocess import Popen,PIPE
-p1 = Popen(["ls","-lha"], stdout=PIPE)
-p2 = Popen(["grep", "foo bar"], stdin=p1.stdout, stdout=PIPE)
-p1.stdout.close()
-```
-
-##### asyncio(异步)
-
-```py
-import asyncio
-
-async def command(cmd):
-    proc = await asyncio.create_subprocess_shell(
-        cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE)
-
-    stdout, stderr = await proc.communicate()
-    return stdout.decode().strip()
-```
-
-- 执行命令
-
-```py
-asyncio.run(command('ls /tmp'))
-```
-
-- loop执行命令
-
-```py
-loop = asyncio.get_event_loop()
-
-# Gather uname and date commands
-commands = asyncio.gather(command('uname'), command('date'))
-
-# Run the commands
-uname, date = loop.run_until_complete(commands)
-
-# Print a report
-print('uname: {}, date: {}'.format(uname, date))
-loop.close()
-```
-
-- stdin, stdout通信
-
-```py
-import asyncio
-
-async def echo(msg):
-    # Run an echo subprocess
-    process = await asyncio.create_subprocess_exec(
-        'cat',
-        # stdin must a pipe to be accessible as process.stdin
-        stdin=asyncio.subprocess.PIPE,
-        # stdout must a pipe to be accessible as process.stdout
-        stdout=asyncio.subprocess.PIPE)
-
-    # Write message
-    print('Writing {!r} ...'.format(msg))
-    process.stdin.write(msg.encode() + b'\n')
-
-    # Read reply
-    data = await process.stdout.readline()
-    reply = data.decode().strip()
-    print('Received {!r}'.format(reply))
-
-    # Stop the subprocess
-    process.terminate()
-    code = await process.wait()
-    print('Terminated with code {}'.format(code))
-
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(echo('hello!'))
-loop.close()
-```
-##### gevent
-```py
-import gevent
-from gevent.subprocess import Popen, PIPE
-
-def cron():
-    while True:
-        print("cron")
-        gevent.sleep(0.2)
-
-g = gevent.spawn(cron)
-sub = Popen(['sleep 1; uname'], stdout=PIPE, shell=True)
-out, err = sub.communicate()
-g.kill()
-print(out.rstrip())
-```
-
-#### clipboard
-
-- 相当于 `pyperclip` 模块
-
-```py
-def getClipboard():
-    cmd = 'xclip -selection clipboard -o'
-    output = subprocess.check_output(cmd, shell=True, universal_newlines=True)
-    return output
-
-def setClipboard(data):
-    p = subprocess.Popen(['xclip','-selection','clipboard'], stdin=subprocess.PIPE)
-    p.stdin.write(data)
-    p.stdin.close()
-    retcode = p.wait()
-
-setClipboard('data'.encode())
-```
-
-#### 安全问题:代码注入
-
-- [Python中的10个常见安全问题](https://medium.com/hackernoon/10-common-security-gotchas-in-python-and-how-to-avoid-them-e19fbe265e03)
-
-- ping例子
-```py
-import subprocess, sys, re
-
-address = sys.argv[1]
-
-# 匹配是否为ip地址
-if not re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", address):
-    print('error')
-    exit(1)
-
-print(address)
-subprocess.call("/bin/ping -c 3 '{0}'".format (address), shell = True)
-```
-
-- 注入代码
-
-```sh
- ./test.py "127.0.0.1';/bin/cat /etc/passwd;'"
-```
-
-- 解决方法: 使用`shlex` 模块
-
-    - 该模块只适用与unix
-
-```py
-import subprocess, sys, re
-import shlex
-
-address = sys.argv[1]
-
-# shlex.quote()
-address = shlex.quote(address)
-
-# 匹配是否为ip地址
-if not re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", address):
-    print('error')
-    exit(1)
-
-print(address)
-subprocess.call("/bin/ping -c 3 '{0}'".format (address), shell = True)
-```
-
-
-### [bandit](https://github.com/PyCQA/bandit)安全测试
-
-```py
-bandit -r ./test.py
-```
-
-
-### argparse(参数)
-
-- [文档](https://zetcode.com/python/argparse/)
-
-```py
-import argparse
-parser = argparse.ArgumentParser()
-
-# 如果有-o, --output参数,有则为true
-# 注意: 必须要有参数-o
-parser.add_argument('-o', '--output', action='store_true', help="shows output")
-
-# 自定义属性now
-parser.add_argument('-a', '--add', dest='now', action='store_true', help="shows output")
-
-# required赋值
-parser.add_argument('--name', required=True)
-
-# type定义类型
-parser.add_argument('-n', type=int, required=True) 
-
-# default
-parser.add_argument('-e', type=int, default=2, help="defines the exponent value")
-
-# append 多个重复参数
-parser.add_argument('-n', '--name', dest='names', action='append')
-
-args = parser.parse_args()
-print(args)
-
-# 如果有-o, --output参数,就执行
-if args.output:
-    print("This is some output")
-    print(f'Hello {args.name}')
-
-# 如果没有-o, --output参数,就执行
-if not args.output:
-    print("This is some output")
-    print(f'Hello {args.name}')
-
-if args.now:
-    print("This is add")
-```
-
-### optparse(参数)
-
-> 允许未add的参数
-
-`argparse` 模块如果遇上没有`add_argument`的参数会报错`error: unrecognized arguments`
-
-`optparse` 这不会有这个问题:
-
-```py
-from optparse import OptionParser
-parser = OptionParser()
-parser.add_option('-n', '--nmap', action='store_true',
-                  help="nmap mode")
-
-# positional是没有add_option的其他参数
-args, positional = parser.parse_args()
+import time
+
+class Timer:
+    # time.perf_counter()时间精度最高
+    def __init__(self, func=time.perf_counter):
+        self.time = 0.0
+        self._func = func
+        self._start = None
+
+    def start(self):
+        if self._start is not None:
+            raise RuntimeError('Already started')
+        self._start = self._func()
+
+    def stop(self):
+        if self._start is None:
+            raise RuntimeError('Not started')
+        end = self._func()
+        self.time += end - self._start
+        self._start = None
+
+    def reset(self):
+        self.time = 0.0
+
+    @property
+    def running(self):
+        return self._start is not None
+
+    # with语句
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args):
+        self.stop()
+
+
+def countdown(n):
+    while n > 0:
+        n -= 1
+
+if __name__ == '__main__':
+    t = Timer()
+
+    # 不使用with
+    t.start()
+    countdown(100)
+    t.stop()
+    print(t.time)
+
+    # with语句
+    with t:
+        countdown(100)
+    print(t.time)
 ```
 
 ### re(正则表达式)
@@ -5560,110 +6154,7 @@ pyautogui.locateOnScreen('123.png')
 im.getpixel((0, 0))
 ```
 
-### [psutil](https://github.com/giampaolo/psutil)
-
-- [官方文档](https://psutil.readthedocs.io/en/latest/)
-
-psutil.Popen:
-
-```py
-import psutil
-from subprocess import PIPE
-p = psutil.Popen(["/usr/bin/python", "-c", "print('hello')"], stdout=PIPE)
-p.name()
-p.communicate()
-p.wait(timeout=2)
-```
-
-bytes2human():
-
-```py
-def bytes2human(n):
-    # http://code.activestate.com/recipes/578019
-    # >>> bytes2human(10000)
-    # '9.8K'
-    # >>> bytes2human(100001221)
-    # '95.4M'
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10
-    for s in reversed(symbols):
-        if n >= prefix[s]:
-            value = float(n) / prefix[s]
-            return '%.1f%s' % (value, s)
-    return "%sB" % n
-```
-
-```py
-# 统计time_wait的连接
-cons =psutil.net_connections()
-len([c for c in cons if c.status == 'TIME_WATI'])
-```
-
 ### cursesmenu(tui)
-
-### pyinotify
-
-- [官方文档](https://github.com/seb-m/pyinotify/wiki)
-
-- [Events-types(mask)](https://github.com/seb-m/pyinotify/wiki/Events-types)
-```py
-import pyinotify
-
-wm = pyinotify.WatchManager()
-
-# mask = delete, create
-mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE
-
-# 自定义类
-class EventHandler(pyinotify.ProcessEvent):
-    def process_IN_CREATE(self, event):
-        print("Creating: ", event.pathname)
-
-    def process_IN_DELETE(self, event):
-        print("Deleting: ", event.pathname)
-
-# handler可单独call: handler(new_event)
-handler = EventHandler()
-
-notifier = pyinotify.Notifier(wm, handler)
-# 不使用自定义类
-notifier = pyinotify.Notifier(wm)
-
-# timeout周期性监控
-# notifier = pyinotify.Notifier(wm, handler, timeout=10)
-
-# wdd 所有监控的路径: 字典类型
-# rec 是否递归
-wdd = wm.add_watch('/tmp', mask, rec=True)
-wdd = wm.add_watch('/tmp', pyinotify.ALL_EVENTS, rec=True)
-
-# 取消某个监控路径
-wm.rm_watch(wdd['/tmp/dir'])
-wm.rm_watch(wdd['/tmp/dir'], rec=True)
-
-# 开始轮询
-notifier.loop()
-```
-
-开启新线程:
-
-```py
-notifier = pyinotify.ThreadedNotifier(wm, EventHandler())
-notifier.start()
-# 关闭
-notifier.stop()
-```
-
-异步:
-
-```py
-notifier = pyinotify.AsyncNotifier(wm, EventHandler())
-wdd = wm.add_watch('/tmp', mask, rec=True)
-import asyncore
-asyncore.loop()
-```
 
 ### [itchat: 微信库](https://github.com/littlecodersh/itchat)
 
@@ -6042,47 +6533,11 @@ token = hashlib.sha256(name.encode(encoding='UTF-8')).hexdigest()
 token = hashlib.sha3_512(name.encode(encoding='UTF-8')).hexdigest()
 ```
 
+### [pyodide: 把python编译成wasm, 在浏览器上运行](https://github.com/pyodide/pyodide)
+
+- [阿里技术:复杂推理模型从服务器移植到Web浏览器的理论和实战](https://mp.weixin.qq.com/s?src=11&timestamp=1638685048&ver=3477&signature=36Xs1HetyvAraQhPQIrJnqPsejKyxVfQCG*Lyuz6sHM1K2XwdWN9l8RJtRH1sdE1AJAhNzZ8ubS-zOcGnxOdwFGHpuoibokcOVzpZuBJf1siUc5CHuTESabz-xXPc6Tf&new=1)
+
 ### [locust: web自动化压力测试](https://github.com/locustio/locust)
-
-## 命令行相关
-
-### [typer](https://github.com/tiangolo/typer)
-
-    > 快速构建命令行的帮助信息, 针对函数
-
-### [click](https://github.com/pallets/click)
-    > 快速构建命令行的帮助信息, 针对变量. 执行完@click.command()的函数后会自动退出
-
-- [官方文档](https://click.palletsprojects.com/en/7.x/)
-
-- 打开编辑器,并输出编辑器的输入
-
-```py
-import click
-
-message = click.edit()
-print(message, end='')
-```
-
-- 账号, 密码输入
-
-```py
-import click
-
-@click.command()
-@click.option("--account", prompt="Account", help="The person to greet.")
-@click.option('--password', prompt=True, hide_input=True,
-              confirmation_prompt=True)
-def main(account, password):
-    print(f'account:{account}')
-    print(f'password:{password}')
-
-main()
-```
-
-### [prompt_toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
-
-    > 打造像ipython, mycli的交互REPL
 
 ## cython
 
@@ -6137,7 +6592,9 @@ import this
 ![image](./imgs/pythonic1.png)
 ![image](./imgs/pythonic2.png)
 
-## [process: 进程, 线程, 协程](./python-process.md)
+## [system: 系统编程](./python-system.md)
+
+## [concurrency: 进程, 线程, 协程](./python-concurrency.md)
 
 ## [scientific computing: 科学计算](./python-sc.md)
 
@@ -6146,6 +6603,10 @@ import this
 ## [spider: 网络爬虫和自动化测试](./python-spider.md)
 
 ## [debug: 调试](./python-debug.md)
+
+## [algorithms: 算法](./python-algorithms.md)
+
+## [Design Pattern: 设计模式](./python-design_pattern.md)
 
 # reference article(优秀文章)
 
