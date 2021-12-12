@@ -1,4 +1,78 @@
+
+<!-- vim-markdown-toc GFM -->
+
+* [debug(调试)](#debug调试)
+    * [代码检测](#代码检测)
+        * [flake8](#flake8)
+        * [bandit: 安全测试](#bandit-安全测试)
+        * [isort代码规范](#isort代码规范)
+        * [rope重构](#rope重构)
+    * [bytecode(字节码)](#bytecode字节码)
+        * [解析字节码函数](#解析字节码函数)
+        * [字节码在stack里的运行](#字节码在stack里的运行)
+            * [变量例子: 赋值, 加减](#变量例子-赋值-加减)
+            * [函数例子: 不同的frame stack](#函数例子-不同的frame-stack)
+            * [if例子](#if例子)
+            * [loop, block stack](#loop-block-stack)
+            * [EXTENDED_ARG特殊指令: oparg大于255(一字节)时](#extended_arg特殊指令-oparg大于255一字节时)
+            * [from vs import字节码](#from-vs-import字节码)
+        * [marshal模块解析pyc文件](#marshal模块解析pyc文件)
+    * [sys.settrace](#syssettrace)
+    * [timeit](#timeit)
+        * [使用timeit进行性能测试](#使用timeit进行性能测试)
+            * [直接初始化 vs 函数初始化](#直接初始化-vs-函数初始化)
+            * [3种字符串格式化对比](#3种字符串格式化对比)
+            * [列表,元组,集合添加元素性能对比:](#列表元组集合添加元素性能对比)
+            * [字典的key, 列表的值.相同情况下的循环对比](#字典的key-列表的值相同情况下的循环对比)
+            * [对比3种方法获取字典值: if, get(), try](#对比3种方法获取字典值-if-get-try)
+            * [from vs import](#from-vs-import)
+            * [全局变量 vs 局部变量](#全局变量-vs-局部变量)
+            * [使用`@numba.jit`JIT编译 vs 不使用](#使用numbajitjit编译-vs-不使用)
+            * [class内init赋值 vs class内`__slots__`赋值 vs 直接dict赋值](#class内init赋值-vs-class内__slots__赋值-vs-直接dict赋值)
+            * [类型检测 type() vs id() vs isinstance()](#类型检测-type-vs-id-vs-isinstance)
+            * [len()赋值局部变量 vs 在函数体内len()](#len赋值局部变量-vs-在函数体内len)
+            * [字典赋值 vs if赋值](#字典赋值-vs-if赋值)
+            * [iter循环迭代获取元素 vs index循环迭代获取元素](#iter循环迭代获取元素-vs-index循环迭代获取元素)
+            * [编译对象后运行 vs 直接运行](#编译对象后运行-vs-直接运行)
+            * [使用cython vs 不使用](#使用cython-vs-不使用)
+            * [字典循环使用keys() vs 不使用](#字典循环使用keys-vs-不使用)
+            * [4种字符串格式化方法性能对比](#4种字符串格式化方法性能对比)
+            * [list vs deque](#list-vs-deque)
+        * [函数内执行 vs 全局内执行](#函数内执行-vs-全局内执行)
+    * [cProfile: 统计每个函数的执行次数, 时间](#cprofile-统计每个函数的执行次数-时间)
+    * [Scalene: cpu, gpu, 内存分析器](#scalene-cpu-gpu-内存分析器)
+    * [tracemalloc: 查看内存使用](#tracemalloc-查看内存使用)
+    * [py-spy: 查看系统调用](#py-spy-查看系统调用)
+    * [objgraph: 对象依赖图](#objgraph-对象依赖图)
+    * [line_profiler: 统计每行代码的cpu时间](#line_profiler-统计每行代码的cpu时间)
+    * [memory_profiler: 统计每行代码的内存使用量](#memory_profiler-统计每行代码的内存使用量)
+    * [guppy3: 查看heap上的对象数量和大小](#guppy3-查看heap上的对象数量和大小)
+    * [ipython 分析代码](#ipython-分析代码)
+        * [性能测试](#性能测试)
+            * [array vs deque vs list](#array-vs-deque-vs-list)
+    * [pysnooper](#pysnooper)
+    * [pudb: tui调试](#pudb-tui调试)
+    * [vardbg](#vardbg)
+
+<!-- vim-markdown-toc -->
+
 # debug(调试)
+
+## 代码检测
+
+### [flake8](https://github.com/PyCQA/flake8)
+
+- 执行pycodestyle、pyflakes、mccabe的代码检测
+
+### [bandit: 安全测试](https://github.com/PyCQA/bandit)
+
+```py
+bandit -r ./test.py
+```
+
+### [isort代码规范](https://github.com/PyCQA/isort)
+
+### [rope重构](https://github.com/python-rope/rope)
 
 ## bytecode(字节码)
 
@@ -1157,6 +1231,39 @@ appendleft_test
 pop_test
 0.002227412000138429
 0.0012563700001919642
+```
+
+### 函数内执行 vs 全局内执行
+
+函数比全局更快
+
+```py
+import time
+
+# 在全局执行with语句
+start = time.time()
+with open('/tmp/file') as f:
+    for i in f:
+        pass
+end = time.time()
+print(end-start)
+
+
+# 在函数内执行with语句
+def f():
+    with open('/tmp/file') as f:
+        for i in f:
+            pass
+
+start = time.time()
+f()
+end = time.time()
+print(end-start)
+```
+输出
+```
+3.5762786865234375e-05
+2.5510787963867188e-05
 ```
 
 ## cProfile: 统计每个函数的执行次数, 时间

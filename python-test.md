@@ -1,6 +1,333 @@
-# test
+# test(测试)
+
+## pytest
+
+### 基本使用
+
+- [官方文档](https://docs.pytest.org/en/6.2.x/contents.html)
+
+- pytest不需要加入任何代码
+
+```py
+# test.py
+class Test:
+    def test_one(self):
+        assert 0
+```
+
+- pytest会自动运行以test开头的类和函数
+```sh
+pytest ./test.py
+```
+
+- 指定运行测试类和函数
+```py
+class Test:
+    def test_one(self):
+        assert 0
+
+class Test1:
+    def test_two(self):
+        assert 0
+```
+
+```sh
+# 只测试Test1类
+pytest ./test.py::Test1
+
+# 只测试Test1类的test_two函数
+pytest ./test.py::Test1::test_two
+```
+
+- pytest 参数
+```sh
+# pdb调试
+pytest --trace ./test.py
+
+# pastbin=all 发送所有测试结果到 http://bpaste.net
+pytest --pastebin=all ./test.py
+# 只发送failed测试结果
+pytest --pastebin=failed ./test.py
+```
+
+- `@pytest.mark.xfail`捕抓异常
+```py
+import pytest
+
+@pytest.mark.xfail(raises=ValueError)
+def test():
+    raise ValueError("Exception 123 raised")
+```
+
+- `pytest.raises` 捕抓异常和异常参数
+
+```py
+import pytest
+
+def f():
+    raise ValueError("Exception 123 raised")
+
+def test_match():
+    with pytest.raises(ValueError, match=r".* 123 .*"):
+        f()
+```
+
+
+
+### 6种测试结果
+
+| 测试结果 |
+|----------|
+| failed   |
+| passed   |
+| skipped  |
+| xfailed  |
+| xpassed  |
+| error    |
+
+```py
+import pytest
+
+
+@pytest.fixture
+def error_fixture():
+    assert 0
+
+
+def test_ok():
+    print("ok")
+
+
+def test_fail():
+    assert 0
+
+
+def test_error(error_fixture):
+    pass
+
+
+def test_skip():
+    pytest.skip("skipping this test")
+
+
+def test_xfail():
+    pytest.xfail("xfailing this test")
+
+
+@pytest.mark.xfail(reason="always xfail")
+def test_xpass():
+    pass
+```
+
+```sh
+pytest ./test.py
+```
+输出
+```
+...省略
+======================================== short test summary info =========================================
+FAILED test.py::test_fail - assert 0
+ERROR test.py::test_error - assert 0
+================= 1 failed, 1 passed, 1 skipped, 1 xfailed, 1 xpassed, 1 error in 0.10s ==================
+```
+
+- `pytest -r ` 加以下参数. 指定最后部分显示
+
+| r后面的参数 | 最后部分只显示        |
+|-------------|-----------------------|
+| f           | failed                |
+| E           | error                 |
+| s           | skipped               |
+| x           | xfailed               |
+| X           | xpassed               |
+| p           | passed                |
+| P           | passed with output    |
+| a           | all except pP         |
+| A           | all                   |
+| N           | none (不显示任何内容) |
+
+```sh
+pytest -ra ./test.py
+```
+输出
+```
+...省略
+======================================== short test summary info =========================================
+SKIPPED [1] test.py:23: skipping this test
+XFAIL test.py::test_xfail
+  reason: xfailing this test
+XPASS test.py::test_xpass always xfail
+ERROR test.py::test_error - assert 0
+FAILED test.py::test_fail - assert 0
+================= 1 failed, 1 passed, 1 skipped, 1 xfailed, 1 xpassed, 1 error in 0.11s ==================
+
+```
 
 ## unittest
+
+### 基本使用
+
+| assert方法                          | 操作                    |
+|-------------------------------------|-------------------------|
+| assertEqual(a, b)                   | a == b                  |
+| assertTrue(x)                       | bool(x) is True         |
+| assertFalse(x)                      | bool(x) is False        |
+| assertIs(a, b)                      | a is b                  |
+| assertIsNone(x)                     | x is None               |
+| assertIn(a, b)                      | a in b                  |
+| assertIsInstance(a, b)              | isinstance(a, b)        |
+| assertRaises(ValueError, func, arg) | 执行func(arg)抛出ValueError |
+
+| 测试结果 | 内容                                   |
+|----------|----------------------------------------|
+| OK       | 所有测试通过                           |
+| FAIL     | 未通过. 抛出`AssertionError`异常       |
+| ERROR    | 未通过. 抛出`AssertionError`以外的异常 |
+
+- OK
+    ```py
+    import unittest
+
+    # 继承unittest.TestCase
+    class Test(unittest.TestCase):
+
+        def test(self):
+            self.assertTrue(True)
+
+    if __name__ == '__main__':
+        # 会自动运行以test开头的函数
+        unittest.main()
+    ```
+    输出
+    ```
+    .
+    ----------------------------------------------------------------------
+    Ran 1 test in 0.000s
+
+    OK
+    ```
+    `-v`参数, 表示详细输出
+    ```
+    test (__main__.Test) ... ok
+
+    ----------------------------------------------------------------------
+    Ran 1 test in 0.000s
+
+    OK
+    ```
+
+- FAIL
+    ```py
+    import unittest
+
+    class Test(unittest.TestCase):
+
+        def test(self):
+            # 改为False, 让测试Fail
+            self.assertTrue(False)
+
+    if __name__ == '__main__':
+        unittest.main()
+    ```
+    输出
+    ```
+    F
+    ======================================================================
+    FAIL: test (__main__.Test)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      File "/home/tz/test.py", line 8, in test
+        self.assertTrue(False)
+    AssertionError: False is not true
+
+    ----------------------------------------------------------------------
+    Ran 1 test in 0.000s
+
+    FAILED (failures=1)
+    ```
+
+- error
+    ```py
+    import unittest
+
+    class Test(unittest.TestCase):
+
+        def test(self):
+            # 输入一个不存在的函数, 让测试error
+            self.assertTrue(f)
+
+    if __name__ == '__main__':
+        unittest.main()
+    ```
+    输出
+    ```
+    E
+    ======================================================================
+    ERROR: test (__main__.Test)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      File "/home/tz/./test.py", line 7, in test
+        self.assertTrue(f)
+    NameError: name 'f' is not defined
+
+    ----------------------------------------------------------------------
+    Ran 1 test in 0.000s
+
+    FAILED (errors=1)
+    ```
+
+- 跳过测试
+```
+import os
+
+class Tests(unittest.TestCase):
+    # 跳过测试
+    @unittest.skip('skipped test')
+    def test_1(self):
+        pass
+
+    # 如果是unix系统, 就跳过测试
+    @unittest.skipIf(os.name=='posix', 'Not supported on Unix')
+    def test_2(self):
+        import winreg
+
+    # 预期失败
+    @unittest.expectedFailure
+    def test_4(self):
+        self.assertEqual(2+2, 5)
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+
+### patch
+
+- 测试标准输出. 也就是print()的结果
+
+```py
+from io import StringIO
+import unittest
+from unittest.mock import patch
+
+def f(n):
+    print(n)
+
+class Test(unittest.TestCase):
+    def test_stdout(self):
+        n = 1
+
+        # 使用 StringIO 对象来代替 sys.stdout
+        with patch('sys.stdout', new=StringIO()) as out:
+            f(n)
+            expect_output = f'{n}\n'
+            self.assertEqual(out.getvalue(), expect_output)
+
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
 
 ### mock
 ??
@@ -114,4 +441,3 @@ class test(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 ```
-

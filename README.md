@@ -11,6 +11,7 @@
     * [import and from](#import-and-from)
     * [if](#if)
         * [assert](#assert)
+        * [try, except](#try-except)
         * [PEP 572: 海象运算符(:=)](#pep-572-海象运算符)
         * [三元运算符(Ternary)](#三元运算符ternary)
     * [while, for(循环)](#while-for循环)
@@ -121,6 +122,7 @@
     * [cython](#cython)
     * [mingshe: 语法糖](#mingshe-语法糖)
     * [PEP 20: pythonic(python之禅)](#pep-20-pythonicpython之禅)
+    * [test: 测试](#test-测试)
     * [system: 系统编程](#system-系统编程)
     * [concurrency: 进程, 线程, 协程](#concurrency-进程-线程-协程)
     * [scientific computing: 科学计算](#scientific-computing-科学计算)
@@ -530,9 +532,87 @@ class Myerror(Exception):
     def __str__(self):
         return 'define error'
 
-raise Myerror()
+def f():
+    raise Myerror()
+
+try:
+    f()
+except Myerror:
+    print('ok')
 ```
 
+- 加入参数
+```py
+class Myerror(Exception):
+    def __init__(self, message, status):
+        super().__init__(message, status)
+        self.message = message
+        self.status = status
+
+    def __str__(self):
+        return 'define error'
+
+def f():
+    raise Myerror('error', 1)
+
+try:
+    f()
+except Myerror as e:
+    print(e.args)
+```
+
+
+### try, except
+
+- 使用`Exception` 捕抓所有异常
+
+    - 这三个异常SystemExit, KeyboardInterrupt, GeneratorExit除外, 如果要捕抓这三个使用`BaseException`
+
+```py
+except Exception as e:
+```
+
+- 在异常内, 抛出异常
+```py
+def example():
+    try:
+        int('N/A')
+    except ValueError as e:
+        # raise ... from e
+        raise RuntimeError('A parsing error occurred') from e
+
+example()
+```
+
+- 处理多个异常
+```py
+try:
+    client_obj.get_url(url)
+except (URLError, ValueError, SocketTimeout):
+    client_obj.remove_url(url)
+```
+
+- 对不同的异常, 进行不同的处理
+```py
+try:
+    client_obj.get_url(url)
+except (URLError, ValueError):
+    client_obj.remove_url(url)
+except SocketTimeout:
+    client_obj.handle_url_timeout(url)
+```
+
+```py
+try:
+    f = open(filename)
+except OSError as e:
+    if e.errno == errno.ENOENT:
+        logger.error('File not found')
+    elif e.errno == errno.EACCES:
+        logger.error('Permission denied')
+    else:
+        logger.error('Unexpected error: %d', e.errno)
+```
 
 ### [PEP 572: 海象运算符(:=)](https://www.python.org/dev/peps/pep-0572/)
 
@@ -1258,7 +1338,7 @@ for i in zip(list1, list2):
 
 
 - 值匹配:
-    
+
     - 判断类的值
     ```py
     # o类来自上面例子
@@ -1672,7 +1752,6 @@ def square_root(x):
 square_root(256)
 ```
 
-<++>
 牛顿法:
 
 ```py
@@ -1843,7 +1922,7 @@ count(rlist, 1)
      b = a
      # 由于b引用a, 所以a和b一样
      b[0] = 2
- 
+
      import copy
      # 浅复制不会复制所有子对象
      b = copy.copy(a)
@@ -2014,6 +2093,41 @@ True
 ```py
 str(10) > str(9)
 False
+```
+
+- 字符的utf-8编码
+
+- 变长编码: 一个字符最短是8位, 最长是32位
+
+- 竟然是变长, 那如何区分一个字符的编码长度? 通过高位代表字符的长度
+
+    - 排除长度的位后, 剩余可用的位数为2^7 ; 2^11 ; 2^16 ; 2^21
+
+| First code point | Last code point | Byte 1   | Byte 2   | Byte 3   | Byte 4   |
+|------------------|-----------------|----------|----------|----------|----------|
+| U+0000           | U+007F          | 0xxxxxxx |          |          |          |
+| U+0080           | U+07FF          | 110xxxxx | 10xxxxxx |          |          |
+| U+0800           | U+FFFF          | 1110xxxx | 10xxxxxx | 10xxxxxx |          |
+| U+10000          | [nb 2]U+10FFFF  | 11110xxx | 10xxxxxx | 10xxxxxx | 10xxxxxx |
+
+```py
+def string_to_bytes(s):
+    array = bytearray(s, "utf8")
+    list1 = [bin(i) for i in array]
+    print(list1)
+
+# 中文需要3个字节
+chinese = '一'
+# 英文需要1个字节
+english = 'a'
+
+string_to_bytes(chinese)
+string_to_bytes(english)
+```
+输出
+```
+['0b11100100', '0b10111000', '0b10000000']
+['0b1100001']
 ```
 
 #### print()
@@ -3721,7 +3835,7 @@ def myFun(arg1, arg2, *argv):
     print ("Second argument :", arg2)
     for arg in argv:
         print("Next argument through *argv :", arg)
- 
+
 myFun('Hello', 'Welcome', 'to', 'python')
 
 # 或者
@@ -4115,7 +4229,7 @@ B()
 
     - 通过`__mro__`列表, 从左到右查找基类, 每个方法也只会被调用一次
 
-        - mro列表: 是使用C3线性化算法实现
+        - mro列表: 是使用C3(反向广度优先算法)实现
 
 
 - 查看mro列表
@@ -4197,6 +4311,14 @@ C.__mro__
 ```
 
 ### 多重继承
+
+![image](./imgs/inheritance.png)
+
+- 深度优先: M5 -> M3 -> M1 -> M4 -> M1 -> M2
+- 广度优先: M5 -> M3 -> M4 -> M1 -> M2
+- C3(反向广度优先): M5 -> M4 -> M3 -> M2 -> M1
+
+- python使用的是C3算法
 
 - 如果两个对象之间没有继承关系, 多重继承可以将他们, 关联起来
 
@@ -5496,7 +5618,7 @@ pprint(json_str)
 
 ```py
 import yaml
- 
+
 # 读取json文件
 with open('test.json') as file:
   data = yaml.load(f)
@@ -6591,6 +6713,8 @@ import this
 ![image](./imgs/pythonic.png)
 ![image](./imgs/pythonic1.png)
 ![image](./imgs/pythonic2.png)
+
+## [test: 测试](./python-test.md)
 
 ## [system: 系统编程](./python-system.md)
 

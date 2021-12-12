@@ -30,6 +30,7 @@
     * [search(搜索)](#search搜索)
         * [binary search(二分搜索)](#binary-search二分搜索)
         * [hash tab(hash表)](#hash-tabhash表)
+        * [Bloom Filters(布隆过滤器)](#bloom-filters布隆过滤器)
     * [Linked List(链表)](#linked-list链表)
         * [Linked List(单向链表)](#linked-list单向链表)
             * [单向链表归并排序](#单向链表归并排序)
@@ -58,6 +59,10 @@
 <!-- vim-markdown-toc -->
 
 # algorithms(算法)
+
+- [算法可视化](https://visualgo.net/en)
+
+- [算法可视化](https://www.cs.usfca.edu/~galles/visualization/Algorithms.html)
 
 ## 复杂度
 
@@ -981,6 +986,12 @@ for i in dict1.buckets:
 [(14, 14)]
 [(15, 15)]
 ```
+
+### Bloom Filters(布隆过滤器)
+
+- [介绍](https://llimllib.github.io/bloomfilter-tutorial/zh_CN/)
+
+- [python实现](https://github.com/jaybaird/python-bloomfilter)
 
 ## Linked List(链表)
 

@@ -5,6 +5,9 @@
     * [RPC(远程调用)](#rpc远程调用)
         * [xmlrpc.server.SimpleXMLRPCServer() 实现kv服务器](#xmlrpcserversimplexmlrpcserver-实现kv服务器)
         * [自定义序列化格式](#自定义序列化格式)
+        * [grpc rpc框架](#grpc-rpc框架)
+            * [unary类型](#unary类型)
+            * [bidirectional类型](#bidirectional类型)
     * [http](#http)
         * [requests](#requests)
         * [httpx](#httpx)
@@ -194,6 +197,237 @@ if __name__ == '__main__':
     c = Client(('localhost', 17000), authkey=b'passwd')
     proxy = RPCProxy(c)
     proxy.add(2, 3)
+```
+
+### [grpc rpc框架](https://github.com/grpc/grpc)
+
+- [awesome-grpc](https://github.com/grpc-ecosystem/awesome-grpc)
+
+- [grpc-implementation-using-python](https://www.velotio.com/engineering-blog/grpc-implementation-using-python)
+
+
+| 两种api 设计对比 | rest                        | grpc                      |
+|------------------|-----------------------------|---------------------------|
+| http协议         | http1.1. 一次只能有一个请求 | http2. 一次可以有多个请求 |
+| 传输格式         | json, xml                   | Protobuf                  |
+
+- 跨语言的rpc
+
+- 支持身份验证、跟踪、负载平衡和运行状况检查
+
+| grpc类型         | 操作                                                                       |
+|------------------|----------------------------------------------------------------------------|
+| Unary            | `rpc HelloServer(RequestMessage) returns (ResponseMessage);`               |
+| Bidirectional    | `rpc HelloServer(stream RequestMessage) returns (stream ResponseMessage);` |
+| Server           | `rpc HelloServer(RequestMessage) returns (stream ResponseMessage);`        |
+| Client           | `rpc HelloServer(stream RequestMessage) returns (ResponseMessage);`        |
+
+```sh
+# install
+pip install grpcio grpcio-tools
+```
+
+#### unary类型
+
+- proto文件
+```proto
+// unary.proto
+syntax = "proto3";
+
+package unary;
+
+service Unary{
+  // A simple RPC.
+  //
+  // Obtains the MessageResponse at a given position.
+ rpc GetServerResponse(Message) returns (MessageResponse) {}
+
+}
+
+message Message{
+ string message = 1;
+}
+
+message MessageResponse{
+ string message = 1;
+ bool received = 2;
+}
+```
+
+- 生成两个`unary_pb2.py`, `unary_pb2_grpc.py`
+```py
+python -m grpc_tools.protoc --proto_path=. ./unary.proto --python_out=. --grpc_python_out=.
+```
+
+- server
+```py
+import grpc
+from concurrent import futures
+import unary_pb2_grpc as pb2_grpc
+import unary_pb2 as pb2
+
+
+class UnaryService(pb2_grpc.UnaryServicer):
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def GetServerResponse(self, request, context):
+
+        # get the string from the incoming request
+        message = request.message
+        result = f'server: received "{message}"'
+        result = {'message': result, 'received': True}
+
+        return pb2.MessageResponse(**result)
+
+
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    pb2_grpc.add_UnaryServicer_to_server(UnaryService(), server)
+    server.add_insecure_port('[::]:50051')
+    server.start()
+    server.wait_for_termination()
+
+
+if __name__ == '__main__':
+    serve()
+```
+
+- client
+```py
+import grpc
+import unary_pb2_grpc as pb2_grpc
+import unary_pb2 as pb2
+
+
+class UnaryClient(object):
+    """
+    Client for gRPC functionality
+    """
+
+    def __init__(self):
+        self.host = 'localhost'
+        self.server_port = 50051
+
+        # instantiate a channel
+        self.channel = grpc.insecure_channel(
+            '{}:{}'.format(self.host, self.server_port))
+
+        # bind the client and the server
+        self.stub = pb2_grpc.UnaryStub(self.channel)
+
+    def get_url(self, message):
+        """
+        Client function to call the rpc for GetServerResponse
+        """
+        message = pb2.Message(message=message)
+        print(f'{message}')
+        return self.stub.GetServerResponse(message)
+
+
+if __name__ == '__main__':
+    client = UnaryClient()
+    result = client.get_url(message="client: Hello Server")
+    print(f'{result}')
+```
+
+#### bidirectional类型
+
+- proto文件
+```proto
+// bidirectional.proto
+
+syntax = "proto3";
+
+package bidirectional;
+
+service Bidirectional {
+  // A Bidirectional streaming RPC.
+  //
+  // Accepts a stream of Message sent while a route is being traversed,
+   rpc GetServerResponse(stream Message) returns (stream Message) {}
+}
+
+message Message {
+  string message = 1;
+}
+```
+
+- server
+```py
+from concurrent import futures
+
+import grpc
+import bidirectional_pb2_grpc as bidirectional_pb2_grpc
+
+
+class BidirectionalService(bidirectional_pb2_grpc.BidirectionalServicer):
+
+    def GetServerResponse(self, request_iterator, context):
+        for message in request_iterator:
+            yield message
+
+
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    bidirectional_pb2_grpc.add_BidirectionalServicer_to_server(BidirectionalService(), server)
+    server.add_insecure_port('[::]:50051')
+    server.start()
+    server.wait_for_termination()
+
+
+if __name__ == '__main__':
+    serve()
+```
+
+- 生成两个py文件
+```py
+python -m grpc_tools.protoc --proto_path=. ./bidirectional.proto --python_out=. --grpc_python_out=.
+```
+
+- client
+```py
+from __future__ import print_function
+
+import grpc
+import bidirectional_pb2_grpc as bidirectional_pb2_grpc
+import bidirectional_pb2 as bidirectional_pb2
+
+
+def make_message(message):
+    return bidirectional_pb2.Message(
+        message=message
+    )
+
+
+def generate_messages():
+    messages = [
+        make_message("First message"),
+        make_message("Second message"),
+        make_message("Third message"),
+        make_message("Fourth message"),
+        make_message("Fifth message"),
+    ]
+    for msg in messages:
+        print("Hello Server Sending you the %s" % msg.message)
+        yield msg
+
+
+def send_message(stub):
+    responses = stub.GetServerResponse(generate_messages())
+    for response in responses:
+        print("Hello from the server received your %s" % response.message)
+
+
+def run():
+    with grpc.insecure_channel('localhost:50051') as channel:
+        stub = bidirectional_pb2_grpc.BidirectionalStub(channel)
+        send_message(stub)
+
+
+if __name__ == '__main__':
+    run()
 ```
 
 ## http

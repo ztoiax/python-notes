@@ -1,3 +1,28 @@
+
+<!-- vim-markdown-toc GFM -->
+
+* [系统编程](#系统编程)
+    * [命令行相关](#命令行相关)
+        * [typer](#typer)
+        * [click](#click)
+        * [prompt_toolkit](#prompt_toolkit)
+    * [参数解析](#参数解析)
+        * [argparse](#argparse)
+        * [optparse(参数)](#optparse参数)
+    * [shell](#shell)
+        * [subprocess](#subprocess)
+            * [Popen](#popen)
+                * [asyncio(异步)](#asyncio异步)
+                * [gevent](#gevent)
+            * [clipboard](#clipboard)
+            * [安全问题:代码注入](#安全问题代码注入)
+    * [性能监控](#性能监控)
+        * [psutil](#psutil)
+    * [监控文件](#监控文件)
+        * [pyinotify](#pyinotify)
+    * [限制cpu, 内存](#限制cpu-内存)
+
+<!-- vim-markdown-toc -->
 # 系统编程
 
 ## 命令行相关
@@ -340,12 +365,6 @@ if not re.match("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", address):
 
 print(address)
 subprocess.call("/bin/ping -c 3 '{0}'".format (address), shell = True)
-```
-
-### [bandit](https://github.com/PyCQA/bandit)安全测试
-
-```py
-bandit -r ./test.py
 ```
 
 ## 性能监控

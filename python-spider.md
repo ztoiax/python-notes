@@ -1,3 +1,31 @@
+
+<!-- vim-markdown-toc GFM -->
+
+* [Spider(网络爬虫)](#spider网络爬虫)
+    * [builtwith(查看web技术)](#builtwith查看web技术)
+    * [python-whois(查看web所有者)](#python-whois查看web所有者)
+    * [robotparser(解析robots.txt)](#robotparser解析robotstxt)
+    * [bs4(解析html)](#bs4解析html)
+    * [webbrowser(打开网页)](#webbrowser打开网页)
+* [自动化测试](#自动化测试)
+    * [selenium](#selenium)
+        * [虚拟图形界面](#虚拟图形界面)
+        * [基本操作](#基本操作)
+        * [定位element](#定位element)
+        * [显式(explicit), 隐式(implicit)等待](#显式explicit-隐式implicit等待)
+        * [鼠标与键盘操作](#鼠标与键盘操作)
+        * [other](#other)
+        * [弹窗](#弹窗)
+        * [远程连接](#远程连接)
+        * [unnitest](#unnitest)
+        * [grid with docker](#grid-with-docker)
+    * [playwright](#playwright)
+    * [Puppeteer](#puppeteer)
+    * [appium](#appium)
+    * [airtest](#airtest)
+    * [poco](#poco)
+
+<!-- vim-markdown-toc -->
 # Spider(网络爬虫)
 
 ## builtwith(查看web技术)
