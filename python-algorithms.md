@@ -30,6 +30,7 @@
     * [search(搜索)](#search搜索)
         * [binary search(二分搜索)](#binary-search二分搜索)
         * [hash tab(hash表)](#hash-tabhash表)
+            * [hash函数](#hash函数)
         * [Bloom Filters(布隆过滤器)](#bloom-filters布隆过滤器)
     * [Linked List(链表)](#linked-list链表)
         * [Linked List(单向链表)](#linked-list单向链表)
@@ -50,10 +51,14 @@
         * [binary search tree(二叉搜索树)](#binary-search-tree二叉搜索树)
             * [判断是否为二叉搜索树](#判断是否为二叉搜索树)
         * [AVL tree(自平衡二叉搜索树)](#avl-tree自平衡二叉搜索树)
-    * [string](#string)
-        * [统计两个字符串中的重复字符](#统计两个字符串中的重复字符)
     * [动态规划](#动态规划)
         * [UnlyNum(丑数)](#unlynum丑数)
+        * [汉诺塔](#汉诺塔)
+        * [进制转换](#进制转换)
+        * [最少硬币找零](#最少硬币找零)
+    * [string(字符串)](#string字符串)
+        * [统计两个字符串中的重复字符](#统计两个字符串中的重复字符)
+        * [中叙, 后叙(逆波兰记法), 前叙表达式](#中叙-后叙逆波兰记法-前叙表达式)
 * [reference](#reference)
 
 <!-- vim-markdown-toc -->
@@ -620,9 +625,11 @@ def heapify(list1, length, i):
 
 def heapSort(list1):
     length = len(list1)
+    # 生成堆
     for i in range(length//2-1, -1, -1):
         heapify(list1, length, i)
 
+    # 将第一个值(最大的值), 放到最后面
     for i in range(length-1, 0, -1):
         list1[i], list1[0] = list1[0], list1[i]  # swap
         heapify(list1, i, 0)
@@ -636,10 +643,9 @@ def heapSort(list1):
     result = []
     length = len(list1)
     for i in range(length):
-        # 将最小值移动到list1[0]
         heapq.heapify(list1)
-        result.append(list1[0])
-        list1.remove(list1[0])
+        # pop 第一个值, 也是最小值
+        result.append(heapq.heappop(list1))
     return result
 ```
 
@@ -883,7 +889,7 @@ def binarySearch(list1, x):
 
     while low <= high:
 
-        mid = low + (high - low)//2
+        mid = (low + high)//2
 
         if list1[mid] == x:
             return mid
@@ -917,18 +923,112 @@ def iter(low, high, n):
         iter(mid+1, high, n)
 
 
-def search(list1, n):
+def binarySearch(list1, n):
     return iter(0, len(list1), n)
+```
+
+- 递归
+```py
+def binarySearch(list1, x):
+    length = len(list1)
+    if length == 0:
+        return False
+    else:
+        mid = length // 2
+        if list1[mid] == x:
+            return True
+        else:
+            if list1[mid] > x:
+                return binarySearch(list1[:mid], x)
+            else:
+                return binarySearch(list1[mid+1:], x)
 ```
 
 ### hash tab(hash表)
 
-- 桶越多, 碰撞次数越少
+- 链地址法(chaining)
 
-    - 没有碰撞复杂度为O(1)
+    - 遇到冲突时, 放如链表里
 
-    - 完全碰撞复杂度为O(n)
+    - 优点:
+        - 删除方便
 
+    - 缺点:
+        - 需要额外空间
+
+    ![image](./imgs/hash_link.png)
+
+- 开放地址法(open addressing)
+
+    - 遇到冲突时, 寻找下一个空的桶
+
+        - 最简单的方法就是: 按顺序遍历, 直到找到空的桶
+
+    - 优点:
+        - 不需要额外的空间
+
+    - 缺点:
+        - 桶快填满时, 冲突的几率大大增加, 寻找空桶的时间也增加
+
+        - 删除比链地址法要麻烦
+
+    ![image](./imgs/hash_linear.jpg)
+
+- 桶越多, 冲突次数越少
+
+    - 没有冲突复杂度为O(1)
+
+    - 完全冲突复杂度为O(n)
+
+    - ruby采用链地址法, 在冲突大于5时, 就增加桶的数量
+
+    - python采用开放地址法, 但2/3的桶被填满时, 就增加桶的数量
+
+```py
+class Hash:
+    def __init__(self, n):
+        self.n = n
+        self.buckets = []
+        # 一个集合代表一个桶. 集合没有重复值
+        for _ in range(n):
+            self.buckets.append(set())
+
+    # hash函数
+    def _hash(self, x):
+        return x % self.n
+
+    def add(self, x):
+        self.buckets[self._hash(x)].add(x)
+
+    def remove(self, x):
+        self.buckets[self._hash(x)].remove(x)
+
+    def list(self):
+        print(self.buckets)
+
+
+if __name__ == '__main__':
+    # 5个桶
+    hash = Hash(5)
+
+    # 添加
+    hash.add(10)
+    hash.add(11)
+    hash.add(100)
+    hash.add(101)
+    hash.list()
+
+    # 删除
+    hash.remove(10)
+    hash.list()
+```
+输出
+```
+[{10, 100}, {11, 101}, set(), set(), set()]
+[{100}, {11, 101}, set(), set(), set()]
+```
+
+- 保存kv值
 ```py
 class intdict(object):
     def __init__(self, numBuckets):
@@ -943,10 +1043,12 @@ class intdict(object):
         hashlist = self.buckets[key%self.numBuckets]
         length = len(hashlist)
         for i in range(length):
+            # 如果key存在, 就更换key值
             if hashlist[i][0] == key:
                 hashlist[i] = (key, val)
                 return
 
+        # 如果key不存在, 就添加
         hashlist.append((key, val))
 
     def get(self, key):
@@ -955,37 +1057,55 @@ class intdict(object):
             if i[0] == key:
                 return i[1]
 
+    def list(self):
+        print(self.buckets)
 
-# 16个桶
-dict1 = intdict(16)
 
-# 20个值
-for i in range(20):
-    dict1.add(i, i)
+if __name__ == '__main__':
+    # 5个桶
+    dict1 = intdict(5)
 
-for i in dict1.buckets:
-    print(i)
+    # 添加
+    for i in range(5):
+        dict1.add(i, i)
+    dict1.list()
 
+    # 修改
+    dict1.add(0, 999)
+    dict1.list()
+
+    # 获取
+    print(dict1.get(0))
 ```
 输出
 ```
-[(0, 0), (16, 16)]
-[(1, 1), (17, 17)]
-[(2, 2), (18, 18)]
-[(3, 3), (19, 19)]
-[(4, 4)]
-[(5, 5)]
-[(6, 6)]
-[(7, 7)]
-[(8, 8)]
-[(9, 9)]
-[(10, 10)]
-[(11, 11)]
-[(12, 12)]
-[(13, 13)]
-[(14, 14)]
-[(15, 15)]
+[[(0, 0)], [(1, 1)], [(2, 2)], [(3, 3)], [(4, 4)]]
+[[(0, 999)], [(1, 1)], [(2, 2)], [(3, 3)], [(4, 4)]]
+999
 ```
+
+#### hash函数
+
+- 分组求和法:
+    - 1. 电话号码436-555-4601, 分成2位数（43,65,55,46,01）
+    - 2. 43 + 65 + 55 + 46 + 01得到 210
+    - 3. 210 % 桶数
+
+- 平方取中法:
+    - 1. 数44, 先平方, 44^2 = 1936
+    - 2. 取中间两个数字 93
+    - 3. 93 % 桶数
+
+- 字符串ascii值相加法:
+    ```py
+    def hash(str1, bucket_num):
+        sum = 0
+        for i in str1:
+            sum += ord(i)
+
+        # 最后相加的值 % 桶数
+        return sum % bucket_num
+    ```
 
 ### Bloom Filters(布隆过滤器)
 
@@ -999,79 +1119,277 @@ for i in dict1.buckets:
 
 - 时间复杂度O(n)
 
+实现list(列表)的所有方法, 除了`sort()`, `reverse()`
+
+<details><summary>代码实现</summary><p>
+
+---
 ```py
-class Node(object):
+# 文件: list.py
+
+class Node:
     def __init__(self, data):
         self.data = data
         self.next = None
 
 
-class Linkedlist(object):
+# 迭代器
+class _ListIter():
+    def __init__(self, node):
+        self.node = node
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.node:
+            data = self.node.data
+            self.node = self.node.next
+            return data
+        else:
+            raise StopIteration
+
+
+class List:
     def __init__(self, data=None):
         self.head = Node(data)
+        self.size = 0
 
-    def add(self, data):
-        if self.head.data is None:
-            self.head = Node(data)
-        else:
-            node = self.head
-            while node.next:
-                node = node.next
+    def __len__(self):
+        return self.size
 
-            new_node = Node(data)
-            node.next = new_node
+    def __iter__(self):
+        return _ListIter(self.head)
 
-    def insert(self, base_data, data):
+    def __repr__(self):
+        str1 = '['
+        for i in self:
+            str1 += f'{i}, '
+        str1 = str1.rstrip(', ')
+        str1 += ']'
+        return str1
+
+    # List[0]
+    def __getitem__(self, index):
+        assert index >= 0 and index < len(self), 'out of range'
+        for i, item in enumerate(self):
+            if i == index:
+                return item
+
+    # List[0] = 10
+    def __setitem__(self, index, value):
+        assert index >= 0 and index < len(self), 'out of range'
         node = self.head
-        while node.next:
-            if base_data == node.data:
-                new_node = Node(data)
-                new_node.next,  node.next = node.next, new_node
+        i = 0
+        while node:
+            if i == index:
+                node.data = value
                 return
+            i += 1
             node = node.next
 
-        raise ValueError("not search base_data")
+    def index(self, data):
+        for index, item in enumerate(self):
+            if item == data:
+                return index
 
-    def delete(self, data):
-        pre_node = node = self.head
+        raise ValueError("not search index data")
+
+    def count(self, data):
+        i = 0
+        for item in self:
+            if item == data:
+                i += 1
+        return i
+
+    def _last(self):
+        node = self.head
         while node.next:
-            if data == node.data:
-                pre_node.next = node.next
+            node = node.next
+        return node
+
+    def extend(self, link):
+        node = self._last()
+        node.next = link.head
+
+    def append(self, data):
+        if self.head.data is None:
+            self.head = Node(data)
+            self.size = 1
+        else:
+            node = self._last()
+            node.next = Node(data)
+            self.size += 1
+
+    def remove(self, data):
+        if self.head.data == data:
+            self.head = self.head.next
+            return
+
+        node = self.head
+        prev = node
+        while node:
+            if node.data == data:
+                prev.next = node.next
                 return
-            pre_node = node
+            prev = node
             node = node.next
 
         raise ValueError("not search delete data")
 
-    def search(self, data):
-        node, n = self.head, 1
-        while node:
-            if data == node.data:
-                return n
-            node = node.next
-            n += 1
+    def pop(self, index=None):
+        assert index >= 0 and index < len(self), 'out of range'
+        if index is None:
+            index = self.size - 1
 
-        raise ValueError("not search data")
-
-    def print(self):
-        if self.head is None:
-            raise ValueError("Link is empty")
+        if index == 0:
+            data = self.head.data
+            self.head = self.head.next
+            return data
 
         node = self.head
+        i = 0
+        prev = node
         while node:
-            print(node.data)
+            if i == index:
+                prev.next = node.next
+                return node.data
+            i += 1
+            prev = node
             node = node.next
 
+    def insert(self, index, data):
+        assert index >= 0 and index < len(self), 'out of range'
+        node = self.head
+        i = 0
+        prev = node
+        while node:
+            if i == index:
+                new_node = Node(data)
+                new_node.next = node
+                prev.next = new_node
+                return
+            i += 1
+            prev = node
+            node = node.next
 
-link1 = Linkedlist()
-link1.add(1)
-link1.add(2)
-link1.add(3)
-link1.delete(2)
-link1.insert(1, 0)
-link1.print()
-print(link1.search(0))
+    def copy(self):
+        list = List()
+        for item in self:
+            list.append(item)
+        return list
 ```
+---
+
+</p></details>
+
+<details><summary>测试代码</summary><p>
+
+---
+```py
+import pytest
+
+# list文件, 包含上面的实现代码
+from list import List
+
+
+# 初始化
+@pytest.fixture()
+def list1():
+    list = List()
+    for i in range(3):
+        list.append(i)
+    yield list
+
+def test_size(list1):
+    assert 3 == len(list1)
+
+def test_getitem(list1):
+    assert 0 == list1[0]
+
+    with pytest.raises(AssertionError, match="out of range"):
+        assert 0 == list1[9]
+
+def test_setitem(list1):
+    list1[0] = 10
+    assert 10 == list1[0]
+
+    with pytest.raises(AssertionError, match="out of range"):
+        list1[9] = 10
+
+def test_index(list1):
+    assert 1 == list1.index(1)
+
+    with pytest.raises(ValueError, match="not search index data"):
+        list1.index(9)
+
+def test_count(list1):
+    assert 1 == list1.count(1)
+    # 不存在返回0
+    assert 0 == list1.count(11)
+
+def test_copy(list1):
+    list2 = list1.copy()
+    assert id(list2) != id(list1)
+
+def iter(list1):
+    for i in list1:
+        print(i)
+
+def test_iter(capsys, list1):
+    iter(list1)
+    out, err = capsys.readouterr()
+    assert out == '0\n1\n2\n'
+
+def test_extend(capsys, list1):
+    node = List()
+    for i in range(3, 6):
+        node.append(i)
+
+    list1.extend(node)
+
+    iter(list1)
+    out, err = capsys.readouterr()
+    assert out == '0\n1\n2\n3\n4\n5\n'
+
+def test_remove(capsys, list1):
+    list1.remove(1)
+
+    iter(list1)
+    out, err = capsys.readouterr()
+    assert out == '0\n2\n'
+
+    with pytest.raises(ValueError, match="not search delete data"):
+        list1.remove(9)
+
+def test_pop(capsys, list1):
+    assert 1 == list1.pop(1)
+
+    iter(list1)
+    out, err = capsys.readouterr()
+    assert out == '0\n2\n'
+
+    with pytest.raises(AssertionError, match="out of range"):
+        assert 1 == list1.pop(9)
+
+def test_insert(capsys, list1):
+    list1.insert(1, 11)
+
+    iter(list1)
+    out, err = capsys.readouterr()
+    assert out == '0\n11\n1\n2\n'
+
+    with pytest.raises(AssertionError, match="out of range"):
+        list1.insert(9, 11)
+
+def test_repr(capsys, list1):
+    iter(list1)
+    out, err = capsys.readouterr()
+    assert out == '0\n1\n2\n'
+```
+---
+
+</p></details>
 
 #### 单向链表归并排序
 
@@ -1231,6 +1549,44 @@ link1.search(0)
 
 ### binary tree(二叉树)
 
+- 列表实现
+```py
+def BinaryTree(r):
+    return [r, [], []]
+
+
+def insertLeft(root, newBranch):
+    t = root.pop(1)
+    if len(t) > 1:
+        root.insert(1, [newBranch, t, []])
+    else:
+        root.insert(1, [newBranch, [], []])
+    return root
+
+
+def insertRight(root, newBranch):
+    t = root.pop(2)
+    if len(t) > 1:
+        root.insert(2, [newBranch, [], t])
+    else:
+        root.insert(2, [newBranch, [], []])
+    return root
+
+
+if __name__ == '__main__':
+    r = BinaryTree(0)
+    insertLeft(r, 1)
+    insertRight(r, 2)
+    insertLeft(r, 3)
+    insertRight(r, 4)
+    print(r)
+```
+输出
+```
+[0, [3, [1, [], []], []], [4, [], [2, [], []]]]
+```
+
+- class实现
 ```py
 class Node:
     def __init__(self, data):
@@ -1405,7 +1761,127 @@ True
 
 ### AVL tree(自平衡二叉搜索树)
 
-## string
+## 动态规划
+
+### UnlyNum(丑数)
+
+```py
+def unlyNum(n):
+    dp = [0] * n
+    dp[0] = 1
+    p2 = p3 = p5 = 0
+    for i in range(1, n):
+        dp[i] = min(2*dp[p2], 3*dp[p3], 5*dp[p5])
+        if dp[i] == 2*dp[p2]:
+            p2 += 1
+        if dp[i] == 3*dp[p3]:
+            p3 += 1
+        if dp[i] == 5*dp[p5]:
+            p5 += 1
+
+    return dp[-1]
+
+
+print(unlyNum(8))
+```
+
+### 汉诺塔
+
+- 2的n次方-1
+```py
+def func(n):
+    if n == 0:
+        return 0
+    return 2*func(n-1) + 1
+```
+
+### 进制转换
+```py
+def toStr(n, base):
+    convertString = "0123456789ABCDEF"
+    if n < base:
+        return convertString[n]
+    else:
+        return toStr(n // base, base) + convertString[n % base]
+
+
+# 16进制
+print(toStr(65535, 16))
+
+# 2进制
+print(toStr(255, 2))
+```
+
+- stack实现
+```py
+from queue import LifoQueue
+
+def toStr(n, base):
+    stack = LifoQueue()
+    convertString = "0123456789ABCDEF"
+    while n > 0:
+        if n < base:
+            stack.put(convertString[n])
+        else:
+            stack.put(convertString[n % base])
+        n = n // base
+    res = ""
+    while not stack.empty():
+        res = res + str(stack.get())
+    return res
+
+print(toStr(65535, 16))
+print(toStr(255, 2))
+```
+
+### 最少硬币找零
+
+- 循环
+```py
+def coin(list1, n):
+    list2 = [0] * (n + 1)
+
+    def f(list1, n, list2):
+        for i in range(n + 1):
+            coinCount = i
+            for j in [c for c in list1 if c <= i]:
+                if list2[i - j] + 1 < coinCount:
+                    coinCount = list2[i - j] + 1
+            list2[i] = coinCount
+        return list2[n]
+    return f(list1, n, list2)
+
+
+print(coin([1, 5, 10, 20, 50, 100], 106))
+```
+
+- 递归
+```py
+def coin(list1, n):
+    list2 = [0] * (n + 1)
+
+    def f(list1, n, list2):
+        if n in list1:
+            list2[n] = 1
+            return 1
+        elif list2[n] > 0:
+            return list2[n]
+        else:
+            minCoins = n
+            for i in [c for c in list1 if c <= n]:
+                numCoins = 1 + f(list1, n - i, list2)
+                if numCoins < minCoins:
+                    minCoins = numCoins
+                    list2[n] = minCoins
+        return minCoins
+
+    return f(list1, n, list2)
+
+
+print(coin([1, 5, 10, 20, 50, 100], 106))
+```
+
+## string(字符串)
 
 ### 统计两个字符串中的重复字符
 
@@ -1431,30 +1907,237 @@ s2 = 'defghi'
 print(f(s1, s2))
 ```
 
-## 动态规划
+### 中叙, 后叙(逆波兰记法), 前叙表达式
 
-### UnlyNum(丑数)
+> stack实现
 
-```py
-def unlyNum(n):
-    dp = [0] * n
-    dp[0] = 1
-    p2 = p3 = p5 = 0
-    for i in range(1, n):
-        dp[i] = min(2*dp[p2], 3*dp[p3], 5*dp[p5])
-        if dp[i] == 2*dp[p2]:
-            p2 += 1
-        if dp[i] == 3*dp[p3]:
-            p3 += 1
-        if dp[i] == 5*dp[p5]:
-            p5 += 1
+- 对比
+```
+# 中叙
+a + b
 
-    return dp[-1]
+# 后叙
+a b +
 
-
-print(unlyNum(8))
+# 前叙
++ a b
 ```
 
+- 中叙表达式转后叙, 前叙表达式
+```py
+from queue import LifoQueue
+
+def to_lisp(str1):
+    # 优先级
+    dict1 = {}
+    dict1["*"] = 3
+    dict1["/"] = 3
+    dict1["+"] = 2
+    dict1["-"] = 2
+    dict1["("] = 1
+
+    list1 = str1.split()
+    opStack = LifoQueue()
+    res = []
+
+    res.append(')')
+    res.append(')')
+    for object in list1:
+        # 操作数
+        if object in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" or object in "0123456789":
+            res.append(object)
+        # 括号
+        elif object == '(':
+            opStack.put(object)
+        elif object == ')':
+            topToken = opStack.get()
+            while topToken != '(':
+                res.append(topToken)
+                res.append('(')
+                topToken = opStack.get()
+        # 操作符
+        else:
+            length = opStack.qsize()-1
+            # 先处理优先级高的操作符
+            while (not opStack.empty()) and \
+               (dict1[opStack.queue[length]] >= dict1[object]):
+                  res.append(opStack.get())
+                  res.append('(')
+                  res.append(')')
+            opStack.put(object)
+
+    # 处理剩余操作符
+    while not opStack.empty():
+        res.append(opStack.get())
+        res.append('(')
+
+    # 将后叙表达式转换为前叙, 也就是lisp
+    res.reverse()
+    return " ".join(res)
+
+if __name__ == '__main__':
+    print(to_lisp("1 * 2 + 3 * 4"))
+    print(to_lisp("( A + B ) * C - ( D - E ) * ( F + G )"))
+```
+输出
+```
+( + ( * 4 3 ) ( * 2 1 ) )
+( - ( * ( + G F ( - E D ) ( * C ( + B A ) )
+```
+
+- 前叙转中叙(不带括号)
+```py
+from queue import LifoQueue
+
+# 去除指定字符
+def remove_char(str1, tuple1):
+    res = []
+    a = True
+    for i in str1:
+        for j in tuple1:
+            if i == j:
+                a = False
+                break
+        if a is True:
+            res.append(i)
+        a = True
+    return res
+
+# 前叙转中叙
+def lisp_to(str1):
+    opStack = LifoQueue()
+    # 去除(, ), 空格
+    list1 = remove_char(str1, ('(', ')', ' '))
+    res = []
+
+    for object in list1:
+        if object in "+-*/":
+            opStack.put(object)
+        else:
+            res.append(object)
+            if not opStack.empty():
+                res.append(opStack.get())
+
+    return " ".join(res)
+
+
+if __name__ == '__main__':
+    str1 = '/ + 7 8 + 3 2'
+    str2 = '(/ (+ 7 8) (+ 3 2))'
+    str3 = '* 3 / + 7 8 + 3 2'
+    print(lisp_to(str1))
+    print(lisp_to(str2))
+    print(lisp_to(str3))
+```
+输出
+```
+7 + 8 / 3 + 2
+7 + 8 / 3 + 2
+3 * 7 + 8 / 3 + 2
+```
+
+- 前叙转中叙(带括号)
+```py
+from queue import LifoQueue
+
+def lisp_to(str1):
+    # 操作符
+    opStack = LifoQueue()
+    # 操作数
+    operandStack = LifoQueue()
+
+    list1 = list(str1)
+    res = []
+
+    for object in list1:
+        if object in "+-*/":
+            opStack.put(object)
+        elif object in "0123456789":
+            operandStack.put(object)
+        elif object == ')':
+            if operandStack.qsize() >= 2:
+                res.append('(')
+                res.append(operandStack.get())
+                res.append(opStack.get())
+                res.append(operandStack.get())
+                res.append(')')
+            if not opStack.empty():
+                res.append(opStack.get())
+
+    # 添加剩余操作数
+    while not operandStack.empty():
+        res.append(operandStack.get())
+
+    return " ".join(res)
+
+if __name__ == '__main__':
+    str1 = '(/ (+ 7 8) (+ 3 2))'
+    str2 = '(* 3 (/ (+ 7 8) (+ 3 2)))'
+
+    # 前叙转中叙
+    print(lisp_to(str1))
+    print(lisp_to(str2), '=', eval(lisp_to(str2)))
+```
+输出
+```
+( 8 + 7 ) / ( 2 + 3 )
+( 8 + 7 ) / ( 2 + 3 ) * 3 = 9.0
+```
+
+- 运行后叙表达式
+```py
+from queue import LifoQueue
+
+# 去除指定字符
+def remove_char(str1, tuple1):
+    res = []
+    a = True
+    for i in str1:
+        for j in tuple1:
+            if i == j:
+                a = False
+                break
+        if a is True:
+            res.append(i)
+        a = True
+    return res
+
+def doMath(op, op1, op2):
+    if op == "*":
+        return op1 * op2
+    elif op == "/":
+        return op1 / op2
+    elif op == "+":
+        return op1 + op2
+    else:
+        return op1 - op2
+
+def lisp_to(str1):
+    operandStack = LifoQueue()
+    # 去除(, ), 空格
+    list1 = remove_char(str1, ('(', ')', ' '))
+
+    for object in list1:
+        if object in "0123456789":
+            operandStack.put(int(object))
+        else:
+            operand2 = operandStack.get()
+            operand1 = operandStack.get()
+            result = doMath(object, operand1, operand2)
+            operandStack.put(result)
+    return operandStack.get()
+
+if __name__ == '__main__':
+    str1 = '7 8 + 3 2 + /'
+    str2 = '((7 8 +) (3 2 +) /)'
+    print(lisp_to(str1))
+    print(lisp_to(str2))
+```
+输出
+```
+3.0
+3.0
+```
 
 # reference
 
@@ -1467,7 +2150,6 @@ print(unlyNum(8))
 - [Problem Solving with Algorithms and Data Structures using Python(英文版, 可在线交互运行代码)](https://runestone.academy/runestone/books/published/pythonds3/index.html)
 
     - [problem-solving-with-algorithms-and-data-structure-using-python(中文版)](https://github.com/facert/python-data-structure-cn)
-
 
 - [TheAlgorithms: Python](https://github.com/TheAlgorithms/Python)
 

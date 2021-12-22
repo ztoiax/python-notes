@@ -7,6 +7,8 @@
     * [robotparser(解析robots.txt)](#robotparser解析robotstxt)
     * [bs4(解析html)](#bs4解析html)
     * [webbrowser(打开网页)](#webbrowser打开网页)
+* [web](#web)
+    * [PyWebIO: 快速生成html](#pywebio-快速生成html)
 * [自动化测试](#自动化测试)
     * [selenium](#selenium)
         * [虚拟图形界面](#虚拟图形界面)
@@ -230,6 +232,10 @@ controller.name
 # 打开网页
 controller.open(url)
 ```
+
+# web
+
+## [PyWebIO: 快速生成html](https://github.com/pywebio/PyWebIO)
 
 # 自动化测试
 

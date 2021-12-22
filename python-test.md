@@ -1,3 +1,26 @@
+<!-- vim-markdown-toc GFM -->
+
+* [test(测试)](#test测试)
+    * [pytest](#pytest)
+        * [基本使用](#基本使用)
+        * [6种测试结果](#6种测试结果)
+        * [fixture](#fixture)
+        * [临时文件tmpdir, tmpfactory](#临时文件tmpdir-tmpfactory)
+        * [capsys获取stdout, stderr](#capsys获取stdout-stderr)
+            * [recwarn 读取warnings模块](#recwarn-读取warnings模块)
+        * [插件](#插件)
+        * [配置文件](#配置文件)
+            * [pytest.ini](#pytestini)
+            * [tox 测试多个python版本](#tox-测试多个python版本)
+        * [jenkins(持续集成)](#jenkins持续集成)
+    * [unittest](#unittest)
+        * [基本使用](#基本使用-1)
+        * [patch](#patch)
+        * [mock](#mock)
+        * [@mock.path()](#mockpath)
+
+<!-- vim-markdown-toc -->
+
 # test(测试)
 
 ## pytest
@@ -8,6 +31,19 @@
 
 - pytest不需要加入任何代码
 
+| pytest参数        | 操作                                 |
+|-------------------|--------------------------------------|
+| -x                | 遇到第1个failed就退出                |
+| --maxfail=2       | 自定义failed退出的次数               |
+| -s                | 输出print()的内容                    |
+| -l                | 输出堆栈跟踪                         |
+| --trace           | pdb调试                              |
+| --pastebin=all    | 发送所有测试结果到 http://bpaste.net |
+| --pastebin=failed | 只发送failed测试结果                 |
+| --setup-show      | 回溯fixture的执行过程                |
+| --cache-show      | 查看缓存                             |
+| --lf              | 运行上一次failed的测试               |
+
 ```py
 # test.py
 class Test:
@@ -15,7 +51,12 @@ class Test:
         assert 0
 ```
 
-- pytest会自动运行以test开头的类和函数
+- pytest会根据以下规则自动运行
+
+| 文件                   | 类    | 函数   |
+|------------------------|-------|--------|
+| test_*.py or *_test.py | Test* | test_* |
+
 ```sh
 pytest ./test.py
 ```
@@ -39,15 +80,82 @@ pytest ./test.py::Test1
 pytest ./test.py::Test1::test_two
 ```
 
-- pytest 参数
-```sh
-# pdb调试
-pytest --trace ./test.py
+- @pytest.mark.name 标记
 
-# pastbin=all 发送所有测试结果到 http://bpaste.net
-pytest --pastebin=all ./test.py
-# 只发送failed测试结果
-pytest --pastebin=failed ./test.py
+    - 标记名字可以自定义
+
+```py
+# 标记为a
+@pytest.mark.a
+def test_1():
+    assert 0
+
+@pytest.mark.c
+def test_2():
+    assert 0
+
+# 标记为a和b
+@pytest.mark.b
+@pytest.mark.a
+def test_3():
+    assert 0
+```
+
+```sh
+# 运行标记a. 只运行test_1和test_3
+pytest -m a ./test.py
+
+# 运行标记a. 只运行test_3
+pytest -m b ./test.py
+
+# 运行标记b和c
+pytest -m 'b or c' ./test.py
+```
+
+- 输入测试参数
+```py
+# 输入两个参数
+@pytest.mark.parametrize('x, y',
+        [(0, 0), (1, 1)])
+def test_1(x, y):
+    assert 0 == x + y
+```
+```py
+xy = [(0, 0), (1, 1)]
+
+@pytest.mark.parametrize('x, y', xy)
+def test_1(x, y):
+    assert 0 == x + y
+```
+
+- 装饰类, 可以将输入参数传递给的所有方法
+```py
+@pytest.mark.parametrize('x, y',
+        [(0, 0), (1, 1)])
+class Test():
+    def test_1(self, x, y):
+        assert 0 == x + y
+
+    def test_2(self, x, y):
+        assert 0 == x + y
+```
+
+
+- 跳过测试
+```py
+import pytest
+import os
+
+# 跳过
+@pytest.mark.skip
+def test_1():
+    assert 0
+
+# 如果不是unix就跳过
+@pytest.mark.skipif(os.name!='posix',
+        reason='Not supported on Unix')
+def test_2():
+    assert 0
 ```
 
 - `@pytest.mark.xfail`捕抓异常
@@ -72,18 +180,16 @@ def test_match():
         f()
 ```
 
-
-
 ### 6种测试结果
 
-| 测试结果 |
-|----------|
-| failed   |
-| passed   |
-| skipped  |
-| xfailed  |
-| xpassed  |
-| error    |
+| 测试结果 | 内容                   |
+|----------|------------------------|
+| failed   | 失败                   |
+| passed   | 通过                   |
+| skipped  | 跳过                   |
+| xfailed  | 预期失败               |
+| xpassed  | 预期失败, 但成功       |
+| error    | 测试以外的代码出现异常 |
 
 ```py
 import pytest
@@ -162,6 +268,241 @@ FAILED test.py::test_fail - assert 0
 ================= 1 failed, 1 passed, 1 skipped, 1 xfailed, 1 xpassed, 1 error in 0.11s ==================
 
 ```
+
+### fixture
+
+> fixture表示测试前的预备工作, 比方说检索测试数据等...
+
+- 使用fixture传递参数
+```py
+# 在测试函数运行前, 先运行x()
+import pytest
+
+# 传递x函数给test_1
+@pytest.fixture()
+def x():
+    return 10
+
+def test_1(x):
+    assert 0 == x
+```
+
+- 使用request传递参数, request是pytest的内建函数之一
+```py
+n = [0, 1]
+
+# 将n传递给x函数
+@pytest.fixture(params=n)
+def x(request):
+    # return n
+    return request.param
+
+def test_1(x):
+    assert 0 == x
+```
+
+- yield 上面的语句为setup(测试前运行), 下面的语句为teardown(测试后运行)
+```py
+@pytest.fixture()
+def x():
+    # setup
+    print('setup')
+    yield 10
+    # teardown
+    print('teardown')
+
+def test_1(x):
+    assert 0 == x
+```
+
+- 回溯fixture的执行过程
+
+```sh
+pytest --setup-show ./test.py
+```
+
+- 作用范围: 默认是函数范围
+
+| 名称     | 作用范围 |
+|----------|----------|
+| function | 函数     |
+| class    | 类       |
+| module   | 模块     |
+| session  | 会话     |
+
+```py
+# 设置作用范围为module
+@pytest.fixture(scope='module')
+```
+
+
+### 临时文件tmpdir, tmpfactory
+
+- 文件和目录会在, 测试开始时创建, 测试结束后删除
+
+- `tmpdir` 的范围是函数级别
+
+- `tmpfactory` 的范围是会话级别
+
+```py
+def test_tmpdir(tmpdir):
+    # 新建名为file_a的文件
+    file_a = tmpdir.join('file_a')
+
+    # 新建名为dir的目录
+    dir = tmpdir.mkdir('dir')
+
+    # 在dir目录下新建名为file_b的文件
+    file_b = dir.join('file_b')
+
+    # 写入内容
+    file_b.write('test')
+
+    # 测试
+    assert file_b.read() == 'test'
+```
+
+### capsys获取stdout, stderr
+
+- stdout
+```py
+def f():
+    print('hello world')
+
+
+def test_capsys(capsys):
+    f()
+    # 读取stdout, stderr
+    out, err = capsys.readouterr()
+
+    # 需要加上换行符\n
+    assert out == 'hello world\n'
+    assert err == ''
+```
+
+- stderr
+```py
+import sys
+
+def f():
+    print('hello world', file=sys.stderr)
+```
+
+#### recwarn 读取warnings模块
+
+```py
+import warnings
+
+
+def f():
+    warnings.warn('warn')
+
+
+def test_recwarn(recwarn):
+    f()
+    w = recwarn.pop()
+    assert str(w.message) == 'warn'
+```
+
+### 插件
+
+- [插件汇总](https://docs.pytest.org/en/latest/reference/plugin_list.html)
+
+- pytest-cov: 代码的覆盖率
+```py
+# 指定当前目录
+pytest --cov=. test.py
+
+# 生成覆盖率的html文件
+pytest --cov=. --cov-report=html test.py
+```
+
+- pytest-xdist: 并行测试
+```py
+pytest -n auto test.py
+```
+
+- pytest-timeout: 设置限制时间
+```py
+# 0.5秒
+pytest --timeout=0.5 test.py
+```
+
+- pytest-html: 生成html测试报告
+
+```py
+pytest --html=report.html test.py
+```
+
+- pytest-sugar: 显示进度条
+
+- pytest-emoji: emoji
+```py
+pytest --emoji test.py
+```
+
+### 配置文件
+
+#### pytest.ini
+
+- 设置默认参数
+```
+[pytest]
+; 设置默认参数--emoji
+addopts = --emoji
+```
+
+
+- 修改搜索规则
+```ini
+[pytest]
+; class
+python_classes = *Test Test* *Suite
+
+; file
+python_files = *test_ test_*
+
+; function
+python_functions = *test_ test_*
+```
+
+- `__init__.py` 解决文件名冲突
+
+a, b两个目录下的测试文件是同名的
+```
+.
+├── a
+│   └── test.py
+└── b
+    └── test.py
+```
+
+加入`__init__.py` 可解决报错
+```
+.
+├── a
+│   ├── __init__.py
+│   └── test.py
+└── b
+    ├── __init__.py
+    └── test.py
+```
+
+#### tox 测试多个python版本
+
+- `tox.ini`
+```ini
+[tox]
+; python2.7, python3.9
+envlist = py27, py39
+
+[testenv]
+deps=pytest
+commands=pytest
+```
+
+### jenkins(持续集成)
+
 
 ## unittest
 

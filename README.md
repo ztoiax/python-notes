@@ -53,7 +53,7 @@
             * [Deque(双向链表)](#deque双向链表)
             * [array 模块](#array-模块)
             * [bisect(二分排序列表)](#bisect二分排序列表)
-            * [headp: 二进制列表](#headp-二进制列表)
+            * [headp: 堆](#headp-堆)
                 * [优先级队列](#优先级队列)
         * [tuple(元组)](#tuple元组-1)
             * [namedtuple](#namedtuple)
@@ -123,6 +123,7 @@
     * [mingshe: 语法糖](#mingshe-语法糖)
     * [PEP 20: pythonic(python之禅)](#pep-20-pythonicpython之禅)
     * [test: 测试](#test-测试)
+    * [draw: 画图](#draw-画图)
     * [system: 系统编程](#system-系统编程)
     * [concurrency: 进程, 线程, 协程](#concurrency-进程-线程-协程)
     * [scientific computing: 科学计算](#scientific-computing-科学计算)
@@ -1494,7 +1495,37 @@ for num in list1:
 from functools import reduce
 fib = reduce((lambda x, y: x + y), [1, 2, 3, 4])
 
-max = reduce(lambda a, b:a if a > b else b, [1, 2, 3, 4])
+number_list = range(0, 11)
+fib = reduce((lambda x, y: x + y), number_list)
+
+number_max = reduce(lambda a, b:a if a > b else b, [1, 2, 3, 4])
+```
+
+- 用递归实现reduce
+```py
+def listsum(list1):
+    if len(list1) == 1:
+        return list1[0]
+    else:
+        return list1[0] + listsum(list1[1:])
+
+print(listsum([1, 3, 5, 7, 9]))
+```
+
+![image](./imgs/reduce.png)
+
+```py
+def reduce(f, list1):
+    if len(list1) == 1:
+        return list1[0]
+    else:
+        return f(reduce(f, list1[1:]), list1[0])
+
+
+number_list = range(0, 11)
+print(reduce(lambda x, y: x + y, number_list))
+print(reduce(lambda x, y: x + y, [1, 3, 5, 7, 9]))
+print(reduce(lambda a, b: a if a > b else b, [1, 2, 3, 4]))
 ```
 
 ### fib(斐波那契)
@@ -1535,11 +1566,11 @@ fib1(mul,10)
 
 ```py
 def fib2(x, n):
-    def diedai(x, n, s):
+    def iter(x, n, s):
         if n >= x:
-            s = diedai(x, n - 1, s + n)
+            s = iter(x, n - 1, s + n)
         return s
-    return diedai(x, n - 1, n)
+    return iter(x, n - 1, n)
 
 # test
 fib2(0,10)
@@ -1547,11 +1578,11 @@ fib2(0,10)
 # 自选函数: f
 
 def fib2(f, x, n):
-    def diedai(f, x, n, s):
+    def iter(f, x, n, s):
         if n >= x:
-            s = diedai(f, x, n - 1, f(s, n))
+            s = iter(f, x, n - 1, f(s, n))
         return s
-    return diedai(f, x, n - 1, n)
+    return iter(f, x, n - 1, n)
 
 
 # test
@@ -1561,14 +1592,18 @@ fib2(mul, 1, 5)
 # 步进: y
 
 def fib2(f, x, n, y):
-    def diedai(f, x, n, s):
+    def iter(f, x, n, s):
         if n >= x:
-            s = diedai(f, x, n - y, f(s, n))
+            # 递减
+            s = iter(f, x, n-y, f(s, n))
+            # 递加
+            # s = iter(f, x+y, n, f(s, x))
         return s
-    return diedai(f, x, n - y, n)
+    return iter(f, x, n - y, n)
 
-# test
+# 累加器
 fib2(add, 0, 10, 2)
+fib2(lambda x, y: x + y, 0, 10, 1)
 fib2(mul, 10, 100, 10)
 ```
 
@@ -1908,6 +1943,8 @@ count(rlist, 1)
 ```
 ## 数据类型
 
+- [python所有类型的时间复杂度](https://wiki.python.org/moin/TimeComplexity)
+
 ### 基本概念
 
 - 一切皆是对象
@@ -2130,6 +2167,12 @@ string_to_bytes(english)
 ['0b1100001']
 ```
 
+- ord()查看字符编码
+
+```py
+ord('1')
+```
+
 #### print()
 
 - sep: 分隔符, end: 末尾字符
@@ -2286,8 +2329,6 @@ s.read(4)
 
 ### list(列表)
 
-- [list每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Lists.html)
-
 - list.append(): 包含类型
 
 - append自身(递归)
@@ -2305,11 +2346,12 @@ list1 == list1[5]
 ['1', '2', '3', '4', '5', [...]]
 ```
 
-- list.extend() 不包含类型
+- list.extend() 合并list
 
 ```py
 # [1, 2, 3, 4, 5]
 list1 = list('12345')
+# 添加自身
 list1.extend(list1)
 ```
 
@@ -2530,6 +2572,39 @@ s.get()
 s.get()
 ```
 
+- 括号匹配
+```py
+from queue import LifoQueue
+
+def matches(open, close):
+    opens = "([{"
+    closers = ")]}"
+    return opens.index(open) == closers.index(close)
+
+def parChecker(str1):
+    stack1 = LifoQueue()
+
+    for i in range(len(str1)):
+        symbol = str1[i]
+        # 如果是左括号
+        if symbol in "([{":
+            stack1.put(symbol)
+        # 如果是右括号
+        elif symbol in ")]}":
+            top = stack1.get()
+            if not matches(top, symbol):
+                return False
+
+    if stack1.empty():
+        return True
+    else:
+        return False
+
+
+print(parChecker("{{([][])}()}"))
+print(parChecker("[{()]"))
+```
+
 #### CircularQueue(环形队列)
 ```py
 class CircularQueue():
@@ -2613,11 +2688,8 @@ class Deque:
     def popleft(self):
         return self.items.pop(0)
 
-    def popright(self):
+    def pop(self):
         return self.items.pop()
-
-    def qsize(self):
-        return len(self.items)
 
 
 d = Deque()
@@ -2675,9 +2747,27 @@ deque([1, 2, 3], maxlen=3)
 deque([2, 3, 4], maxlen=3)
 ```
 
-- [timeit性能对比: list vs deque](./python-debug.md#deque)
+- 判断一个字符串是否是回文字符串
+```py
+from collections import deque
 
-    - Deque的append, pop操作是O(1); 而列表是O(n)。
+def palchecker(str1):
+    deque1 = deque()
+
+    for i in str1:
+        deque1.appendleft(i)
+
+    while len(deque1) > 1:
+        if deque1.pop() != deque1.popleft():
+            return False
+
+    return True
+
+print(palchecker("toot"))
+print(palchecker("toat"))
+```
+
+- [timeit性能对比: list vs deque](./python-debug.md#deque)
 
     - 但timeit的测试结果是list比deque快1.68倍
 
@@ -2720,7 +2810,7 @@ bisect.insort_right(list1, 5, 0, 4)
 print(list1)
 ```
 
-#### headp: 二进制列表
+#### headp: 堆
 
 - append()和pop()的时间复杂度是: O(log n)
 
@@ -2753,6 +2843,8 @@ print(heapq.heappop(list1))
 
 ##### 优先级队列
 ```py
+import heapq
+
 class PriorityQueue:
     def __init__(self):
         self.queue = []
@@ -2909,9 +3001,6 @@ a = replace(dict1)
 
 
 ### Dictionaries(字典)
-
-- [dict每个方法的复杂度](https://runestone.academy/runestone/books/published/pythonds3/AlgorithmAnalysis/Dictionaries.html)
-
 
 > key不能重复
 
@@ -6715,6 +6804,8 @@ import this
 ![image](./imgs/pythonic2.png)
 
 ## [test: 测试](./python-test.md)
+
+## [draw: 画图](./python-draw.md)
 
 ## [system: 系统编程](./python-system.md)
 

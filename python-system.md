@@ -6,6 +6,7 @@
         * [typer](#typer)
         * [click](#click)
         * [prompt_toolkit](#prompt_toolkit)
+        * [shovel: 像普通命令那样使用](#shovel-像普通命令那样使用)
     * [参数解析](#参数解析)
         * [argparse](#argparse)
         * [optparse(参数)](#optparse参数)
@@ -65,6 +66,32 @@ main()
 ### [prompt_toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
 
     > 打造像ipython, mycli的交互REPL
+
+
+### [shovel: 像普通命令那样使用](https://github.com/seomoz/shovel)
+
+- 保存至`/home/tz/.shovel.py`
+```py
+from shovel import task
+
+@task
+def hello():
+    print('hello')
+
+@task
+def f(x, y):
+    print(x, y)
+```
+
+- 在终端下运行
+
+```sh
+# 调用hello函数
+shovel hello
+
+# 调用f函数, 并输入参数
+shovel f 1 2
+```
 
 
 ## 参数解析
