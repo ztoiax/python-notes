@@ -1188,6 +1188,12 @@ class List:
             i += 1
             node = node.next
 
+    def __mul__(self, n):
+        new_link = self.copy()
+        for _ in range(n-1):
+            new_link.extend(self)
+        return new_link
+
     def index(self, data):
         for index, item in enumerate(self):
             if item == data:
@@ -1209,8 +1215,9 @@ class List:
         return node
 
     def extend(self, link):
+        new_link = link.copy()
         node = self._last()
-        node.next = link.head
+        node.next = new_link.head
 
     def append(self, data):
         if self.head.data is None:
@@ -1289,7 +1296,7 @@ class List:
 ```py
 import pytest
 
-# list文件, 包含上面的实现代码
+# 导入上面的代码
 from list import List
 
 
@@ -1332,60 +1339,50 @@ def test_copy(list1):
     list2 = list1.copy()
     assert id(list2) != id(list1)
 
-def iter(list1):
-    for i in list1:
-        print(i)
-
 def test_iter(capsys, list1):
+    def iter(list1):
+        for i in list1:
+            print(i)
+
     iter(list1)
     out, err = capsys.readouterr()
     assert out == '0\n1\n2\n'
 
-def test_extend(capsys, list1):
+def test_extend(list1):
     node = List()
     for i in range(3, 6):
         node.append(i)
 
     list1.extend(node)
+    assert list1.__repr__() == '[0, 1, 2, 3, 4, 5]'
 
-    iter(list1)
-    out, err = capsys.readouterr()
-    assert out == '0\n1\n2\n3\n4\n5\n'
-
-def test_remove(capsys, list1):
+def test_remove(list1):
     list1.remove(1)
-
-    iter(list1)
-    out, err = capsys.readouterr()
-    assert out == '0\n2\n'
+    assert list1.__repr__() == '[0, 2]'
 
     with pytest.raises(ValueError, match="not search delete data"):
         list1.remove(9)
 
-def test_pop(capsys, list1):
+def test_pop(list1):
     assert 1 == list1.pop(1)
-
-    iter(list1)
-    out, err = capsys.readouterr()
-    assert out == '0\n2\n'
+    assert list1.__repr__() == '[0, 2]'
 
     with pytest.raises(AssertionError, match="out of range"):
         assert 1 == list1.pop(9)
 
-def test_insert(capsys, list1):
+def test_insert(list1):
     list1.insert(1, 11)
-
-    iter(list1)
-    out, err = capsys.readouterr()
-    assert out == '0\n11\n1\n2\n'
+    assert list1.__repr__() == '[0, 11, 1, 2]'
 
     with pytest.raises(AssertionError, match="out of range"):
         list1.insert(9, 11)
 
-def test_repr(capsys, list1):
-    iter(list1)
-    out, err = capsys.readouterr()
-    assert out == '0\n1\n2\n'
+def test_repr(list1):
+    assert list1.__repr__() == '[0, 1, 2]'
+
+def test_mul(list1):
+    list2 = list1 * 2
+    assert list2.__repr__() == '[0, 1, 2, 0, 1, 2]'
 ```
 ---
 
@@ -1447,88 +1444,253 @@ while node:
 
 ### DoublyList(双向链表)
 
+<details><summary>代码实现</summary><p>
+
+---
 ```py
-class Node(object):
+class Node:
     def __init__(self, data):
         self.data = data
-        self.next = None
         self.prev = None
+        self.next = None
 
 
-class DoublyList(object):
-    def __init__(self, data=None):
-        self.head = Node(data)
-        self.tail = self.head
+class _ListIter():
+    def __init__(self, node):
+        self.node = node
 
-    def add(self, data):
-        if self.head.data is None:
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.node:
+            data = self.node.data
+            self.node = self.node.next
+            return data
+        else:
+            raise StopIteration
+
+
+class Deque:
+    def __init__(self, maxlen=-1):
+        self.head = None
+        self.tail = None
+        self.maxlen = maxlen
+        self.size = 0
+
+    def __iter__(self):
+        return _ListIter(self.head)
+
+    def __repr__(self):
+        str1 = '['
+        for i in self:
+            str1 += f'{i}, '
+        str1 = str1.rstrip(', ')
+        str1 += ']'
+        return str1
+
+    def _isFull(self):
+        if self.maxlen == self.size:
+            return True
+
+    def _isEmpry(self):
+        if self.head is None:
+            return True
+
+    def __len__(self):
+        return self.size
+
+    def append(self, data):
+        if self._isEmpry():
             self.head = Node(data)
             self.tail = self.head
         else:
-            node = self.head
-            while node.next:
-                node = node.next
-            new_node = Node(data)
-            node.next, new_node.prev = new_node, node
-            self.tail = new_node
+            if self._isFull():
+                self.popleft()
+            node = Node(data)
+            self.tail.next, node.prev = node, self.tail
+            self.tail = node
+        self.size += 1
 
-    def insert(self, base_data, data):
-        node = self.head
-        while node.next:
-            if base_data == node.data:
-                new_node = Node(data)
-                new_node.prev, new_node.next = node, node.next
-                node.next.prev = new_node
-                node.next = new_node
-                return
-            node = node.next
+    def appendleft(self, data):
+        if self._isEmpry():
+            self.head = Node(data)
+            self.tail = self.head
+        else:
+            if self._isFull():
+                self.pop()
+            node = Node(data)
+            self.head.prev, node.next = node, self.head
+            self.head = node
+        self.size += 1
 
-        raise ValueError("not search base_data")
+    def pop(self):
+        assert not self._isEmpry(), 'pop from an empty deque'
+        data = self.tail.data
+        if self.size > 1:
+            self.tail = self.tail.prev
+            self.tail.next = None
+        # 链表只剩1个的时候
+        else:
+            self.prev = self.head = None
+        self.size -= 1
+        return data
 
-    def delete(self, data):
-        node = self.head
-        while node.next:
-            if data == node.data:
-                node.prev.next = node.next
-                node.next.prev = node.prev
-                return
-            node = node.next
+    def popleft(self):
+        assert not self._isEmpry(), 'pop from an empty deque'
+        data = self.head.data
+        if self.size > 1:
+            self.head = self.head.next
+            self.head.prev = None
+        # 链表只剩1个的时候
+        else:
+            self.prev = self.head = None
+        self.size -= 1
+        return data
 
-        raise ValueError("not search delete data")
+    def copy(self):
+        new_de = Deque()
+        for i in self:
+            new_de.append(i)
+        return new_de
 
-    def search(self, data):
-        node, n = self.head, 1
-        while node:
-            if data == node.data:
-                return n
-            n += 1
-            node = node.next
-
-        raise ValueError("not search data")
-
-    def print(self):
-        node = self.head
-        while node:
-            print(node.data)
-            node = node.next
-
-    def print_prev(self):
+    def reverse(self):
+        new_link = Deque(maxlen=self.maxlen)
         node = self.tail
         while node:
-            print(node.data)
+            new_link.append(node.data)
             node = node.prev
+        self.head, self.tail = new_link.head, new_link.tail
 
+    def extend(self, link):
+        # 如果是合并自身, 就复制自身
+        if link == self:
+            link = link.copy()
 
-link1 = DoublyList()
-link1.add(1)
-link1.add(2)
-link1.add(3)
-link1.delete(2)
-link1.insert(1, 0)
-link1.print()
-link1.print_prev()
-link1.search(0)
+        for i in link:
+            self.append(i)
+
+    def extendleft(self, link):
+        # 如果是合并自身, 就复制自身
+        if link == self:
+            link = link.copy()
+
+        for i in link:
+            self.appendleft(i)
+
+    def rotate(self, n=1):
+        '''旋转'''
+        for _ in range(n):
+            tail = self.pop()
+            self.appendleft(tail)
+
+    def clear(self):
+        self.tail = self.head = None
+        self.size = 0
 ```
+---
+
+</p></details>
+
+<details><summary>测试代码</summary><p>
+
+---
+```py
+import pytest
+# 导入上面的代码
+from list import Deque
+
+
+# 初始化
+@pytest.fixture()
+def de1():
+    de = Deque()
+    for i in range(3):
+        de.append(i)
+
+    for i in range(3):
+        de.appendleft(i)
+    yield de
+
+def test_size(de1):
+    assert 6 == len(de1)
+
+def test_clear(de1):
+    de1.clear()
+    assert True == de1._isEmpry()
+
+def test_pop_popleft(de1):
+    for i in range(3):
+        de1.popleft()
+        de1.pop()
+    assert True == de1._isEmpry()
+
+def test_extend(de1):
+    # 合并自身
+    de1.extend(de1)
+    assert de1.__repr__() == '[2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2]'
+
+    # 合并其它链表
+    de2 = Deque()
+    for i in range(3, 6):
+        de2.append(i)
+
+    de1.extend(de2)
+    assert de1.__repr__() == '[2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 3, 4, 5]'
+
+def test_extendleft(de1):
+    # 合并自身
+    de1.extend(de1)
+    assert de1.__repr__() == '[2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2]'
+
+    # 合并其它链表
+    de2 = Deque()
+    for i in range(3, 6):
+        de2.append(i)
+
+    de1.extendleft(de2)
+    assert de1.__repr__() == '[5, 4, 3, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2]'
+
+def test_rotate(de1):
+    de2 = de1
+    de1.rotate(len(de1))
+    assert de2 == de1
+
+def reverse(de1):
+    for _ in range(3):
+        de1.pop()
+    de1.reverse()
+    assert de1.__repr__() == '[2, 1, 0]'
+
+def test_maxlen():
+    de1 = Deque(maxlen=6)
+    for i in range(3):
+        de1.append(i)
+
+    for i in range(3):
+        de1.appendleft(i)
+
+    # 合并自身
+    de1.extend(de1)
+    assert de1.__repr__() == '[2, 1, 0, 0, 1, 2]'
+
+    de1.extendleft(de1)
+    assert de1.__repr__() == '[2, 1, 0, 0, 1, 2]'
+
+    # 合并其它链表
+    de2 = Deque()
+    for i in range(3, 6):
+        de2.append(i)
+
+    de1.extend(de2)
+    assert de1.__repr__() == '[0, 1, 2, 3, 4, 5]'
+
+    de1.extendleft(de2)
+    assert de1.__repr__() == '[5, 4, 3, 0, 1, 2]'
+```
+---
+
+</p></details>
 
 ### Blockchain(区块链)
 

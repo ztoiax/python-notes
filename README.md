@@ -4425,6 +4425,52 @@ list1.append(1)
 list1.f()
 ```
 
+```py
+class A:
+    def __init__(self):
+        self.a = 'A'
+
+    def print(self):
+        print(self.a)
+
+
+class B:
+    def __init__(self):
+        self.b = 'B'
+
+    def print(self):
+        print(self.b)
+
+
+class C(A, B):
+    def __init__(self):
+
+        # init A
+        super().__init__()
+
+        # init B
+        B.__init__(self)
+
+        # 调用A.print()
+        A.print(self)
+
+        # 调用B.print()
+        B.print(self)
+
+
+c = C()
+c.print() # 调用A.print()
+
+print(C.mro()) # c3算法的调用顺序
+```
+输出
+```
+A
+B
+A
+[<class '__main__.C'>, <class '__main__.A'>, <class '__main__.B'>, <class 'object'>]
+```
+
 ### @dataclass(简化类的定义)
 
 ```py
@@ -5908,6 +5954,9 @@ p.stem
 # 只显示拓展名
 p.suffix
 
+# 显示多个拓展名
+p.suffixes
+
 # 以.为分格符返回列表
 Path('my.tar.bz2').suffixes
 
@@ -5946,6 +5995,23 @@ for i in p.glob('*'):
 # find .
 for i in p.glob('**/*'):
     print(i)
+```
+
+- time
+```py
+from datetime import datetime, timezone, timedelta
+
+file = pathlib.Path('/tmp/test')
+
+# 获取atime. 格式为unix timestamp
+unixtime = file.stat().st_atime
+
+# 修改时区
+tz = timezone(timedelta(hours=+8))
+time = datetime.fromtimestamp(unixtime, tz=tz)
+
+# 转换
+time.strftime("%Y-%m-%d %H:%M:%S") # 2021-12-23_11:16:37
 ```
 
 ### os
@@ -6850,6 +6916,8 @@ import this
 - [Python/Golang Web 入坑指南](https://python-web-guide.readthedocs.io/zh/latest/)
 
 - [腾讯技术工程: 新潮小众的 Python 最新语法合集](https://zhuanlan.zhihu.com/p/363157743)
+
+- [python基础数据结构, c语言实现](http://www.laurentluce.com/posts/category/python/)
 
 # 第三方软件资源
 
