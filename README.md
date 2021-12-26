@@ -72,6 +72,7 @@
         * [内置函数,属性](#内置函数属性)
         * [装饰器(decorator)](#装饰器decorator)
             * [类装饰器](#类装饰器)
+            * [优秀的装饰器例子](#优秀的装饰器例子)
         * [functools模块](#functools模块)
     * [class(类)](#class类)
         * [继承](#继承)
@@ -85,9 +86,11 @@
         * [`__getitem__` 和 `__class_getitem__`: 定义带[]的调用 `object['arg']`](#__getitem__-和-__class_getitem__-定义带的调用-objectarg)
         * [`__getattribute__`: 当访问不存在的属性时调用](#__getattribute__-当访问不存在的属性时调用)
         * [functools.partialmethod() 只能封装是类里的方法](#functoolspartialmethod-只能封装是类里的方法)
+        * [自定义类的hash值: __hash__(), __eq__()](#自定义类的hash值-__hash__-__eq__)
         * [描述器](#描述器)
             * [实现类的参数类型检查](#实现类的参数类型检查)
     * [weakerf(弱引用)](#weakerf弱引用)
+        * [优秀的weakref例子](#优秀的weakref例子)
     * [file](#file)
         * [readinto()](#readinto)
         * [hdf5](#hdf5)
@@ -2329,6 +2332,37 @@ s.read(4)
 
 ### list(列表)
 
+- python的数据类型里面, 由于list是可变数组, list类型是无法hash()的
+    ```py
+    list1 = [i for i in range(10)]
+
+    # 报错
+    set1 = set()
+    set1.add(list1)
+
+    # 报错, list只能用作value
+    dict1 = {list1: '1'}
+    ```
+
+    - 自定义hash
+        ```py
+        class List(list):
+            # id值
+            def __hash__(self):
+                return hash(id(self))
+
+        list1 = List(i for i in range(10))
+
+        # 成功添加
+        set1 = set()
+        set1.add(list1)
+
+        dict1 = {list1: '1'}
+
+        list1 in set1  # True
+        list1 in dict1 # True
+        ```
+
 - list.append(): 包含类型
 
 - append自身(递归)
@@ -4216,6 +4250,9 @@ f()    # 我是装饰器 2
 f.f1() # 我是f1函数
 ```
 
+#### 优秀的装饰器例子
+- [微信公众号: 使用装饰器简化大量 if…elif…代码]()
+
 ### functools模块
 
 - partial() 封装一个参数
@@ -5196,6 +5233,48 @@ print(obj.color)
 black
 blue
 ```
+
+### 自定义类的hash值: __hash__(), __eq__()
+
+- False: 自定义类的hash值和id()值相关, 两个实例的id()值并不相同
+```py
+class Node(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+a = Node(1, 1)
+b = Node(1, 1)
+set1 = set()
+set1.add(a)
+
+# False
+b in set1
+```
+
+- 设置`__hash__` , `__eq__`
+```py
+class Node(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __eq__(self, o):
+        return self.x == o.x and self.y == o.y
+
+
+a = Node(1, 1)
+b = Node(1, 1)
+set1 = set()
+set1.add(a)
+
+# True
+b in set1
+```
+
 ### 描述器
 
 - 通过setattr()实现描述器, 将参数转换成属性
@@ -5384,6 +5463,10 @@ gc.collect()
         self.children.append(child)
         child.parent = weakref.ref(self)
 ```
+
+### 优秀的weakref例子
+
+- [微信公众号: 一个 Python 开发神技 - weakref]()
 
 ## file
 

@@ -38,7 +38,8 @@
             * [字典循环使用keys() vs 不使用](#字典循环使用keys-vs-不使用)
             * [4种字符串格式化方法性能对比](#4种字符串格式化方法性能对比)
             * [list vs deque](#list-vs-deque)
-        * [函数内执行 vs 全局内执行](#函数内执行-vs-全局内执行)
+            * [函数内执行 vs 全局内执行](#函数内执行-vs-全局内执行)
+            * [for vs while](#for-vs-while)
     * [cProfile: 统计每个函数的执行次数, 时间](#cprofile-统计每个函数的执行次数-时间)
     * [Scalene: cpu, gpu, 内存分析器](#scalene-cpu-gpu-内存分析器)
     * [tracemalloc: 查看内存使用](#tracemalloc-查看内存使用)
@@ -1233,7 +1234,7 @@ pop_test
 0.0012563700001919642
 ```
 
-### 函数内执行 vs 全局内执行
+#### 函数内执行 vs 全局内执行
 
 函数比全局更快
 
@@ -1265,6 +1266,11 @@ print(end-start)
 3.5762786865234375e-05
 2.5510787963867188e-05
 ```
+
+#### for vs while
+- [微信公众号: Python 实现循环的最快方式(for、while 等速度对比)]()
+
+for 比 while快
 
 ## cProfile: 统计每个函数的执行次数, 时间
 
