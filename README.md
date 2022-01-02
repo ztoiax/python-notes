@@ -28,10 +28,6 @@
         * [map()](#map)
         * [filter(): 过滤](#filter-过滤)
         * [reduce()](#reduce)
-        * [fib(斐波那契)](#fib斐波那契)
-            * [循环 while, for](#循环-while-for)
-            * [迭代](#迭代)
-            * [泛函](#泛函)
             * [tuple(元组)](#tuple元组)
         * [pi(圆周率)](#pi圆周率)
         * [黄金分割](#黄金分割)
@@ -55,12 +51,24 @@
             * [bisect(二分排序列表)](#bisect二分排序列表)
             * [headp: 堆](#headp-堆)
                 * [优先级队列](#优先级队列)
+            * [list(列表)和tuple(元组)的区别](#list列表和tuple元组的区别)
         * [tuple(元组)](#tuple元组-1)
             * [namedtuple](#namedtuple)
         * [Dictionaries(字典)](#dictionaries字典)
+            * [去重](#去重)
+            * [zip(): 迭代多个对象](#zip-迭代多个对象-1)
+            * [字典拆包](#字典拆包)
+            * [dictionaries(字典)集合运算](#dictionaries字典集合运算)
+            * [`|` 语法糖](#-语法糖)
             * [collections模块](#collections模块)
-        * [set(集合)](#set集合)
-        * [图](#图)
+                * [Counter(): 计数器](#counter-计数器)
+                * [defaultdict: 设置默认值, 默认类型](#defaultdict-设置默认值-默认类型)
+                * [OrderedDict: 有序字典, 内存比普通字典大2倍多](#ordereddict-有序字典-内存比普通字典大2倍多)
+                * [ChainMap(): 链式字典, 访问多个字典](#chainmap-链式字典-访问多个字典)
+            * [MappingProxyType只读字典](#mappingproxytype只读字典)
+        * [set(动态集合)](#set动态集合)
+        * [frozenset(静态集合)](#frozenset静态集合)
+        * [trie字典数](#trie字典数)
         * [静态类型(static type)](#静态类型static-type)
             * [静态类型检查工具:mypy](#静态类型检查工具mypy)
             * [静态类型检查工具:pytype](#静态类型检查工具pytype)
@@ -97,6 +105,7 @@
         * [自定义数据块读写, 而不是行读写](#自定义数据块读写-而不是行读写)
         * [读写压缩文件](#读写压缩文件)
         * [json](#json)
+            * [orjson更好的json库](#orjson更好的json库)
         * [yaml](#yaml)
         * [toml](#toml)
         * [ini](#ini)
@@ -135,6 +144,7 @@
     * [debug: 调试](#debug-调试)
     * [algorithms: 算法](#algorithms-算法)
     * [Design Pattern: 设计模式](#design-pattern-设计模式)
+    * [Geometry: 几何](#geometry-几何)
 * [reference article(优秀文章)](#reference-article优秀文章)
 * [第三方软件资源](#第三方软件资源)
 
@@ -1531,104 +1541,6 @@ print(reduce(lambda x, y: x + y, [1, 3, 5, 7, 9]))
 print(reduce(lambda a, b: a if a > b else b, [1, 2, 3, 4]))
 ```
 
-### fib(斐波那契)
-
-#### 循环 while, for
-
-```py
-def fib(n):
-    x = n
-    while n > 1:
-        n = n - 1
-        x = x + n
-    return x
-
-def fib(n):
-    prev, curr = 1, 0
-    for _ in range(n):
-        prev, curr = curr, prev + curr
-    return curr
-
-# test
-fib(10)
-
-def fib1(f, n):
-    x = n
-    while n > 1:
-        n = n - 1
-        x = f(x, n)
-        print(x)
-    return x
-
-# test
-fib1(add,10)
-fib1(mul,10)
-```
-
-#### 迭代
-
-```py
-def fib2(x, n):
-    def iter(x, n, s):
-        if n >= x:
-            s = iter(x, n - 1, s + n)
-        return s
-    return iter(x, n - 1, n)
-
-# test
-fib2(0,10)
-
-# 自选函数: f
-
-def fib2(f, x, n):
-    def iter(f, x, n, s):
-        if n >= x:
-            s = iter(f, x, n - 1, f(s, n))
-        return s
-    return iter(f, x, n - 1, n)
-
-
-# test
-fib2(add, 0, 10)
-fib2(mul, 1, 5)
-
-# 步进: y
-
-def fib2(f, x, n, y):
-    def iter(f, x, n, s):
-        if n >= x:
-            # 递减
-            s = iter(f, x, n-y, f(s, n))
-            # 递加
-            # s = iter(f, x+y, n, f(s, x))
-        return s
-    return iter(f, x, n - y, n)
-
-# 累加器
-fib2(add, 0, 10, 2)
-fib2(lambda x, y: x + y, 0, 10, 1)
-fib2(mul, 10, 100, 10)
-```
-
-#### 泛函
-
-```py
-def sum(n, term, next):
-    s, x = 0, 1
-    while x <= n:
-        s, x = s + term(x), next(x)
-    return s
-
-def fib(x):
-    def fib_next(x):
-        return x + 1
-    def fib_term(x):
-        return x
-    return sum(x, fib_term, fib_next)
-
-fib(100)
-```
-
 #### tuple(元组)
 
 ```py
@@ -2332,36 +2244,32 @@ s.read(4)
 
 ### list(列表)
 
-- python的数据类型里面, 由于list是可变数组, list类型是无法hash()的
-    ```py
-    list1 = [i for i in range(10)]
+- 笛卡尔积:
+```py
+list1 = ['A', 'B', 'C']
+list2 = [1, 2, 3]
+for i in list1:
+    for j in list2:
+        print((i, j))
+```
+输出
+```
+('A', 1)
+('A', 2)
+('A', 3)
+('B', 1)
+('B', 2)
+('B', 3)
+('C', 1)
+('C', 2)
+('C', 3)
+```
 
-    # 报错
-    set1 = set()
-    set1.add(list1)
-
-    # 报错, list只能用作value
-    dict1 = {list1: '1'}
-    ```
-
-    - 自定义hash
-        ```py
-        class List(list):
-            # id值
-            def __hash__(self):
-                return hash(id(self))
-
-        list1 = List(i for i in range(10))
-
-        # 成功添加
-        set1 = set()
-        set1.add(list1)
-
-        dict1 = {list1: '1'}
-
-        list1 in set1  # True
-        list1 in dict1 # True
-        ```
+- 列表推导式
+```py
+list3 = [(i, j) for i in list1 for j in list2]
+print(list3) # [('A', 1), ('A', 2), ('A', 3), ('B', 1), ('B', 2), ('B', 3), ('C', 1), ('C', 2), ('C', 3)]
+```
 
 - list.append(): 包含类型
 
@@ -2567,6 +2475,22 @@ try:
     q.put(2)
 except ValueError:
     print('error')
+```
+
+- 使用两个stack实现queue
+```py
+class Queue:
+    def __init__(self):
+        self.stack1 = []
+        self.stack2 = []
+
+    def put(self, data):
+        self.stack1.append(data)
+
+    def get(self):
+        while self.stack1:
+            self.stack2.append(self.stack1.pop())
+        return self.stack2.pop()
 ```
 
 - Queue: FIFO
@@ -2781,26 +2705,6 @@ deque([1, 2, 3], maxlen=3)
 deque([2, 3, 4], maxlen=3)
 ```
 
-- 判断一个字符串是否是回文字符串
-```py
-from collections import deque
-
-def palchecker(str1):
-    deque1 = deque()
-
-    for i in str1:
-        deque1.appendleft(i)
-
-    while len(deque1) > 1:
-        if deque1.pop() != deque1.popleft():
-            return False
-
-    return True
-
-print(palchecker("toot"))
-print(palchecker("toat"))
-```
-
 - [timeit性能对比: list vs deque](./python-debug.md#deque)
 
     - 但timeit的测试结果是list比deque快1.68倍
@@ -2904,12 +2808,61 @@ while q.queue:
     print(q.pop())
 ```
 
+#### list(列表)和tuple(元组)的区别
+
+- list: 动态数组
+
+    - 一般保存相同类型的数据
+
+    - 会多分配一些内存, 方便日后append()
+
+    - 由于是动态, 因此无法hash
+        ```py
+        list1 = [i for i in range(10)]
+
+        # 报错
+        set1 = set()
+        set1.add(list1)
+
+        # 报错, list只能用作value
+        dict1 = {list1: '1'}
+        ```
+
+        - 自定义hash
+            ```py
+            class List(list):
+                # id值
+                def __hash__(self):
+                    return hash(id(self))
+
+            list1 = List(i for i in range(10))
+
+            # 成功添加
+            set1 = set()
+            set1.add(list1)
+
+            dict1 = {list1: '1'}
+
+            list1 in set1  # True
+            list1 in dict1 # True
+            ```
+
+- tuple: 静态数组
+
+    - 一般保存不同类型的数据
+
 ### tuple(元组)
+
+```py
+# tuple需要加,
+(1)  # int
+(1,) # tuple
+```
 
 ```py
 word = "hello Worrld ! in Python"
 
-# 字符串传元组
+# 字符串转元组
 tuple(word.split())
 tuple(w[0] for w in word.split())
 tuple(w[0] for w in word.split() if w[0].isupper())
@@ -2978,6 +2931,9 @@ a = people('tz', 24)
 print(a.name, a.age)
 print(a[0], a[1])
 
+# 查看字段
+print (people._fields)
+
 # 字典输出
 print(a._asdict())
 ```
@@ -2985,9 +2941,10 @@ print(a._asdict())
 ```
 tz 24
 tz 24
+('name', 'age')
 {'name': 'tz', 'age': 24}
 ```
-- 列表输入
+- `_make()` 列表或元组输入
 ```py
 from collections import namedtuple
 
@@ -2995,12 +2952,16 @@ people = namedtuple('people', ('name', 'age'))
 
 # 列表输入
 list1 = ['tz', 24]
-people._make(list1)
-print(list1)
+print(people._make(list1))
+
+# 元组输入
+tuple1 = ('tz', 24)
+print(people._make(tuple1))
 ```
 输出
 ```
-['tz', 24]
+people(name='tz', age=24)
+people(name='tz', age=24)
 ```
 
 - `_replace()` 修改value.  会创建一个新的实例
@@ -3033,49 +2994,78 @@ dict1 = {'name': 'tz', 'age': 21}
 a = replace(dict1)
 ```
 
-
 ### Dictionaries(字典)
 
-> key不能重复
-
-- `v | b` instead of `{**v, **v1}` instead of  `v.update(b)`
-
+- 初始化
 ```py
-{**a, **b}
-
-# or
-a | b
+# 两者相同
+dict1 = dict(a=1, b=2)
+dict1 = {'a': 1, 'b': 2}
 ```
 
-- `|=` instead `dict.update()`
+- fromkey()提取key
+```py
+dict1 = {'a': 1, 'b': 2}
+dict2 = dict1.fromkeys('b', 3)
+print(dict2) # {'b': 3}
+```
+
+- get(), setdefault()获取key
+```py
+dict1 = {'a': 1}
+
+# 如果没有这个key, 就返回0
+dict1.get('b', 0)
+
+# 如果没有这个key, 就设置这个key, value
+dict1.setdefault('b', 0)
+```
 
 ```py
-a = {**a, **b}
+dict1 = {}
+dict1.setdefault('a', []).append(1)
+dict1.setdefault('a', []).append(2)
 
-# or
-a.update(b)
-
-# or
-a |= b
+print(dict1) # {'a': [1, 2]}
 ```
-- 去重key值. 通过set()作过滤器
+
+- defaultdict()
+    ```py
+    from collections import defaultdict
+
+    # 初始化为列表
+    dict1 = defaultdict(list)
+    dict1['a'].append(1)
+    dict1['a'].append(2)
+    dict1  # {'a': [1, 2]}
+    ```
+
+#### 去重
+
+- key不能重复
+
+```py
+# 重复的key, 等同于更新操作
+dict1 = {'x': 1,'x':2} # {'x': 2}
+```
+
+- 去重key,value. 通过set()作过滤器
 
     ```py
-    def dedupe(data, key=None):
+    def dedupe(data, func=None):
         set1 = set()
-        for i in data:
-            val = i if key is None else key(i)
+        for kv in data:
+            val = kv if func is None else func(kv)
+            print(val)
             if val not in set1:
-                yield i
+                yield kv
                 set1.add(val)
 
-    dict1 = [{'x': 1, 'y': 2},  {'x': 3, 'y': 4}, {'x': 1, 'y': 2}, {'x': 1, 'y': 3}]
+    list1 = [{'x': 1, 'y': 2},  {'x': 3, 'y': 4}, {'x': 1, 'y': 2}, {'x': 1, 'y': 3}]
 
-    # 去重key. 提取key值后保存进set
-    list(dedupe(dict1, key=lambda d: d['x']))
-
-    # 去重key, value. 转换成tuple后保存进set
-    list(dedupe(dict1, key=lambda d: (d['x'], d['y'])))
+    # 去重key, value. 将value保存进set
+    list(dedupe(list1, func=lambda d: d['x']))
+    list(dedupe(list1, func=lambda d: (d['x'], d['y'])))
     ```
     输出
     ```
@@ -3103,99 +3093,87 @@ print(res)
 {'d': 10, 'b': 15, 'e': 20}
 ```
 
-- zip(): 迭代多个对象
+#### zip(): 迭代多个对象
 
-    - 对value进行排序
-        ```py
-        dict1 = {
-                'o': 3,
-                'y': 2,
-                'x': 1,
-                'z': 3
-                }
+```py
+dict(zip('abc', range(3))) # {'a': 0, 'b': 1, 'c': 2}
+```
 
-        dict1_zip = zip(dict1.values(), dict1.keys())
-        print(sorted(dict1_zip))
-        ```
-        输出
-        ```
-        [(1, 'x'), (2, 'y'), (3, 'o'), (3, 'z')]
-        ```
-
-    - 两个数组转换为字典
+- 对value进行排序
     ```py
-    k = ['k1', 'k2']
-    v = ['v1', 'v2']
-    kv = dict(zip(k,v))
+    dict1 = {
+            'o': 3,
+            'y': 2,
+            'x': 1,
+            'z': 3
+            }
 
-    # 通过切片交换数组, 形成字典
-    old_kv = ['k1', 'v1', 'k2', 'v2']
-    old_kv1 = ['k10', 'v10', 'k20', 'v20']
-    new_kv = dict(zip(old_kv[0::2], old_kv1[0::2]))
+    # 交换kv
+    dict1_zip = zip(dict1.values(), dict1.keys())
+    print(sorted(dict1_zip)) # 相当于循环 print
     ```
-    - 输出
+    输出
     ```
-    kv
-    {'k1': 'v1', 'k2': 'v2'}
+    [(1, 'x'), (2, 'y'), (3, 'o'), (3, 'z')]
+    ```
 
-    new_kv
-    {'k1': 'k10', 'k2': 'k20'}
-    ```
-- 取出字典内的kv
+- 反转key, value
     ```py
-    dict1 = {'k1': 'v1', 'k2': 'v2'}
-    (k1, v1), (k2, v2) = dict1.items()
-    (i1, i2)  = dict1.items()
-
-    # *_表示省略后面
-    (k1, v1), *_  = dict1.items()
-
-    # _表示省略
-    (i1, _)  = dict1.items()
-    ```
-    - 输出
-    ```
-    k1
-    'k1'
-
-    v1
-    'v1'
-
-    i1
-    ('k1', 'v1')
-
-    i2
-    ('k2', 'v2')
+    dict1_zip = zip(dict1.values(), dict1.keys())
+    dict1_reverse = {key: value for key, value in dict1_zip}
+    print(dict1_reverse) # {3: 'z', 2: 'y', 1: 'x'}
     ```
 
-- 一个key保存多个value:
+- 两个数组转换为字典
+```py
+k = ['k1', 'k2']
+v = ['v1', 'v2']
+kv = dict(zip(k,v))
 
-    - 字典包字典
-        ```py
-        dict1 = {
-                'a': {'1', '2', '3'},
-                'b': {'2', '3', '4'}
-                }
-        dict1['a']
-        ```
+# 通过切片交换数组, 形成字典
+old_kv = ['k1', 'v1', 'k2', 'v2']
+old_kv1 = ['k10', 'v10', 'k20', 'v20']
+new_kv = dict(zip(old_kv[0::2], old_kv1[0::2]))
+```
+- 输出
+```
+kv
+{'k1': 'v1', 'k2': 'v2'}
 
-    - setdefault():
-        ```py
-        dict1 = {}
-        dict1.setdefault('a', []).append(1)
-        dict1.setdefault('a', []).append(2)
-        ```
+new_kv
+{'k1': 'k10', 'k2': 'k20'}
+```
 
-    - defaultdict()
-        ```py
-        from collections import defaultdict
+#### 字典拆包
+```py
+dict1 = {'k1': 'v1', 'k2': 'v2'}
+(k1, v1), (k2, v2) = dict1.items()
+(i1, i2)  = dict1.items()
 
-        d = defaultdict(list)
-        d['a'].append(1)
-        d['a'].append(2)
-        ```
+# *_表示省略后面
+(k1, v1), *_  = dict1.items()
 
-- 集合运算. keys支持集合运算, values不支持, items带keys所以支持
+# _表示省略
+(i1, _)  = dict1.items()
+```
+- 输出
+```
+k1
+'k1'
+
+v1
+'v1'
+
+i1
+('k1', 'v1')
+
+i2
+('k2', 'v2')
+```
+#### dictionaries(字典)集合运算
+
+- keys支持集合运算, values不支持, items带keys所以支持
+
     ```py
     dict1 = {
             'x': 1,
@@ -3213,16 +3191,62 @@ print(res)
     dict1.keys() & dict2.keys()   # {'x', 'y'}
     dict1.items() & dict2.items() # {('x', 1)}
 
+    # | 并集
+    dict1.keys() | dict2.keys()   # {'o', 'x', 'y', 'z'}
+    # item升级为元组类型
+    dict1.items() | dict2.items() # {('o', 3), ('x', 1), ('y', 2), ('y', 20), ('z', 3)}
+
     # - 差集
     dict1.keys() - dict2.keys() # {'z'}
+    dict2.keys() - dict1.keys() # {'o'}
+
+    # ^ 对称差集. 先交集的后补集
+    dict1.keys() ^ dict2.keys()   # {'o', 'z'}
+    dict1.items() ^ dict2.items() # {('o', 3), ('y', 2), ('y', 20), ('z', 3)}
     ```
+
+#### `|` 语法糖
+
+- `v | b` instead of `{**v, **v1}` instead of  `v.update(b)`
+
+```py
+{**a, **b}
+
+# or
+a | b
+```
+
+- `|=` instead `dict.update()`
+
+```py
+dict1 = {'a': 1, 'b': 2}
+dict2 = {'c': 3, 'd': 4}
+
+# 以下三种方法一样 # {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+dict1.update(dict2)
+dict1 = {**dict1, **dict2}
+dict1 |= dict2
+```
 
 #### collections模块
 
 - [geeksforgeeks文档](https://www.geeksforgeeks.org/python-collections-module/)
 
-- Counter()
+##### Counter(): 计数器
 
+```py
+from collections import Counter
+
+d = Counter()
+# 不存在的key, 返回0
+d['a'] # 0
+d['a'] += 1 # Counter({'a': 1})
+d['a'] += 1 # Counter({'a': 2})
+
+d['b'] = 10 # Counter({'a': 2, 'b': 10})
+```
+
+- 统计列表重复的值
     ```py
     from collections import Counter
 
@@ -3234,101 +3258,104 @@ print(res)
     Counter({'B': 5, 'A': 3, 'C': 2})
     ```
 
-    - 统计命令的次数
+- 统计命令的次数
 
-        ```py
-        from collections import Counter
+    ```py
+    from collections import Counter
 
-        cmd = []
+    cmd = []
 
-        # 将所有命令加入list
-        with open('/home/tz/.bash_history', 'r') as f:
-            for line in f:
-                l = line.split()
-                if len(l) > 1:
-                    cmd.append(l[0])
+    # 将所有命令加入list
+    with open('/home/tz/.bash_history', 'r') as f:
+        for line in f:
+            l = line.split()
+            if len(l) > 1:
+                cmd.append(l[0])
 
-        # Counter用dict统计list重复的值, 并按顺序排序
-        print(Counter(cmd))
-        ```
+    # Counter用dict统计list重复的值, 并按顺序排序
+    print(Counter(cmd))
+    ```
 
-- defaultdict
+##### defaultdict: 设置默认值, 默认类型
 
-    - append()
+- 通过lambda设置默认值为1
+    ```py
+    from collections import defaultdict
 
-        ```py
-        from collections import defaultdict
+    dict1 = defaultdict(lambda: 1)
 
-        # 定义value为list
-        d = defaultdict(list)
+    dict1['a'] # 1
+    dict1['b'] # 1
+    ```
 
-        for i in range(5):
-            d[i].append(i)
+- 通过设置list类型, 实现一个key多个value
 
-        print(d)
-        ```
-        输出
-        ```
-        defaultdict(<class 'list'>, {0: [0], 1: [1], 2: [2], 3: [3], 4: [4]})
-        ```
+    ```py
+    from collections import defaultdict
 
-    - 统计
+    # 定义value为list
+    d = defaultdict(list)
 
-        ```py
-        from collections import defaultdict
+    for i in range(5):
+        d[i].append(i)
 
-        # 定义int
-        d = defaultdict(int)
+    print(d) # defaultdict(<class 'list'>, {0: [0], 1: [1], 2: [2], 3: [3], 4: [4]})
+    ```
 
-        list1 = [1, 2, 3, 4, 2, 4, 1, 2]
+- 通过设置int类型, 进行统计
 
-        for i in list1:
-            d[i] += 1
+    ```py
+    from collections import defaultdict
 
-        print(d)
-        ```
-        输出
-        ```
-        defaultdict(<class 'int'>, {1: 2, 2: 3, 3: 1, 4: 2})
-        ```
+    # 定义int
+    d = defaultdict(int)
 
-    - 统计命令的次数
+    list1 = [1, 2, 3, 4, 2, 4, 1, 2]
 
-        ```py
-        from collections import defaultdict
-        cmd = []
+    for i in list1:
+        d[i] += 1
 
-        d = defaultdict(str)
-        # 将所有命令加入list
-        with open('/home/tz/.bash_history', 'r') as f:
-            for line in f:
-                l = line.split()
-                if len(l) > 1:
-                    cmd.append(l[0])
+    print(d) # defaultdict(<class 'int'>, {1: 2, 2: 3, 3: 1, 4: 2})
+    ```
 
-        # 定义int
-        d = defaultdict(int)
+- 统计命令的次数
 
-        for i in cmd:
-            d[i] += 1
+    ```py
+    from collections import defaultdict
 
-        # 不会按顺序排序
-        print(d)
-        ```
+    # 将所有命令加入list
+    cmd = []
+    with open('/home/tz/.bash_history', 'r') as f:
+        for line in f:
+            l = line.split()
+            if len(l) > 1:
+                cmd.append(l[0])
 
-    - OrderedDict: 双向链表, 新元素会加入末尾, 内存比普通字典大2倍多
-        ```py
-        from collections import OrderedDict
+    # 定义int
+    d = defaultdict(int)
 
-        d = OrderedDict()
-        d['a'] = 1
-        d['b'] = 2
-        d['c'] = 3
+    for i in cmd:
+        d[i] += 1
 
-        for key in d:
-            print(key, d[key])
-        ```
-- ChainMap():
+    # 不会按顺序排序
+    print(d)
+    ```
+
+##### OrderedDict: 有序字典, 内存比普通字典大2倍多
+
+```py
+from collections import OrderedDict
+
+d = OrderedDict()
+d['a'] = 1
+d['b'] = 2
+d['c'] = 3
+
+for key in d:
+    print(key, d[key])
+```
+
+##### ChainMap(): 链式字典, 访问多个字典
 
 ```py
 from collections import ChainMap
@@ -3338,15 +3365,10 @@ dict2 = {'x': 2, 'z': 3}
 
 c = ChainMap(dict1, dict2)
 
-# 只会输出第一个key的值
-# 输出: 0
-c['x']
-
-# 输出: ['x', 'z', 'y']
-list(c.keys())
-
-# 输出: [0, 3, 1]
-list(c.values())
+# 当出现重复时, 只会输出第一个
+c['x'] # 0
+list(c.keys()) # ['x', 'z', 'y']
+list(c.values()) # [0, 3, 1]
 ```
 
 - new_child() 手动创建
@@ -3362,7 +3384,19 @@ c['z'] = 3
 print(c)
 ```
 
-### set(集合)
+#### MappingProxyType只读字典
+
+```py
+from types import MappingProxyType
+
+dict1 = {'a': 1}
+dict1_proxy = MappingProxyType(dict1)
+
+# 报错
+dict1_proxy['a'] = 2
+```
+
+### set(动态集合)
 
 - 比list使用更多的内存, 但查询速度更快
 
@@ -3402,9 +3436,42 @@ print(c)
     {6}
     ```
 
-### 图
+- frozenset(): 去重
+    ```py
+    list1 = [1, 1, 2, 2, 3]
+    for i in frozenset(list1):
+    # or
+    # for i in set(list1):
+        print(i)
+    ```
+    输出
+    ```
+    1
+    2
+    3
+    ```
 
-![image](./imgs/dawg.png)
+### frozenset(静态集合)
+```py
+tuple1 = ('a', 'b', 1, 2)
+fset1 = frozenset(tuple1)
+
+# isdisjoint() 是否没有交集
+tuple2 = (3, 4)
+fset1.isdisjoint(tuple2) # True
+
+# issuperset() 是否是父集
+tuple3 = (1, 2)
+fset1.issuperset(tuple3) # True
+
+# issubset() 是否是子集
+tuple4 = ('a', 'b', 1, 2, 3, 4)
+fset1.issubset(tuple4) # True
+```
+
+### trie字典数
+
+![image](./imgs/trie.png)
 - 减少内存
 
 - DAWG(有向无环图)
@@ -3418,7 +3485,7 @@ print(c)
 
     str1 = 'hello world'
 
-    dawg1 = dawg.DAWG('str1')
+    dawg1 = dawg.DAWG(str1)
     ```
 
 - trie只共享前缀
@@ -3429,7 +3496,7 @@ print(c)
 
     ```py
     import marisa_trie
-    trie = marisa_trie.Trie('str1')
+    trie = marisa_trie.Trie(str1)
     ```
 
     - `datrie`
@@ -3438,7 +3505,7 @@ print(c)
 
     ```py
     import datrie
-    set1 = set('str1')
+    set1 = set(str1)
     datrie1 = datrie.BaseTrie(set1)
     ```
 
@@ -3772,6 +3839,18 @@ close_all([f, r])
 ```
 
 ## sorted
+
+- sorted的key参数支持数据类型
+```py
+list1 = [10, '21', 9, '1', 33, 62, '4', 31]
+
+# 直接调用会报错
+print(sorted(list1))
+
+# 指定key
+print(sorted(list1, key=int)) # ['1', '4', 9, 10, '21', 31, 33, 62]
+print(sorted(list1, key=str)) # ['1', 10, '21', 31, 33, '4', 62, 9]
+```
 
 - 找出列表内元素组合的最大值. 通过字符串的比较, 使其变成一个排序问题
 
@@ -4786,7 +4865,7 @@ print(a.__class__.__class__)
     a.__dict__['name']
     ```
 
--  `__slots__` 不使用dictionary(字典)保存self变量
+-  `__slots__` 使用tuple(元组)代替dictionary(字典)保存self变量
 
     > 每个class的dictionary浪费大量内存, 而__slots__是一种减少内存的方法
 
@@ -5417,51 +5496,34 @@ Stock('tz', 0, 1.1)
 ```
 ## weakerf(弱引用)
 
+> tuple, int不支持弱引用
+
 - gc(垃圾回收)
 
-    - 对象的引用数变成0时才会被gc, 而循环引用导致条件永远不会成立
+    - 对象的引用数变成0时才会被gc
 
 ```py
+import weakref
+import sys
+
+
 class Data:
     def __del__(self):
-        print('Data.__del__')
-
-class Node:
-    def __init__(self):
-        self.data = Data()
-        self.parent = None
-        self.children = []
-
-    def add_child(self, child):
-        self.children.append(child)
-        child.parent = self
-
+        print(id(self), 'dead')
 
 a = Data()
-del a # Data.__del__
+# 引用计数
+sys.getrefcount(a) # 2
 
-a = Node()
-del a # Data.__del__
+# 创建弱引用
+w = weakref.ref(a)
+w() is a # True
 
-# 循环引用没有触发del(在交互模式下运行)
-a = Node()
-a.add_child(Node())
-del a
+# 引用计数并没有增加
+sys.getrefcount(a) # 2
 
-# 需要手动触发
-import gc
-gc.collect()
-```
-
-- weakref.ref(): 通过弱引用消除循环引用
-
-    - 弱引用就是一个对象指针，它不会增加它的引用计数
-
-```py
-# 重新定义方法
-    def add_child(self, child):
-        self.children.append(child)
-        child.parent = weakref.ref(self)
+# 删除原对象后, 弱引用w也会失效
+del a # 139893964471840 dead
 ```
 
 ### 优秀的weakref例子
@@ -5829,6 +5891,10 @@ pprint(json_str)
 ```
 
 - 没有代码注入的安全问题
+
+#### [orjson](https://github.com/ijl/orjson)更好的json库
+
+- 支持datetime, numpy
 
 ### yaml
 
@@ -6971,6 +7037,8 @@ import this
 ## [algorithms: 算法](./python-algorithms.md)
 
 ## [Design Pattern: 设计模式](./python-design_pattern.md)
+
+## [Geometry: 几何](./python-geometry.md)
 
 # reference article(优秀文章)
 

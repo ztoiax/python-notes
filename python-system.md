@@ -22,6 +22,8 @@
     * [监控文件](#监控文件)
         * [pyinotify](#pyinotify)
     * [限制cpu, 内存](#限制cpu-内存)
+    * [APScheduler(计划任务调度器)](#apscheduler计划任务调度器)
+        * [新建任务](#新建任务)
 
 <!-- vim-markdown-toc -->
 # 系统编程
@@ -521,4 +523,111 @@ if __name__ == '__main__':
     set_max_runtime(15)
     while True:
         pass
+```
+
+## APScheduler(计划任务调度器)
+
+- [官方文档](https://apscheduler.readthedocs.io/en/3.x/)
+
+- [优秀教程](https://betterprogramming.pub/introduction-to-apscheduler-86337f3bb4a6)
+
+- 默认的job store是MemoryJobStore, 如果需要持久化, 则可以选择数据库
+
+- 默认的executors是ThreadPoolExecutor(线程池实现), 如果任务是cpu密集性, 则可以选择ProcessPoolExecutor
+
+| scheduler           | 内容                                                                                                                           |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| BlockingScheduler   | use when the scheduler is the only thing running in your process                                                               |
+| BackgroundScheduler | use when you’re not using any of the frameworks below, and want the scheduler to run in the background inside your application |
+| AsyncIOScheduler    | use if your application uses the asyncio module                                                                                |
+| GeventScheduler     | use if your application uses gevent                                                                                            |
+| TornadoScheduler    | use if you’re building a Tornado application                                                                                   |
+| TwistedScheduler    | use if you’re building a Twisted application                                                                                   |
+| QtScheduler         | use if you’re building a Qt application                                                                                        |
+
+- 初始化
+```py
+from apscheduler.schedulers.background import BlockingScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.executors.pool import ProcessPoolExecutor
+from pytz import utc
+
+
+jobstores = {
+    'mongo': {'type': 'mongodb'},
+    'default': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')
+}
+executors = {
+    'default': {'type': 'threadpool', 'max_workers': 20},
+    'processpool': ProcessPoolExecutor(max_workers=5)
+}
+job_defaults = {
+    'coalesce': False,
+    'max_instances': 3
+}
+
+scheduler = BlockingScheduler()
+scheduler.configure(jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc)
+```
+
+### 新建任务
+
+| trigger  | 内容              |
+|----------|-------------------|
+| date     | 指定时间,运行一次 |
+| interval | 周期性执行        |
+| cron     | cron              |
+
+| interval   |
+|------------|
+| weeks      |
+| days       |
+| hours      |
+| minutes    |
+| seconds    |
+| start_date |
+| end_date   |
+
+- 使用装饰器新建任务
+```py
+# 使用interval的trigger, 并设置每1秒钟执行一次
+@scheduler.scheduled_job('interval', seconds=1)
+def func():
+    print('func')
+
+# 设置开始和结束时间, 在这段时间内, 每2小时执行一次
+@scheduler.add_job('interval', hours=2, start_date='2022-1-1 09:00:00', end_date='2022-1-10 9:00:00'
+def func1():
+    print('func')
+
+# 使用cron的trigger, 并设置从周一至周五, 每天下午5点执行
+@scheduler.scheduled_job('cron', day_of_week='0-4', hour=17)
+@scheduler.scheduled_job('cron', day_of_week='mon-fri', hour=17)
+def func2():
+    print('func2')
+
+# 查看job列表
+scheduler.get_jobs()
+
+# 执行所有任务
+scheduler.start()
+```
+
+- `add_job()` 新建任务
+```py
+def func():
+    # 打印任务列表
+    scheduler.print_jobs()
+
+# 新建任务
+job = scheduler.add_job(func, 'interval', seconds=1)
+
+# 执行任务
+job.func()
+
+# 执行所有任务
+scheduler.start()
+
+# 删除任务
+job.remove()
 ```

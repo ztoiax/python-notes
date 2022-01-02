@@ -38,13 +38,18 @@
             * [单向链表归并排序](#单向链表归并排序)
         * [DoublyList(双向链表)](#doublylist双向链表)
         * [CircularQueue(环形队列)](#circularqueue环形队列)
+            * [判断是否为环形队列](#判断是否为环形队列)
             * [LRU缓存](#lru缓存)
         * [Blockchain(区块链)](#blockchain区块链)
     * [graph(图)](#graph图)
+        * [遍历有环图](#遍历有环图)
+        * [生成树](#生成树)
+            * [Prim算法](#prim算法)
+            * [Kruskal算法](#kruskal算法)
+        * [Dijkstra最短路径算法](#dijkstra最短路径算法)
+        * [全排列](#全排列)
+        * [走出迷宫](#走出迷宫)
         * [图的应用](#图的应用)
-        * [深度优先(dfs)](#深度优先dfs)
-            * [全排列](#全排列)
-        * [广度优先(bfs)](#广度优先bfs)
     * [tree(树)](#tree树)
         * [binary tree(二叉树)](#binary-tree二叉树)
             * [遍历树](#遍历树)
@@ -63,24 +68,54 @@
         * [完全二叉树(complete binary tree)](#完全二叉树complete-binary-tree)
             * [判断是否为完全二叉树](#判断是否为完全二叉树)
         * [二叉搜索树(binary search tree)](#二叉搜索树binary-search-tree)
+            * [输入两个值, 计算他们之间的值](#输入两个值-计算他们之间的值)
             * [判断是否为二叉搜索树](#判断是否为二叉搜索树)
         * [自平衡二叉搜索树(AVL tree)](#自平衡二叉搜索树avl-tree)
         * [红黑树](#红黑树)
+        * [字典树(trie tree)](#字典树trie-tree)
+        * [2-3树](#2-3树)
         * [B树](#b树)
         * [B+树](#b树-1)
         * [B-link树](#b-link树)
         * [R树](#r树)
         * [LSMTree(日志结构合并树)](#lsmtree日志结构合并树)
-    * [递归](#递归)
+    * [递归(rec)](#递归rec)
         * [汉诺塔](#汉诺塔)
         * [反转正整数](#反转正整数)
+        * [集合划分](#集合划分)
+        * [整数划分](#整数划分)
+        * [最大公约数, 最小公倍数](#最大公约数-最小公倍数)
+    * [分治算法](#分治算法)
+        * [找到出现最多次数的值](#找到出现最多次数的值)
     * [动态规划](#动态规划)
         * [UnlyNum(丑数)](#unlynum丑数)
         * [进制转换](#进制转换)
         * [最少硬币找零](#最少硬币找零)
+        * [最长公共子序列长度](#最长公共子序列长度)
+        * [完全背包问题](#完全背包问题)
+    * [贪心算法](#贪心算法)
+        * [背包问题](#背包问题)
+        * [钱币找零](#钱币找零)
+        * [任务调度](#任务调度)
+        * [活动安排](#活动安排)
+        * [分数背包](#分数背包)
+        * [连续背包](#连续背包)
+        * [密度贪心算法](#密度贪心算法)
+    * [双指针算法](#双指针算法)
+        * [三数之和](#三数之和)
+            * [四数之和](#四数之和)
+        * [救生艇](#救生艇)
+        * [存储水](#存储水)
     * [string(字符串)](#string字符串)
         * [统计两个字符串中的重复字符](#统计两个字符串中的重复字符)
+        * [回文字符串](#回文字符串)
         * [中叙, 后叙(逆波兰记法), 前叙表达式](#中叙-后叙逆波兰记法-前叙表达式)
+    * [fib(斐波那契)](#fib斐波那契)
+        * [循环 while, for](#循环-while-for)
+        * [递归](#递归)
+        * [迭代](#迭代)
+        * [泛函](#泛函)
+    * [牛顿法求平方根](#牛顿法求平方根)
 * [reference](#reference)
 
 <!-- vim-markdown-toc -->
@@ -139,6 +174,16 @@
         - 到最深的递归时, 分配了x个堆栈, 空间复杂度也是O(n)
 
 ## sort(排序)
+
+- 是否稳定:
+
+    - 一个排序算法使元素之间, 保留原有的相对位置, 就可以说它是**稳定的**
+
+    - 意义: 如果对学生的成绩进行排序, 一个稳定的排序算法, 可以把成绩相同的学生, 保留原有的字母顺序
+
+- 是否在位(in-place):
+
+    - 是否需要使用额外的空间, 不需要就是**在位的(in-place)**
 
 ![image](./imgs/bigO_sort.png)
 
@@ -804,6 +849,8 @@ def stoogeSort(list1):
 
 > 是python, java...等默认的排序算法
 
+- tim是python之禅(import this)的作者, 也是高产的python核心开发者
+
 - [Timsort — the fastest sorting algorithm you’ve never heard of](https://hackernoon.com/timsort-the-fastest-sorting-algorithm-youve-never-heard-of-36b28417f399)
 
 - [python中的sort之timsort学习](https://zhuanlan.zhihu.com/p/158972725)
@@ -986,10 +1033,8 @@ def binarySearch(list1, x):
 class Hash:
     def __init__(self, n):
         self.n = n
-        self.buckets = []
         # 一个集合代表一个桶. 集合没有重复值
-        for _ in range(n):
-            self.buckets.append(set())
+        self.buckets = [set()] * n
 
     # hash函数
     def _hash(self, x):
@@ -1137,7 +1182,7 @@ def hash(key):
 
 - 时间复杂度O(n)
 
-实现list(列表)的所有方法, 除了`sort()`, `reverse()`
+实现list(列表)的所有方法, 除了`sort()`
 
 <details><summary>代码实现</summary><p>
 
@@ -1303,6 +1348,17 @@ class List:
         for item in self:
             list.append(item)
         return list
+
+    def reverse(self):
+        node = self.head
+        next = self.head.next
+        node.next = None
+        while next:
+            current = next
+            next = next.next
+            current.next = node
+            node = current
+        self.head = current
 ```
 ---
 
@@ -1401,6 +1457,10 @@ def test_repr(list1):
 def test_mul(list1):
     list2 = list1 * 2
     assert list2.__repr__() == '[0, 1, 2, 0, 1, 2]'
+
+def test_reverse(list1):
+    list1.reverse()
+    assert list1.__repr__() == '[2, 1, 0]'
 ```
 ---
 
@@ -1788,6 +1848,32 @@ class CircularQueue(object):
         return str1
 ```
 
+#### 判断是否为环形队列
+
+- 使用快慢双指针: 每次移动快指针都比慢指针快1
+
+- 快指针要追上慢指针, 只需一次遍历, 因此时间复杂度为O(n)
+
+```py
+def check(cqueue):
+    slow = fast = cqueue.head
+    while fast.next:
+        fast = fast.next.next
+        slow = slow.next
+
+        if id(fast) == id(slow):
+            return True
+    # 到头就返回False
+    return False
+
+if __name__ == '__main__':
+    cqueue = CircularQueue()
+    for i in range(3):
+        cqueue.put(i, i)
+
+    print(check(cqueue)) # True
+```
+
 #### LRU缓存
 
 - 利用CircularQueue的FIFO特性, 实现LRU缓存
@@ -1864,15 +1950,234 @@ if __name__ == '__main__':
 
 - [图介绍](https://www.section.io/engineering-education/graph-data-structure-python/)
 
-### 图的应用
+![image](./imgs/graph.png)
 
-- [pagerank](https://en.wikipedia.org/wiki/PageRank)
+```py
+class Node:
+    """结点"""
 
-    > 为网页的每个链接分配权重, 测量网页内部连接的相对重要性
+    def __init__(self, name):
+        self.name = name
 
-### 深度优先(dfs)
+    def __repr__(self):
+        return self.name
 
-#### 全排列
+
+class Edge:
+    """边"""
+
+    def __init__(self, src, dest):
+        self.src = src
+        self.dest = dest
+
+    def __repr__(self):
+        return self.src.name + "->" + self.dest.name
+
+
+class WeightEdge(Edge):
+    """权重边"""
+
+    def __init__(self, src, dest, weight):
+        self.src = src
+        self.dest = dest
+        self.weight = weight
+
+    def __repr__(self):
+        return self.src.name + "->" + str(self.weight) + "," + self.dest.name
+
+
+class Digraph:
+    """有向图"""
+
+    def __init__(self):
+        self.nodes = []
+        # {0: [1, 2], 1: [2, 0], 2: [3, 4], 3: [5, 1], 4: [0], 5: []}
+        self.edges = {}
+
+    def addNode(self, node):
+        self.nodes.append(node)
+        self.edges[node] = []
+
+    def addEdge(self, edge):
+        self.edges[edge.src].append(edge.dest)
+
+    def getEdge(self, node):
+        return self.edges[node]
+
+    def __repr__(self):
+        result = ""
+        for src in self.nodes:
+            for dest in self.edges[src]:
+                result = result = src.name + "->" + dest.name + "\n"
+        return result[:-1]
+
+
+class Graph(Digraph):
+    """无向图"""
+
+    def addEdge(self, edge):
+        Digraph.addEdge(self, edge)
+        rev = Edge(edge.dest, edge.src)
+        Digraph.addEdge(self, rev)
+
+
+def printPath(path):
+    """输入[0, 2, 3, 5]; 输出0->2->3->5"""
+    result = ""
+    for i in range(len(path)):
+        result += str(path[i])
+        if i != len(path) - 1:
+            result += "->"
+
+    return result
+
+
+def dfs(graph, start, end, toPrint=False):
+    def rec(graph, start, end, path, result, toPrint=False):
+        path = path + [start]
+
+        if toPrint:
+            print(printPath(path))
+
+        if start == end:
+            return path
+
+        for node in graph.getEdge(start):
+            if node not in path:
+                if result is None or len(path) < len(result):
+                    newPath = rec(graph, node, end, path, result, toPrint)
+
+                    if newPath:
+                        result = newPath
+        return result
+    return rec(graph, start, end, [], None, toPrint)
+
+
+def bfs(graph, start, end, toPrint=False):
+    initPath = [start]
+    pathQueue = [initPath]
+
+    while len(pathQueue) != 0:
+        tmpPath = pathQueue.pop(0)
+        if toPrint:
+            print(printPath(tmpPath))
+
+        lastNode = tmpPath[-1]
+        if lastNode == end:
+            return tmpPath
+
+        for node in graph.getEdge(lastNode):
+            if node not in tmpPath:
+                newPath = tmpPath + [node]
+                pathQueue.append(newPath)
+
+
+def test_SP():
+    nodes = []
+    for name in range(6):
+        nodes.append(Node(str(name)))
+
+    graph = Digraph()
+    for i in nodes:
+        graph.addNode(i)
+
+    graph.addEdge(Edge(nodes[0], nodes[1]))
+    graph.addEdge(Edge(nodes[1], nodes[2]))
+    graph.addEdge(Edge(nodes[2], nodes[3]))
+    graph.addEdge(Edge(nodes[2], nodes[4]))
+    graph.addEdge(Edge(nodes[3], nodes[5]))
+    graph.addEdge(Edge(nodes[0], nodes[2]))
+    graph.addEdge(Edge(nodes[1], nodes[0]))
+    graph.addEdge(Edge(nodes[3], nodes[1]))
+    graph.addEdge(Edge(nodes[4], nodes[0]))
+
+    sp = dfs(graph, nodes[0], nodes[5], toPrint=True)
+    print(printPath(sp))
+
+    print()
+
+    sp = bfs(graph, nodes[0], nodes[5], toPrint=True)
+    print(printPath(sp))
+
+
+if __name__ == '__main__':
+    test_SP()
+```
+
+### 遍历有环图
+
+![image](./imgs/graph1.png)
+
+| 节点 | 1 | 2 | 3 | 4 | 5 |
+|------|---|---|---|---|---|
+| 1    | 0 | 1 | 0 | 1 | 1 |
+| 2    | 1 | 0 | 1 | 0 | 0 |
+| 3    | 0 | 1 | 0 | 0 | 0 |
+| 4    | 1 | 0 | 0 | 0 | 1 |
+| 5    | 1 | 0 | 0 | 1 | 0 |
+
+- dfs
+
+```py
+def dfs(graph, point):
+    def rec(n, sum):
+        bitmap[n] = 1
+        print(point[n], end='')
+        sum += 1
+        if sum == len(bitmap):
+            return
+        for i in range(len(graph)):
+            if graph[n][i] == 1 and bitmap[i] == 0:
+                rec(i, sum)
+
+    bitmap = [0 for _ in range(len(graph))]
+    rec(0, 0)
+```
+
+- bfs
+```py
+from collections import deque
+
+
+def bfs(graph, point):
+    bitmap = [0 for _ in range(len(graph))]
+    n = 0
+    queue = deque([n])
+    bitmap[n] = 1
+
+    while queue:
+        head = queue.popleft()
+        print(point[head], end="")
+        for i in range(len(graph)):
+            if graph[head][i] == 1 and bitmap[i] == 0:
+                queue.append(i)
+                bitmap[i] = 1
+
+
+if __name__ == "__main__":
+    graph = [
+        [0, 1, 0, 1, 1],
+        [1, 0, 1, 0, 0],
+        [0, 1, 0, 0, 0],
+        [1, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0],
+    ]
+    point = [1, 2, 3, 4, 5]
+
+    dfs(graph, point) # 12345
+    bfs(graph, point) # 12453
+```
+
+### 生成树
+
+#### Prim算法
+
+#### Kruskal算法
+
+### Dijkstra最短路径算法
+
+### 全排列
+
 - 输入输出
 
     输入
@@ -1889,7 +2194,7 @@ if __name__ == '__main__':
     [3, 2, 1]
     ```
 
-- 代码
+- dfs
 ```py
 def dfs(list1):
     def iter(i, list2):
@@ -1906,7 +2211,13 @@ list1 = [1, 2, 3]
 dfs(list1)
 ```
 
-### 广度优先(bfs)
+### 走出迷宫
+
+### 图的应用
+
+- [pagerank](https://en.wikipedia.org/wiki/PageRank)
+
+    > 为网页的每个链接分配权重, 测量网页内部连接的相对重要性
 
 ## tree(树)
 
@@ -2169,9 +2480,9 @@ def invert(tree):
     if not tree:
         return
 
-    swap(tree)
     invert(tree.left)
     invert(tree.right)
+    swap(tree)
 ```
 - stack实现
 ```py
@@ -2189,7 +2500,20 @@ def invert(tree):
         if tail.left: stack.append(tail.left)
 ```
 
-- bfs
+- bfs:
+
+- 迭代
+```py
+def invert(tree):
+    if not tree:
+        return
+
+    swap(tree)
+    invert(tree.left)
+    invert(tree.right)
+```
+
+- 队列实现
 ```py
 from collections import deque
 
@@ -2507,6 +2831,32 @@ def insert(tree, data):
     return tree
 ```
 
+#### 输入两个值, 计算他们之间的值
+
+```py
+class dfs():
+    def f(self, tree, left, right):
+        self.sum = 0
+
+        def rec(tree):
+            if tree:
+                # 小于left值就跳过
+                if tree.data < left:
+                    rec(tree.right)
+                # 大于right值就跳过
+                elif tree.data > right:
+                    rec(tree.left)
+                else:
+                    # 相加
+                    self.sum += tree.data
+                    rec(tree.right)
+                    rec(tree.left)
+        rec(tree)
+        return self.sum
+
+func = dfs()
+print(func.f(tree, 2, 10))
+```
 
 #### 判断是否为二叉搜索树
 
@@ -2565,13 +2915,15 @@ True
 
 ### 自平衡二叉搜索树(AVL tree)
 ### 红黑树
+### 字典树(trie tree)
+### 2-3树
 ### B树
 ### B+树
 ### B-link树
 ### R树
 ### LSMTree(日志结构合并树)
 
-## 递归
+## 递归(rec)
 
 ### 汉诺塔
 
@@ -2602,6 +2954,130 @@ def iter(n):
 
 # 输入一个正整数
 iter(1234)
+```
+
+### 集合划分
+
+```py
+def f(n, m):
+    if m==1 or n==1:
+        return 1
+    return f(n-1, m-1) + f(n-1, m)
+```
+
+### 整数划分
+
+- 假设num是4, maxnum也是4可以划分为5种: 4+0, 1+3, 2+2, 2+1+1, 1+1+1+1
+
+```py
+def func(num, maxnum):
+    if num < 1 and maxnum < 1:
+        return 0
+    if num == 1 or maxnum == 1:
+        return 1
+
+    if num < maxnum:
+        return func(num, num)
+    if num == maxnum:
+        return func(num, maxnum-1) + 1
+    return func(num - maxnum, maxnum) + func(num, maxnum-1)
+
+print(func(4, 4))
+```
+
+### 最大公约数, 最小公倍数
+
+- 最大公约数
+
+    - gcd(60, 24) -> gcd(24, 12) -> gcd(12, 0) = 12
+
+```py
+def gcd(m, n):
+    yu = m % n
+    if yu == 0:
+        return n
+
+    return gcd(n, yu)
+
+
+print(gcd(60, 24))
+```
+
+- 最小公倍数
+
+    - 60 = 2 * 2 * 2 * 3
+
+    - 24 = 2 * 2 * 3 * 5
+
+    - lcm(60, 24) = (2 * 2 * 3) * 2 * 5 = 120
+
+        - (公共质因子的积)
+
+$$
+lcm(m, n) = \frac {m \times n}{gcd(m, n)}
+$$
+
+```py
+def lcm(m, n):
+    return m * n / gcd(m, n)
+
+
+print(lcm(60, 24)) # 120.0
+```
+
+
+
+## 分治算法
+
+### 找到出现最多次数的值
+
+- 二分搜索:时间复杂度O(n log n), 递归需要空间复杂度O(n log n)
+```py
+def func(list1):
+    def rec(low, high):
+        if low == high:
+            return list1[low]
+        mid = low + (high-low) // 2
+        head = rec(low, mid)
+        tail = rec(mid+1, high)
+
+        if head == tail:
+            return tail
+        head_count = sum(1 for i in range(low, high+1) if list1[i] == head)
+        tail_count = sum(1 for i in range(low, high+1) if list1[i] == tail)
+        return head if head_count > tail_count else tail
+    return rec(0, len(list1)-1)
+
+
+list1 = [1, 2, 2, 1, 1]
+print(func(list1))
+```
+
+- 字典实现:时间复杂度:O(n), 空间复杂度:O(n)
+```py
+def func(list1):
+    dict1 = {}
+    for i in list1:
+        dict1[i] = dict1.get(i, 0) + 1
+    return max(dict1.keys(), key=dict1.get)
+```
+
+- 抵消: 时间复杂度O(n), 空间复杂度O(1)
+```py
+def func(list1):
+    times = 1
+    res = list1[0]
+    length = len(list1)
+
+    for i in range(1, length):
+        if times == 0:
+            times += 1
+        elif list1[i] == res:
+            times += 1
+        else:
+            res = list1[i]
+            times -= 1
+    return res
 ```
 
 ## 动态规划
@@ -2714,6 +3190,376 @@ def coin(list1, n):
 print(coin([1, 5, 10, 20, 50, 100], 106))
 ```
 
+### 最长公共子序列长度
+
+```py
+def f(str1, str2):
+    len1 = len(str1)
+    len2 = len(str2)
+    # 生成二维数组
+    array = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+    for i in range(1, len1 + 1):
+        for j in range(1, len2 + 1):
+            if str1[i-1] == str2[j-1]:
+                array[i][j] = array[i-1][j-1] + 1
+            else:
+                array[i][j] = max(array[i][j-1], array[i-1][j])
+    return array[len1][len2]
+
+
+print(f('abcd', 'baad')) # 2
+```
+
+### 完全背包问题
+
+- 二维数组
+
+```py
+weight = [1, 3, 2, 5]
+value = [200, 240, 140, 150]
+max_weight = 5
+
+
+def bag(weight, value, max_weight):
+    weight.insert(0, 0)
+    value.insert(0, 0)
+    weight_length = len(weight)
+
+    res = []
+    for i in range(weight_length):
+        res.append([0] * (max_weight + 1))
+
+    for i in range(1, weight_length):
+        for j in range(1, max_weight + 1):
+            res[i][j] = res[i - 1][j]
+            if j >= weight[i]:
+                res[i][j] = max(res[i - 1][j], res[i - 1][j - weight[i]] + value[i])
+    return res[weight_length - 1][max_weight]
+
+
+print(bag(weight, value, max_weight)) # 440
+```
+
+## 贪心算法
+
+贪心算法本质是: 每一步都做出, 当前情况下的最优选择(局部最优). 但不一定能得出全局最优
+
+### 背包问题
+
+| 商品 | 价值 | 重量 | 性价比 |
+|------|------|------|--------|
+| A    | 175  | 10   | 17.5   |
+| B    | 90   | 9    | 10     |
+| C    | 20   | 4    | 5      |
+| D    | 50   | 2    | 25     |
+| E    | 10   | 1    | 10     |
+| F    | 200  | 20   | 10     |
+
+```py
+class Item:
+    '''商品'''
+    def __init__(self, name, value, weight):
+        self.name = name
+        self.value = value
+        self.weight = weight
+
+    # [<A:175, 10>]
+    def __repr__(self):
+        return '<' + self.name + ':' + str(self.value) + ', ' + str(self.weight) + '>'
+
+
+class Select:
+    '''贪心算法, 选择函数'''
+    def value(item):
+        return item.value
+
+    def weight(item):
+        return item.weight
+
+    def desity(item):
+        ''' 选择性价比 '''
+        return item.value / item.weight
+
+
+def builditems():
+    ''' 生成数据 '''
+    names = list("ABCDE")
+    values = [175, 90, 20, 50, 10, 200]
+    weights = [10, 9, 4, 2, 1, 20]
+    items = []
+    for i in range(len(names)):
+        items.append(Item(names[i], values[i], weights[i]))
+    # [<A:175, 10>, <B:90, 9>, <C:20, 4>, <D:50, 2>, <E:10, 1>]
+    return items
+
+
+def greedy(items, maxWeight, func):
+    '''数据, 背包的重量, 选择函数'''
+    itemsCopy = sorted(items, key=func, reverse=True)
+    res = []
+    total_value, total_weight = 0.0, 0.0
+    for i in range(len(itemsCopy)):
+        if total_weight + itemsCopy[i].weight <= maxWeight:
+            res.append(itemsCopy[i])
+            total_value += itemsCopy[i].value
+            total_weight += itemsCopy[i].weight
+    print('选择顺序:', res)
+    print('最后背包的重量', total_weight)
+    print('总价值', total_value)
+    print()
+    return (res, total_value)
+
+
+if __name__ == '__main__':
+    items = builditems()
+    greedy(items, 20, Select.value)
+    greedy(items, 20, Select.weight)
+    greedy(items, 20, Select.desity)
+```
+输出: 选择性价比, 反而没有选择价值, 选择重量更优
+```
+选择顺序: [<A:175, 10>, <B:90, 9>, <E:10, 1>]
+最后背包的重量 20.0
+总价值 275.0
+
+选择顺序: [<A:175, 10>, <B:90, 9>, <E:10, 1>]
+最后背包的重量 20.0
+总价值 275.0
+
+选择顺序: [<D:50, 2>, <A:175, 10>, <E:10, 1>, <C:20, 4>]
+最后背包的重量 17.0
+总价值 255.0
+```
+
+### 钱币找零
+
+- 从面值最大的钱币开始选
+
+```py
+# 数量
+count = [4, 1, 2, 1, 1, 3, 5]
+
+# 面值
+value = [1, 2, 5, 10, 20, 50, 100]
+
+# 钱
+money = 234
+
+def f(count, value, money):
+    # 次数
+    res = 0
+    list1 = []
+    # 从面值最大的钱币开始选
+    for i in range(len(value)-1, -1, -1):
+        num = min(int(money/value[i]), count[i])
+        money -= num * value[i]
+        res += num
+        for j in range(num):
+            list1.append(value[i])
+
+    if money == 0:
+        return res, list1
+    else:
+        return -1
+
+print(f(count, value, money)) # (7, [100, 100, 20, 10, 2, 1, 1])
+```
+### 任务调度
+```py
+# 每个任务工作的时间
+time = [30, 26, 10, 35]
+
+# 机器的数量
+num = 3
+
+
+def f(time, num):
+    tmp = [0] * num
+    if len(time) < num:
+        return max(time)
+    else:
+        time.sort(reverse=True)
+        # 优先分配时间最长的任务
+        tmp = time[:num]
+        for i in time[num:]:
+            # 获取最先完成的任务机器
+            minx = tmp.index(min(tmp))
+            tmp[minx] += i
+    return max(tmp)
+
+
+print(f(time, num)) # 36
+```
+
+### 活动安排
+```py
+# 每个活动的时间
+time = [(3, 5), (1, 4), (5, 7), (0, 6), (6, 10), (8, 11), (12, 14)]
+
+
+def f(time):
+    res = []
+
+    # 选择结束时间最早的活动
+    time.sort(key=lambda x: x[1])
+    res.append(time[0])
+    for i in time[1:]:
+        # 活动的开始时间, 必须大于上一个活动的结束时间
+        if i[0] >= res[-1][1]:
+            res.append(i)
+
+    # 返回活动数量, 活动列表
+    return len(res), res
+
+
+print(f(time)) # (4, [(1, 4), (5, 7), (8, 11), (12, 14)])
+```
+
+### 分数背包
+### 连续背包
+### 密度贪心算法
+
+## 双指针算法
+
+### 三数之和
+
+> 找出三个元素相加等于0的元素
+
+- 穷举: O(n^3)
+```py
+def threeSum(list1):
+    list1.sort()
+    length = len(list1)
+    res = []
+    for i in range(length):
+        for j in range(i+1, length):
+            for k in range(j+1, length):
+                if list1[i] + list1[j] + list1[k] == 0:
+                    res.append([list1[i], list1[j], list1[k]])
+    return res
+
+
+list1 = [-1, 0, 1]
+print(threeSum(list1)) # [[-1, 0, 1]]
+
+list1 = [-1, 0, 1, -2, 2, 3]
+print(threeSum(list1)) # [[-2, -1, 3], [-2, 0, 2], [-1, 0, 1]]
+```
+
+- 双指针: O(n^2)
+
+    - 判断x+y 是否等于 -z
+
+```py
+def threeSum(list1):
+    list1.sort()
+    length = len(list1)
+    res = []
+    for i in range(length - 2):
+        l, r = i + 1, len(list1) - 1
+        while l < r:
+            sum = list1[i] + list1[l] + list1[r]
+            if sum == 0:
+                res.append([list1[i], list1[l], list1[r]])
+                l += 1
+                r -= 1
+            elif sum < 0:
+                l += 1
+            elif sum > 0:
+                r -= 1
+    return res
+```
+
+#### 四数之和
+```py
+def fourSum(list1):
+    list1.sort()
+    length = len(list1)
+    res = []
+    for i in range(length - 3):
+        for j in range(i+1, length - 2):
+            l, r = i + 1, len(list1) - 1
+            while l < r:
+                sum = list1[i] + list1[l] + list1[r] + list1[j]
+                if sum == 0:
+                    res.append([list1[i], list1[l], list1[r], list1[j]])
+                    l += 1
+                    r -= 1
+                elif sum < 0:
+                    l += 1
+                elif sum > 0:
+                    r -= 1
+    return res
+
+
+list1 = [1, 1, -1, -1]
+print(fourSum(list1)) # [[-1, 1, 1, -1]]
+
+list1 = [-1, 0, 1, -2, 2]
+print(fourSum(list1)) # [[-2, 1, 2, -1], [-2, 0, 2, 0], [-1, 0, 1, 0]]
+```
+
+### 救生艇
+
+输入两个参数: 人重量的列表, 救生艇每次能承载的重量. 求救生艇至少需要多少次, 才能载完所有人?
+
+```py
+def f(list1, weight):
+    list1.sort()
+    l = 0
+    r = len(list1) - 1
+    res = 0
+    while l < r:
+        res += 1
+        from ipdb import set_trace
+        set_trace()
+        if list1[l] + list1[r] <= weight:
+            l += 1
+        r -= 1
+    return res
+
+# 每个人的重量
+list1 = [1, 2]
+# 救生艇能容纳的重量
+weight = 3
+print(f(list1, weight)) # 1
+
+list1 = [1, 2, 1, 1, 3, 1]
+weight = 3
+print(f(list1, weight)) # 3
+```
+
+### 存储水
+
+![image](./imgs/water.png)
+
+```py
+def water(list1):
+    l = 0
+    r = len(list1) - 1
+    lmax = rmax = 0
+    res = 0
+    while l < r:
+        if list1[l] < list1[r]:
+            if list1[l] >= lmax:
+                lmax = list1[l]
+            else:
+                res += lmax - list1[l]
+            l += 1
+        else:
+            if list1[r] >= rmax:
+                rmax = list1[r]
+            else:
+                res += rmax - list1[r]
+            r -= 1
+
+    return res
+
+# 墙的高度
+list1 = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2]
+print(water(list1)) # 6
+```
+
 ## string(字符串)
 
 ### 统计两个字符串中的重复字符
@@ -2738,6 +3584,38 @@ def f(s1, s2):
 s1 = 'abcdefghijk'
 s2 = 'defghi'
 print(f(s1, s2))
+```
+
+### 回文字符串
+
+- dfs
+```py
+def isPal(str1):
+    if len(str1) <= 1:
+        return True
+    else:
+        return str1[0] == str1[-1] and isPal(str1[1:-1])
+
+print(isPal("toot"))
+print(isPal("toat"))
+```
+
+- bfs
+```py
+from collections import deque
+
+def isPal(str1):
+    deque1 = deque()
+
+    for i in str1:
+        deque1.append(i)
+
+    # 前后对比
+    while len(deque1) > 1:
+        if deque1.pop() != deque1.popleft():
+            return False
+
+    return True
 ```
 
 ### 中叙, 后叙(逆波兰记法), 前叙表达式
@@ -2970,6 +3848,146 @@ if __name__ == '__main__':
 ```
 3.0
 3.0
+```
+
+## fib(斐波那契)
+
+### 循环 while, for
+
+```py
+def fib(n):
+    x = n
+    while n > 1:
+        n = n - 1
+        x = x + n
+    return x
+
+def fib(n):
+    prev, curr = 1, 0
+    for _ in range(n):
+        prev, curr = curr, prev + curr
+    return curr
+
+# test
+fib(10)
+
+def fib1(f, n):
+    x = n
+    while n > 1:
+        n = n - 1
+        x = f(x, n)
+        print(x)
+    return x
+
+# test
+fib1(add,10)
+fib1(mul,10)
+```
+
+### 递归
+
+> 有大量的重复计算
+
+```py
+def fib(n):
+    if n == 0 or n == 1:
+        return 1
+    else:
+        return fib(n-1) + fib(n - 2)
+```
+
+### 迭代
+
+```py
+def fib2(x, n):
+    def iter(x, n, s):
+        if n >= x:
+            s = iter(x, n - 1, s + n)
+        return s
+    return iter(x, n - 1, n)
+
+# test
+fib2(0,10)
+
+# 自选函数: f
+
+def fib2(f, x, n):
+    def iter(f, x, n, s):
+        if n >= x:
+            s = iter(f, x, n - 1, f(s, n))
+        return s
+    return iter(f, x, n - 1, n)
+
+
+# test
+fib2(add, 0, 10)
+fib2(mul, 1, 5)
+
+# 步进: y
+
+def fib2(f, x, n, y):
+    def iter(f, x, n, s):
+        if n >= x:
+            # 递减
+            s = iter(f, x, n-y, f(s, n))
+            # 递加
+            # s = iter(f, x+y, n, f(s, x))
+        return s
+    return iter(f, x, n - y, n)
+
+# 累加器
+fib2(add, 0, 10, 2)
+fib2(lambda x, y: x + y, 0, 10, 1)
+fib2(mul, 10, 100, 10)
+```
+
+### 泛函
+
+```py
+def sum(n, term, next):
+    s, x = 0, 1
+    while x <= n:
+        s, x = s + term(x), next(x)
+    return s
+
+def fib(x):
+    def fib_next(x):
+        return x + 1
+    def fib_term(x):
+        return x
+    return sum(x, fib_term, fib_next)
+
+fib(100)
+```
+
+## 牛顿法求平方根
+- 二分
+```py
+def f(n):
+    epsilon = 0.01
+    guess = 0.0
+
+    low = 0.0
+    high = max(1.0, n)
+    mid = (low + high) / 2.0
+    while abs(mid ** 2 - n) >= epsilon:
+        print(low, high, mid)
+        guess += 1
+        if mid ** 2 < n:
+            low = mid
+        else:
+            high = mid
+        mid = (low + high) / 2.0
+    print(mid)
+```
+- 牛顿法: 比二分效率要高
+```py
+def f(n):
+    epsilon = 0.01
+    guess = n / 2.0
+    while abs(guess ** 2 - n) >= epsilon:
+        guess = guess - (((guess ** 2) - n) / (2 * guess))
+    print(guess)
 ```
 
 # reference
