@@ -28,11 +28,7 @@
         * [map()](#map)
         * [filter(): 过滤](#filter-过滤)
         * [reduce()](#reduce)
-            * [tuple(元组)](#tuple元组)
-        * [pi(圆周率)](#pi圆周率)
         * [黄金分割](#黄金分割)
-        * [树形递归](#树形递归)
-        * [平方根](#平方根)
         * [rlist(序列)](#rlist序列)
     * [数据类型](#数据类型)
         * [基本概念](#基本概念)
@@ -52,7 +48,7 @@
             * [headp: 堆](#headp-堆)
                 * [优先级队列](#优先级队列)
             * [list(列表)和tuple(元组)的区别](#list列表和tuple元组的区别)
-        * [tuple(元组)](#tuple元组-1)
+        * [tuple(元组)](#tuple元组)
             * [namedtuple](#namedtuple)
         * [Dictionaries(字典)](#dictionaries字典)
             * [去重](#去重)
@@ -106,6 +102,7 @@
         * [读写压缩文件](#读写压缩文件)
         * [json](#json)
             * [orjson更好的json库](#orjson更好的json库)
+            * [RedisJSON](#redisjson)
         * [yaml](#yaml)
         * [toml](#toml)
         * [ini](#ini)
@@ -114,6 +111,7 @@
         * [shelve](#shelve)
         * [pathlib](#pathlib)
         * [os](#os)
+    * [random(随机数)](#random随机数)
     * [日志](#日志)
         * [logging](#logging)
         * [loguru](#loguru)
@@ -131,6 +129,7 @@
         * [hashlib](#hashlib)
         * [pyodide: 把python编译成wasm, 在浏览器上运行](#pyodide-把python编译成wasm-在浏览器上运行)
         * [locust: web自动化压力测试](#locust-web自动化压力测试)
+        * [Diagrams: 生成架构图](#diagrams-生成架构图)
     * [cython](#cython)
     * [mingshe: 语法糖](#mingshe-语法糖)
     * [PEP 20: pythonic(python之禅)](#pep-20-pythonicpython之禅)
@@ -147,6 +146,7 @@
     * [Geometry: 几何](#geometry-几何)
 * [reference article(优秀文章)](#reference-article优秀文章)
 * [第三方软件资源](#第三方软件资源)
+* [在线工具](#在线工具)
 
 <!-- vim-markdown-toc -->
 
@@ -226,6 +226,13 @@
     ```
     - 目前backend使用`pdm` 的代理模式
 
+
+- pip install something报错: `ModuleNotFoundError: No module named 'pip._vendor.packaging'`
+
+```sh
+# 解决方法
+curl -sS https://bootstrap.pypa.io/get-pip.py | sudo python3
+```
 
 ### pyenv
 
@@ -843,7 +850,7 @@ for i in a:
     # 等同于a[1:6]
     a = range(1, 10)
     for i in islice(a, 1, 6):
-        print(i)
+        print(i, end='') # 23456
     ```
 
 - permutations() 组合所有元素(不包含自身)
@@ -890,6 +897,20 @@ for i in a:
     for i in combinations_with_replacement(list1, 3):
         print(i)
     ```
+    输出
+    ```
+    ('a', 'a', 'a')
+    ('a', 'a', 'b')
+    ('a', 'a', 'c')
+    ('a', 'b', 'b')
+    ('a', 'b', 'c')
+    ('a', 'c', 'c')
+    ('b', 'b', 'b')
+    ('b', 'b', 'c')
+    ('b', 'c', 'c')
+    ('c', 'c', 'c')
+    ```
+
 
 <span id="zip_longest"></span>
 - zip_longest() 解决两个对象元素不等
@@ -905,6 +926,15 @@ for i in a:
     for i in zip_longest(list1, list2, fillvalue=0):
         print(i)
     ```
+    输出
+    ```
+    (1, 10)
+    (2, 20)
+    (3, 30)
+    (4, 40)
+    (0, 50)
+    ```
+
 
 - chain() 更好的 for x in list1 + list2:
     ```py
@@ -1541,88 +1571,6 @@ print(reduce(lambda x, y: x + y, [1, 3, 5, 7, 9]))
 print(reduce(lambda a, b: a if a > b else b, [1, 2, 3, 4]))
 ```
 
-#### tuple(元组)
-
-```py
-def maporder(n):
-    return tuple(map(lambda x: x + 10, range(0, n)))
-
-def sumorder(n):
-    return sum(map(lambda x: x + 10, range(0, n)))
-
-def mapfib(n):
-    return tuple(map(fib, range(2, n + 1)))
-
-def mapfib(n):
-    return tuple(x for x in range(1, n + 1))
-
-def sumfib(n):
-    return sum(map(fib, range(2, n + 1)))
-
-def sumfib(n):
-    return sum(fib(x) for x in range(2, n + 1))
-
-# test
-maporder(10)
-sumorder(10)
-mapfib(10)
-sumfib(10)
-
-# odd, even
-def exfib(n, culc, f):
-    return f(filter(culc, range(1, n)))
-
-def odd(n, f):
-    return exfib(n, lambda x: x % 2 != 0, f)
-
-def even(n, f):
-    return exfib(n, lambda x: x % 2 == 0, f)
-
-odd(10, tuple)
-even(10, sum)
-```
-
-### pi(圆周率)
-
-```py
-def pi(n):
-    s, x = 0, 1
-    while x <= n:
-        s, x = s + 8 / (x * (x + 2)), x + 4
-    return s
-
-def pi(n):
-    def pi_sum(s, x, n):
-        if n >= x:
-            s = pi_sum(s + 8 / (x * (x + 2)), x + 4, n)
-        return s
-    return pi_sum(0, 1, n)
-
-# test
-pi(100)
-```
-
-```py
-def sum(n, term, next):
-    def pi_sum(s, x, n, pi_term, pi_next):
-        if n >= x:
-            s = pi_sum(s + term(x), next(x), n, pi_term, pi_next)
-        return s
-    return pi_sum(0, 1, n, pi_term, pi_next)
-
-# pi
-def pi(x):
-    def pi_next(x):
-        return x + 4
-    def pi_term(x):
-        return 8 / (x * (x + 2))
-    return sum(x, pi_term, pi_next)
-
-# test
-# 8 / (x * (x + 2))
-pi(100)
-```
-
 ### 黄金分割
 
 ```py
@@ -1652,98 +1600,6 @@ def iter_improve(update, test, guess = 1):
 # test
 # 1 / guess + 1
 iter_improve(golden_update, golden_test)
-```
-
-### 树形递归
-
-```py
-# 指数增长
-
-def tree(n):
-    if n == 1:
-        return 0
-    if n == 2:
-        return 1
-    return tree(n - 2) + tree(n - 1)
-
-# test
-tree(6)
-```
-
-### 平方根
-
-```py
-def square(x):
-    return x * x
-
-def average(x, y):
-    return (x + y) / 2
-
-def approx_eq(x, y, tolerance = 1e-5):
-    return abs(x - y) < tolerance
-
-def iter_improve(update, test, guess = 1):
-    while not test(guess):
-        guess = update(guess)
-    return guess
-
-def sqrt_update(guess, x):
-    return average(guess, x / guess)
-
-def square_root(x):
-    def update(guess):
-        return average(guess, x / guess)
-    def test(guess):
-        return approx_eq(square(guess), x)
-    return iter_improve(update, test)
-
-# test
-# ((x / guess) + guess) / 2
-square_root(256)
-```
-
-牛顿法:
-
-```py
-def square(x):
-    return x * x
-
-def successor(k):
-    return k + 1
-
-def approx_eq(x, y, tolerance = 1e-5):
-    return abs(x - y) < tolerance
-
-def approx_derivative(f, x, delta = 1e-5):
-    df = f(x + delta) - f(x)
-    return df / delta
-
-def newton_update(f):
-    def update(x):
-        return x - f(x) / approx_derivative(f, x)
-    return update
-
-def iter_improve(update, test, guess = 1):
-    while not test(guess):
-        guess = update(guess)
-    return guess
-
-def find_root(f, initial_guess = 10):
-    def test(x):
-        return approx_eq(f(x), 0)
-    return iter_improve(newton_update(f), test, initial_guess)
-
-def square_root(a):
-    return find_root(lambda x: square(x) - a)
-
-def logarithm(a, base = 2):
-    return find_root(lambda x: pow(base, x) - a)
-
-
-# test
-square_root(16)
-
-logarithm(32, 2)
 ```
 
 ### rlist(序列)
@@ -2926,6 +2782,8 @@ print(a > b)
 from collections import namedtuple
 
 people = namedtuple('people', ('name', 'age'))
+# or
+people = namedtuple('people', 'name age')
 
 a = people('tz', 24)
 print(a.name, a.age)
@@ -3244,6 +3102,26 @@ d['a'] += 1 # Counter({'a': 1})
 d['a'] += 1 # Counter({'a': 2})
 
 d['b'] = 10 # Counter({'a': 2, 'b': 10})
+
+# 添加
+d.update({'a': 10, 'b': 10, 'c': 10}) # Counter({'a': 12, 'b': 20, 'c': 10})
+
+# 返回列表
+d.most_common() # [('b', 20), ('a', 12), ('c', 10)]
+
+# elements()返回迭代器
+list(d.elements()) # ['a', 'a', ......., 'c']
+```
+
+- 集合运算
+```py
+d1 = Counter('abc')
+d2 = Counter('abd')
+
+d1 + d2 # Counter({'a': 2, 'b': 2, 'c': 1, 'd': 1})
+d1 - d2 # Counter({'c': 1})
+d1 & d2 # Counter({'a': 1, 'b': 1})
+d1 | d2 # Counter({'a': 1, 'b': 1, 'c': 1, 'd': 1})
 ```
 
 - 统计列表重复的值
@@ -3262,6 +3140,7 @@ d['b'] = 10 # Counter({'a': 2, 'b': 10})
 
     ```py
     from collections import Counter
+    import pprint
 
     cmd = []
 
@@ -3273,7 +3152,7 @@ d['b'] = 10 # Counter({'a': 2, 'b': 10})
                 cmd.append(l[0])
 
     # Counter用dict统计list重复的值, 并按顺序排序
-    print(Counter(cmd))
+    pprint.pprint(Counter(cmd))
     ```
 
 ##### defaultdict: 设置默认值, 默认类型
@@ -3322,6 +3201,7 @@ d['b'] = 10 # Counter({'a': 2, 'b': 10})
 
     ```py
     from collections import defaultdict
+    import pprint
 
     # 将所有命令加入list
     cmd = []
@@ -3338,7 +3218,7 @@ d['b'] = 10 # Counter({'a': 2, 'b': 10})
         d[i] += 1
 
     # 不会按顺序排序
-    print(d)
+    pprint.pprint(d)
     ```
 
 ##### OrderedDict: 有序字典, 内存比普通字典大2倍多
@@ -3353,6 +3233,12 @@ d['c'] = 3
 
 for key in d:
     print(key, d[key])
+
+# 将b移动到末尾
+d.move_to_end('b')
+
+# 将b移动到头部
+d.move_to_end('b', last=False)
 ```
 
 ##### ChainMap(): 链式字典, 访问多个字典
@@ -4376,13 +4262,11 @@ def fib(n):
         return n
     return n + fib(n-1)
 
-print([fib(n) for n in range(7)])
-print(fib.cache_info())
-```
-输出
-```
-[0, 1, 3, 6, 10, 15, 21]
-CacheInfo(hits=6, misses=7, maxsize=None, currsize=7)
+print([fib(n) for n in range(7)]) # [0, 1, 3, 6, 10, 15, 21]
+print(fib.cache_info()) # CacheInfo(hits=6, misses=7, maxsize=None, currsize=7)
+
+# 清空缓存
+fib.cache_clear()
 ```
 
 - singledispatch(): 根据输入参数的类型, 使用不同的函数
@@ -5124,6 +5008,35 @@ list1 = []
 with list_transaction(list1) as list_t:
     list_t.append(1)
     list_t.append(2)
+```
+
+- 包装try语句
+```py
+from contextlib import contextmanager
+
+@contextmanager
+def list_transaction(list1):
+    print('start', list1)
+    try:
+        yield list1
+    except AttributeError as err:
+        print('error:', err)
+    finally:
+        print('end', list1)
+
+
+list1 = []
+with list_transaction(list1) as list_t:
+    list_t.append(1)
+    list_t.append(2)
+    # 报错
+    list_t.ap
+```
+输出
+```
+start []
+error: 'list' object has no attribute 'ap'
+end [1, 2]
 ```
 
 ### `__getitem__` 和 `__class_getitem__`: 定义带[]的调用 `object['arg']`
@@ -5896,6 +5809,26 @@ pprint(json_str)
 
 - 支持datetime, numpy
 
+#### RedisJSON
+
+```py
+import redis
+import json
+
+dict1 = {
+        'a': 1,
+        'b': 2
+}
+
+r = redis.StrictRedis()
+
+# 写入redis
+r.json().set('doc', '$', json.dumps(dict1))
+
+# 读取redis
+reply = json.loads(r.json().get('doc'))
+```
+
 ### yaml
 
 > 操作类似json
@@ -6165,6 +6098,12 @@ time.strftime("%Y-%m-%d %H:%M:%S") # 2021-12-23_11:16:37
 
 ### os
 
+- join(): 连接目录
+```py
+import os
+path = os.path.join('/', 'usr', 'lib', 'local')
+```
+
 | 方法        | 操作               |
 |-------------|--------------------|
 | os.fork()   | 创建子进程         |
@@ -6204,6 +6143,48 @@ for root, dirs, files in os.walk(".", topdown=False):
           dst = (os.path.join(root, 'AAA'))
           os.rename(src,dst)
 ```
+
+## random(随机数)
+
+- random.random: 返回0 - 1 的浮点数
+```py
+from random import random
+random() # 0.20777445807227546
+```
+
+- randint(): 返回范围内的数
+
+```py
+from random import randint
+randint(1, 10) # 4
+```
+
+- choice(), sample(): 随机选取元素
+
+```py
+from random import choice, sample
+
+list1 = [1, 2, 3, 4, 5]
+str1 = '12345'
+
+# choice 只能返回一个值
+choice(list1) # 3
+choice(str1) # 3
+
+# sample 以列表形式返回, 支持返回多个值
+sample(list1, 1) # [2]
+sample(list1, 2) # [1, 3]
+
+sample(str1, 1) # ['2']
+sample(str1, 2) # ['1', '3']
+```
+
+- shuffle(): 对列表的元素随机排序
+```py
+from random import shuffle
+shuffle(list1) # [2, 3, 1, 4, 5]
+```
+
 ## 日志
 
 ### logging
@@ -6469,6 +6450,8 @@ print ('Matches :', fnmatch.filter(files, pattern))
 ```
 
 ### Image
+
+- [官方文档](https://pillow.readthedocs.io/en/stable/handbook/tutorial.html)
 
 ```py
 from PIL import Image
@@ -6965,6 +6948,8 @@ token = hashlib.sha3_512(name.encode(encoding='UTF-8')).hexdigest()
 
 ### [locust: web自动化压力测试](https://github.com/locustio/locust)
 
+### [Diagrams: 生成架构图](https://github.com/mingrammer/diagrams)
+
 ## cython
 
 - [官方文档](https://cython.readthedocs.io/en/latest/src/tutorial/cython_tutorial.html)
@@ -7085,3 +7070,7 @@ import this
 - [rembg: 一键扣图](https://github.com/danielgatis/rembg)
 
 - [mitmproxy: http抓包](https://github.com/mitmproxy/mitmproxy)
+
+# 在线工具
+
+- [python模块函数案例](https://www.programcreek.com/python/)

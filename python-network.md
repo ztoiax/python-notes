@@ -33,6 +33,15 @@
         * [UDP](#udp)
             * [server](#server-1)
             * [client](#client-1)
+        * [unix domain socket(UDS)](#unix-domain-socketuds)
+            * [server](#server-2)
+            * [client](#client-2)
+        * [Multicast(多播)](#multicast多播)
+            * [server](#server-3)
+            * [client](#client-3)
+        * [二进制传输](#二进制传输)
+            * [server](#server-4)
+            * [client](#client-4)
     * [网络层](#网络层)
         * [IPy(解析ip地址)](#ipy解析ip地址)
 
@@ -1308,6 +1317,16 @@ s.recvfrom(128)
 
 ## 传输层: TCP/UDP
 
+- [Python Socket Communication](https://medium.com/python-pandemonium/python-socket-communication-e10b39225a4c)
+
+    - socket默认以阻塞模式运行(发送或接收会暂停程序的执行)
+
+        - 解决方法1: 关闭阻塞模式 `socket.setblocking(0)`
+
+            - 代价可能会出现异常`socket.error`
+
+        - 解决方法2: 设置超时 `socket.settimeout(float)`
+
 ### TCP
 
 #### server
@@ -1486,6 +1505,205 @@ if __name__ == '__main__':
     port = 5005
     msg = b"I'm a client"
     main(ip, port, msg)
+```
+
+### unix domain socket(UDS)
+
+- sockfile通过文件系统管理
+
+#### server
+
+```py
+import socket
+
+def main(sockfile):
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.bind(sockfile)
+    sock.listen(1)
+
+    print("listen...")
+
+    while True:
+        # 有连接就输出信息
+        client, addr = sock.accept()
+        print('connect')
+
+        # 接受客户端的消息
+        msg = client.recv(1024).decode('utf-8')
+        print("received message: %s" % msg)
+
+        # 发送消息给客户端
+        client.sendall(b"hello client")
+        client.close()
+
+
+if __name__ == '__main__':
+    # sockfile需要手动删除
+    sockfile = '/tmp/socket_file'
+    main(sockfile)
+```
+
+#### client
+
+```py
+import socket
+
+def main(sockfile, msg):
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.connect(sockfile)
+
+    # 发送消息给服务器
+    print('sending {!r}'.format(msg))
+    sock.sendall(msg)
+
+    # 接受服务器的消息
+    print('server: ' + sock.recv(1024).decode('utf-8'))
+    sock.close()
+
+
+if __name__ == '__main__':
+    sockfile = '/tmp/socket_file'
+    msg = b"I'm a client"
+    main(sockfile, msg)
+```
+
+### Multicast(多播)
+
+- 使用udp
+
+- 多播地址: 224.0.0.0 -> 239.255.255.255
+
+#### server
+
+```py
+import socket
+import struct
+
+def main(ip, server_address):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(server_address)
+
+    # Tell the operating system to add the socket to
+    # the multicast group on all interfaces.
+    group = socket.inet_aton(ip)
+    mreq = struct.pack('4sL', group, socket.INADDR_ANY)
+    sock.setsockopt( socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+    print("listen...")
+    while True:
+        msg, addr = sock.recvfrom(1024)
+
+        # 有连接就输出信息
+        print(str(addr) + ' connect')
+
+        # 接受客户端的消息
+        print("received message: %s" % msg)
+
+        # 发送消息给客户端
+        sock.sendto(b'hello client', addr)
+
+
+if __name__ == '__main__':
+    ip = '224.10.10.10'
+    server_address = ('', 10000)
+    main(ip, server_address)
+```
+
+#### client
+
+```py
+import socket
+import struct
+
+def main(msg, ip):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # 设置超时时间
+    sock.settimeout(0.2)
+
+    # ttl(生存时间)为1, 也就是只能访问本地主机
+    ttl = struct.pack('b', 1)
+
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+
+    # 发送消息给服务器
+    sock.sendto(msg, ip)
+
+    while True:
+        print('waiting to receive')
+        try:
+            data, server = sock.recvfrom(1024)
+        except socket.timeout:
+            print('timed out, no more responses')
+            break
+        else:
+            # 接受服务器的消息
+            print('received {!r} from {}'.format(
+                data, server))
+
+    sock.close()
+
+
+if __name__ == '__main__':
+    msg = b"I'm a client"
+    ip = ('224.10.10.10', 10000)
+    main(msg, ip)
+```
+
+### 二进制传输
+
+#### server
+
+```py
+import binascii
+import socket
+import struct
+
+# Create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_address = ('localhost', 10000)
+sock.bind(server_address)
+sock.listen(1)
+
+unpacker = struct.Struct('I 2s f')
+
+print("listen...")
+while True:
+    connection, client_address = sock.accept()
+    try:
+        # 接受客户端的消息
+        data = connection.recv(unpacker.size)
+        print('received {!r}'.format(binascii.hexlify(data)))
+
+        # 解码消息
+        print("unpacked: %s", unpacker.unpack(data))
+
+    finally:
+        connection.close()
+```
+
+#### client
+
+```py
+import binascii
+import socket
+import struct
+
+# Create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_address = ('localhost', 10000)
+sock.connect(server_address)
+
+values = (1, b'ab', 2.7)
+packer = struct.Struct('I 2s f')
+packed_data = packer.pack(*values)
+
+print('values =', values)
+
+# 发送消息给服务器
+print('sending {!r}'.format(binascii.hexlify(packed_data)))
+sock.sendall(packed_data)
+sock.close()
 ```
 
 ## 网络层

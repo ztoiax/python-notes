@@ -52,8 +52,10 @@
         * [性能测试](#性能测试)
             * [array vs deque vs list](#array-vs-deque-vs-list)
     * [pysnooper](#pysnooper)
+    * [viztracer: 可视化多线程堆栈跟踪](#viztracer-可视化多线程堆栈跟踪)
     * [pudb: tui调试](#pudb-tui调试)
     * [vardbg](#vardbg)
+    * [code2flow: 函数跟踪生成png图片](#code2flow-函数跟踪生成png图片)
 
 <!-- vim-markdown-toc -->
 
@@ -1814,6 +1816,12 @@ def f():
 f()
 ```
 
+## [viztracer: 可视化多线程堆栈跟踪](https://github.com/gaogaotiantian/viztracer)
+
+- [Visualize multi-threaded Python programs with an open source tool](https://opensource.com/article/21/3/python-viztracer)
+
 ## [pudb: tui调试](https://www.kimsereylam.com/python/2020/01/17/debug-python-with-pudb.html)
 
 ## [vardbg](https://github.com/CCExtractor/vardbg)
+
+## [code2flow: 函数跟踪生成png图片](https://github.com/scottrogowski/code2flow)

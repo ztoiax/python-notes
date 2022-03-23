@@ -33,6 +33,11 @@
             * [hash函数](#hash函数)
                 * [双字母hash函数](#双字母hash函数)
         * [Bloom Filters(布隆过滤器)](#bloom-filters布隆过滤器)
+        * [匹配查找](#匹配查找)
+            * [穷举: O(nm)](#穷举-onm)
+            * [Boyer-Moore](#boyer-moore)
+            * [kmp(Knuth-Morris-Pratt)](#kmpknuth-morris-pratt)
+        * [lcs(Longest Common Subsequence)最长公共子序列](#lcslongest-common-subsequence最长公共子序列)
     * [Linked List(链表)](#linked-list链表)
         * [Linked List(单向链表)](#linked-list单向链表)
             * [单向链表归并排序](#单向链表归并排序)
@@ -40,6 +45,7 @@
         * [CircularQueue(环形队列)](#circularqueue环形队列)
             * [判断是否为环形队列](#判断是否为环形队列)
             * [LRU缓存](#lru缓存)
+        * [skip list(跳表)](#skip-list跳表)
         * [Blockchain(区块链)](#blockchain区块链)
     * [graph(图)](#graph图)
         * [遍历有环图](#遍历有环图)
@@ -80,6 +86,10 @@
         * [R树](#r树)
         * [LSMTree(日志结构合并树)](#lsmtree日志结构合并树)
     * [递归(rec)](#递归rec)
+        * [阶乘](#阶乘)
+        * [反转列表](#反转列表)
+        * [累加列表里的元素](#累加列表里的元素)
+        * [次方](#次方)
         * [汉诺塔](#汉诺塔)
         * [反转正整数](#反转正整数)
         * [集合划分](#集合划分)
@@ -91,7 +101,6 @@
         * [UnlyNum(丑数)](#unlynum丑数)
         * [进制转换](#进制转换)
         * [最少硬币找零](#最少硬币找零)
-        * [最长公共子序列长度](#最长公共子序列长度)
         * [完全背包问题](#完全背包问题)
     * [贪心算法](#贪心算法)
         * [背包问题](#背包问题)
@@ -107,7 +116,6 @@
         * [救生艇](#救生艇)
         * [存储水](#存储水)
     * [string(字符串)](#string字符串)
-        * [统计两个字符串中的重复字符](#统计两个字符串中的重复字符)
         * [回文字符串](#回文字符串)
         * [中叙, 后叙(逆波兰记法), 前叙表达式](#中叙-后叙逆波兰记法-前叙表达式)
     * [fib(斐波那契)](#fib斐波那契)
@@ -115,7 +123,10 @@
         * [递归](#递归)
         * [迭代](#迭代)
         * [泛函](#泛函)
+    * [pi(圆周率)](#pi圆周率)
     * [牛顿法求平方根](#牛顿法求平方根)
+    * [密码](#密码)
+        * [rsa整数加密](#rsa整数加密)
 * [reference](#reference)
 
 <!-- vim-markdown-toc -->
@@ -154,7 +165,7 @@
 
 - 大O标记法, 并没告诉我们实际花费的时间, 而是n值(数据量)发生变化时, 所对应的运行时间的变化
 
-    - 复杂度越高并不代表一定更慢: 同一个问题, 有的O(n^2)的算法可能只需0.1秒, 有的O(n)的算法可能要1秒
+    - **复杂度越高并不代表一定更慢**: 同一个问题, 有的O(n^2)的算法可能只需0.1秒, 有的O(n)的算法可能要1秒
 
 ### O(n): 线性复杂度
 
@@ -1176,6 +1187,140 @@ def hash(key):
 
 - [python实现](https://github.com/jaybaird/python-bloomfilter)
 
+### 匹配查找
+
+#### 穷举: O(nm)
+```py
+def find(str1, str2):
+    len1, len2 = len(str1), len(str2)
+    for i in range(len1 - len2 + 1):
+        for j in range(len2):
+            if str1[i + j] != str2[j]:
+                break
+            if j == len2 - 1:
+                return i
+    return -1
+
+
+str1 = "abcdef"
+str2 = "de"
+print(find(str1, str2))
+```
+
+#### Boyer-Moore
+
+- 最坏时间复杂度依然是O(nm), 但平均时间复杂度是: O(n)
+
+![image](./imgs/Boyer-Moore.png)
+
+```py
+def find(str1, str2):
+    len1, len2 = len(str1), len(str2)
+
+    # 对比倒数第一个元素
+    i = j = len2 - 1
+    while i < len1:
+        if str1[i] == str2[j]:
+            # 从后向前对比
+            if j > 0:
+                i -= 1
+                j -= 1
+            else:
+                return i
+        # 步长为str2
+        else:
+            i += len2 - j
+
+    return -1
+```
+
+#### kmp(Knuth-Morris-Pratt)
+
+![image](./imgs/kmp.jpeg)
+
+- 时间复杂度: O(n+m)
+
+- 失败函数: O(m)
+```py
+# 通过位图记录公共子序列
+def kmp_fail(str2):
+    len2 = len(str2)
+    bitmap = [0] * len2
+    i = 1
+    j = 0
+    while i < len2:
+        if str2[i] == str2[j]:
+            bitmap[i] = j + 1
+            i += 1
+            j += 1
+        elif j > 0:
+            j = bitmap[j - 1]
+        else:
+            i += 1
+    return bitmap
+
+
+str2 = "ded"
+kmp_fail(str2)  # [0, 0, 1]
+str2 = "dedee"
+kmp_fail(str2)  # [0, 0, 1, 2, 0]
+str2 = "abcabc"
+kmp_fail(str2)  # [0, 0, 0, 1, 2, 3]
+```
+
+- 匹配查找函数
+```py
+def find(str1, str2):
+    len1, len2 = len(str1), len(str2)
+    # 获取位图
+    bitmap = kmp_fail(str2)
+    i = 0
+    j = 0
+    while i < len1:
+        if str1[i] == str2[j]:
+            if j == len2 - 1:
+                return i - len2 + 1
+            i += 1
+            j += 1
+        # 查看是否需要移动子序列
+        elif j > 0:
+            j = bitmap[j - 1]
+        else:
+            i += 1
+    return -1
+
+
+str1 = "abcaba,abcabb,abcabc"
+str2 = "abcabc"
+print(find(str1, str2)) # 14
+```
+
+### lcs(Longest Common Subsequence)最长公共子序列
+
+![image](./imgs/lcs.png)
+
+- 动态规划算法
+
+```py
+def f(str1, str2):
+    len1, len2 = len(str1), len(str2)
+    # 二维数组. 横是str2, 纵是str1
+    array = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+
+    for i in range(1, len1 + 1):
+        for j in range(1, len2 + 1):
+            if str1[i-1] == str2[j-1]:
+                array[i][j] = array[i-1][j-1] + 1
+            else:
+                array[i][j] = max(array[i][j-1], array[i-1][j])
+    return array[len1][len2]
+
+
+str1 = "abcdef"
+str2 = "de"
+print(f(str1, str2)) # 2
+```
+
 ## Linked List(链表)
 
 ### Linked List(单向链表)
@@ -1944,11 +2089,15 @@ if __name__ == '__main__':
 # {15: 15: 987, 16: 16: 1597, 17: 17: 2584, 18: 18: 4181, 19: 19: 6765, 20: 20: 10946, 21: 21: 17711, 22: 22: 28657, 23: 23: 46368, 24: 24: 75025, 25: 25: 121393, 26: 26: 196418, 27: 27: 317811, 28: 28: 514229, 29: 29: 832040, 30: 30: 1346269}
 ```
 
+### skip list(跳表)
+
 ### Blockchain(区块链)
 
 ## graph(图)
 
 - [图介绍](https://www.section.io/engineering-education/graph-data-structure-python/)
+
+- [10种常用的图算法直观可视化解释](https://cloud.tencent.com/developer/article/1692264)
 
 ![image](./imgs/graph.png)
 
@@ -2321,6 +2470,24 @@ def postorder(tree):
 preorder(tree); print()  # 12435786
 inorder(tree); print()   # 42175836
 postorder(tree); print() # 42785631
+```
+
+- 前序的变种, eulerorder(欧拉遍历)
+
+```py
+def eulerorder(tree, parent):
+    if not tree:
+        return
+
+    print(tree.data, end="")
+    eulerorder(tree.left, tree)
+    eulerorder(tree.right, tree)
+    # 比前序遍历多了parent
+    if parent:
+        print(parent.data, end="")
+
+
+eulerorder(tree, None) # 124213575853631
 ```
 
 - stack实现:
@@ -2925,6 +3092,100 @@ True
 
 ## 递归(rec)
 
+- python递归深度
+```py
+import sys
+
+# 查看最大递归深度
+print(sys.getrecursionlimit()) # 3000. 也就是2 ^ 3000次方
+
+# 设置最大递归深度为10000
+sys.getrecursionlimit(10000)
+```
+
+### 阶乘
+
+```py
+def factorial(n):
+    if n == 0:
+        return 1
+
+    return factorial(n - 1) * n
+
+
+print(factorial(4)) # 24
+```
+
+### 反转列表
+```py
+def reverse(list1, left, right):
+    if left < right - 1:
+        list1[left], list1[right] = list1[right], list1[left]
+        reverse(list1, left + 1, right - 1)
+
+
+list1 = [1, 2, 3]
+reverse(list1, 0, len(list1) - 1)
+print(list1) # [3, 2, 1]
+```
+
+### 累加列表里的元素
+- O(n)
+```py
+def list_sum(list1, n):
+    if n == 0:
+        return 0
+
+    return list_sum(list1, n - 1) + list1[n - 1]
+
+
+list1 = [1, 2, 3]
+print(list_sum(list1, len(list1))) # 6
+```
+
+- O(n)
+```py
+def list_sum1(list1, left, right):
+    if left == right - 1:
+        return list1[left]
+
+    mid = (left + right) // 2
+    return list_sum1(list1, left, mid) + list_sum1(list1, mid, right)
+
+list1 = [1, 2, 3]
+print(list_sum1(list1, 0, len(list1))) # 6
+```
+
+### 次方
+- O(n)
+```py
+def power(x, n):
+    if n == 0:
+        return 1
+
+    return power(x, n - 1) * x
+
+
+print(power(2, 8)) # 256
+```
+
+- O(log n)
+```py
+def power1(x, n):
+    if n == 0:
+        return 1
+    else:
+        y = power1(x, n//2)
+        result = y ** 2
+        # n 为单数时, 多乘一次x
+        if n % 2 == 1:
+            result *= x
+        return result
+
+
+print(power1(2, 7)) # 128
+```
+
 ### 汉诺塔
 
 - 2的n次方-1
@@ -2988,6 +3249,12 @@ print(func(4, 4))
 ### 最大公约数, 最小公倍数
 
 - 最大公约数
+
+    - 60 = 2 * 2 * 2 * 3
+
+    - 24 = 2 * 2 * 3 * 5
+
+    - gcd(60, 24) = 2 * 2 * 3 = 12
 
     - gcd(60, 24) -> gcd(24, 12) -> gcd(12, 0) = 12
 
@@ -3188,26 +3455,6 @@ def coin(list1, n):
 
 
 print(coin([1, 5, 10, 20, 50, 100], 106))
-```
-
-### 最长公共子序列长度
-
-```py
-def f(str1, str2):
-    len1 = len(str1)
-    len2 = len(str2)
-    # 生成二维数组
-    array = [[0] * (len2 + 1) for _ in range(len1 + 1)]
-    for i in range(1, len1 + 1):
-        for j in range(1, len2 + 1):
-            if str1[i-1] == str2[j-1]:
-                array[i][j] = array[i-1][j-1] + 1
-            else:
-                array[i][j] = max(array[i][j-1], array[i-1][j])
-    return array[len1][len2]
-
-
-print(f('abcd', 'baad')) # 2
 ```
 
 ### 完全背包问题
@@ -3562,30 +3809,6 @@ print(water(list1)) # 6
 
 ## string(字符串)
 
-### 统计两个字符串中的重复字符
-
-```py
-def f(s1, s2):
-    len1 = len(s1)
-    len2 = len(s2)
-    # 矩阵. 横是s2, 纵是s1
-    array = [[0] * (len2+1) for _ in range(len1+1)]
-
-    for i in range(1, len1 + 1):
-        for j in range(1, len2 + 1):
-            if s1[i-1] == s2[j-1]:
-                array[i][j] = array[i-1][j-1] + 1
-            else:
-                array[i][j] = max(array[i][j-1], array[i-1][j])
-
-    return array[len1][len2]
-
-
-s1 = 'abcdefghijk'
-s2 = 'defghi'
-print(f(s1, s2))
-```
-
 ### 回文字符串
 
 - dfs
@@ -3886,7 +4109,7 @@ fib1(mul,10)
 
 ### 递归
 
-> 有大量的重复计算
+- 有大量的重复计算: O(2^n/2)
 
 ```py
 def fib(n):
@@ -3894,6 +4117,19 @@ def fib(n):
         return 1
     else:
         return fib(n-1) + fib(n - 2)
+```
+
+- 保存上一个值, 从而减少重复: O(n)
+```py
+def fib(n):
+    if n == 1:
+        return (n, 0)
+    else:
+        (x, y) = fib(n-1)
+        return (x + y, x)
+
+
+print(fib(10)[0])
 ```
 
 ### 迭代
@@ -3960,6 +4196,25 @@ def fib(x):
 fib(100)
 ```
 
+## pi(圆周率)
+
+```py
+def sum(n, pi_term, pi_next):
+    def iter(s, x, n):
+        if n >= x:
+            s = iter(s + pi_term(x), pi_next(x), n)
+        return s
+    return iter(0, 1, n)
+
+
+# pi
+def pi(x):
+    return sum(x, lambda x: 8 / (x * (x + 2)), lambda x: x + 4)
+
+# 8 / (x * (x + 2))
+print(pi(3000)) # 3.1409259869971957
+```
+
 ## 牛顿法求平方根
 - 二分
 ```py
@@ -3988,6 +4243,94 @@ def f(n):
     while abs(guess ** 2 - n) >= epsilon:
         guess = guess - (((guess ** 2) - n) / (2 * guess))
     print(guess)
+```
+
+## 密码
+
+### rsa整数加密
+
+- [知乎: 如何深入浅出地讲解RSA密码？](https://www.zhihu.com/question/304030251/answer/543201982)
+
+- [Implementing RSA in Python from Scratch (Part 1)](https://sudosecurity.org/blog/implementing-rsa-from-scratch-in-python/)
+
+```py
+def eucalg(a, b):
+    # 通过扩展欧几里得算法, 求出a的乘法逆元
+
+    # make a the bigger one and b the lesser one
+    swapped = False
+    # 找出a,b之间更大的数
+    if a < b:
+        a, b = b, a
+        swapped = True
+    # ca and cb store current a and b in form of
+    # coefficients with initial a and b
+    # a' = ca[0] * a + ca[1] * b
+    # b' = cb[0] * a + cb[1] * b
+    ca = (1, 0)
+    cb = (0, 1)
+    while b != 0:
+        # k denotes how many times number b
+        # can be substracted from a
+        k = a // b
+        # a  <- b
+        # b  <- a - b * k
+        # ca <- cb
+        # cb <- (ca[0] - k * cb[0], ca[1] - k * cb[1])
+        a, b, ca, cb = b, a-b*k, cb, (ca[0]-k*cb[0], ca[1]-k*cb[1])
+    if swapped:
+        return (ca[1], ca[0])
+    else:
+        return ca
+
+def modpow(msg, ed, n):
+    # 快速幂算法. 时间复杂度log n
+
+    # ed密钥的位数
+    size = ed.bit_length()
+
+    # calculate the result
+    result = 1
+    for i in range(size, -1, -1):
+        result = (result * result) % n
+        if (ed >> i) & 1: result = (result * msg) % n
+
+    return result
+
+def keysgen(p, q):
+    n = p * q
+    # 求出n互质整数的个数
+    lambda_n = (p - 1) * (q - 1)
+    # enc必须是小于n, 且不等于p, q的质数
+    enc = 35537
+    dec = eucalg(enc, lambda_n)[0]
+    if dec < 0: dec += lambda_n
+        # both private and public key must have n stored with them
+    return {'priv': (dec, n), 'pub': (enc, n)}
+
+def numencrypt(msg, pub):
+    return modpow(msg, pub[0], pub[1])
+
+def numdecrypt(msg, priv):
+    return modpow(msg, priv[0], priv[1])
+
+def test():
+    # 生成密钥. 两个参数必须是质数
+    keys = keysgen(31337, 31357)
+    # 私钥
+    priv = keys['priv']
+    # 公钥
+    pub = keys['pub']
+
+    # msg只能是int类型
+    msg = 80087
+    # 加密
+    enc = numencrypt(msg, pub)
+    # 解密
+    dec = numdecrypt(enc, priv)
+
+    # 验证
+    assert 80087 == dec
 ```
 
 # reference
