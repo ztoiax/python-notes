@@ -56,6 +56,7 @@
     * [pudb: tui调试](#pudb-tui调试)
     * [vardbg](#vardbg)
     * [code2flow: 函数跟踪生成png图片](#code2flow-函数跟踪生成png图片)
+    * [memray:查看内存分配, 并生成火焰图](#memray查看内存分配-并生成火焰图)
 
 <!-- vim-markdown-toc -->
 
@@ -1825,3 +1826,33 @@ f()
 ## [vardbg](https://github.com/CCExtractor/vardbg)
 
 ## [code2flow: 函数跟踪生成png图片](https://github.com/scottrogowski/code2flow)
+
+## [memray:查看内存分配, 并生成火焰图](https://github.com/bloomberg/memray)
+
+- 实时内存跟踪
+
+```sh
+memray run --live test.py
+```
+
+- 生成各种报告图
+```sh
+# 生成output.bin
+memray run -o output.bin test.py
+
+# 生成表格图(html)
+memray table output.bin
+
+# 生成火焰图(html)
+memray flamegraph output.bin
+
+# 生成报告图
+memray summary output.bin
+
+# 生成树形图
+memray summary output.bin
+
+# 生成统计图
+memray stats output.bin
+```
+
