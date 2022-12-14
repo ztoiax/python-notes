@@ -45,7 +45,7 @@ def star1(length=200):
         right(160)
 ```
 
-![image](./imgs/star.png)
+![image](./imgs/star.avif)
 
 - 五角星海龟螺旋
 
@@ -58,7 +58,7 @@ def f():
 f()
 ```
 
-![image](./imgs/star1.png)
+![image](./imgs/star1.avif)
 
 ### 正方形(square)
 
@@ -74,7 +74,7 @@ def f():
 f()
 ```
 
-![image](./imgs/square.png)
+![image](./imgs/square.avif)
 
 - 海龟螺旋
 
@@ -89,4 +89,4 @@ def f():
 f()
 ```
 
-![image](./imgs/square1.png)
+![image](./imgs/square1.avif)

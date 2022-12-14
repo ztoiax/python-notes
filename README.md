@@ -12,9 +12,11 @@
     * [if](#if)
         * [assert](#assert)
         * [try, except](#try-except)
+            * [fuckit:自动排除代码错误](#fuckit自动排除代码错误)
         * [PEP 572: 海象运算符(:=)](#pep-572-海象运算符)
         * [三元运算符(Ternary)](#三元运算符ternary)
     * [while, for(循环)](#while-for循环)
+        * [for-else](#for-else)
         * [enumerate() index的语法糖](#enumerate-index的语法糖)
         * [iter(迭代器)](#iter迭代器)
             * [itertools模块](#itertools模块)
@@ -188,6 +190,8 @@
 
     `/usr/lib/python3.9/`
 
+- `pip install git+https://github.com/mli/autocut.git` 安装github下的模块
+
 - 安装过程:
 
     - 先`build`, 后`install` 两个阶段是分开的, 可以由不同的工具完成
@@ -209,7 +213,7 @@
             ```
 
 
-        ![image](./imgs/pip-install.png)
+        ![image](./imgs/pip-install.avif)
 
         [视频:明希 - Python 打包 101](https://www.bilibili.com/video/BV1Db4y1h7Xx/?spm_id_from=333.788.recommend_more_video.0)
 
@@ -276,7 +280,7 @@ pyenv virtualenv-delete first
 pyenv virtualenv-delete second
 ```
 
-![image](./imgs/virtualenv.png)
+![image](./imgs/virtualenv.avif)
 
 ### 常用命令:
 
@@ -325,7 +329,7 @@ python -m trustme -i baidu.com
 
         - 子解释器之间的资源通信: 使用`pickle verison 5` 把资源序列化, 然后通过共享内存进行传输
 
-            ![image](./imgs/subinterpreters.png)
+            ![image](./imgs/subinterpreters.avif)
 
             - 全局变量不能被其它子解释器访问
 
@@ -368,7 +372,7 @@ python -m trustme -i baidu.com
 
     - 生成python字节码, 在jvm上的python解释器上执行
 
-    ![image](./imgs/jython.png)
+    ![image](./imgs/jython.avif)
 
 - Cpython:库是 C 写的
 
@@ -401,7 +405,7 @@ python -m trustme -i baidu.com
     - (3) 3.12 增加JIT
     - (4) 3.13 生成高级机械语言
 
-    ![image](./imgs/faster.png)
+    ![image](./imgs/faster.avif)
 
 
     - 最终目标是加几个[执行层(tiers)](https://github.com/markshannon/faster-cpython/blob/master/tiers.md)
@@ -629,6 +633,16 @@ except OSError as e:
         logger.error('Unexpected error: %d', e.errno)
 ```
 
+#### [fuckit:自动排除代码错误](https://github.com/ajalt/fuckitpy#as-a-decorator)
+
+```py
+import fuckit
+
+@fuckit
+def func():
+    pass
+```
+
 ### [PEP 572: 海象运算符(:=)](https://www.python.org/dev/peps/pep-0572/)
 
 - 1.运行b函数
@@ -731,6 +745,28 @@ print(array)
     3
     [4, 5]
     ```
+
+### for-else
+
+- [weixin:For-else：Python中一个奇怪但有用的特性]()
+
+```py
+# 不执行else
+for i in range(10):
+    if i == 9:
+        print(i)
+        break
+else:
+    print("Not found")
+
+# 执行else
+for i in range(10):
+    if i == 11:
+        print(i)
+        break
+else:
+    print("Not found")
+```
 
 ### enumerate() index的语法糖
 
@@ -1549,7 +1585,7 @@ def listsum(list1):
 print(listsum([1, 3, 5, 7, 9]))
 ```
 
-![image](./imgs/reduce.png)
+![image](./imgs/reduce.avif)
 
 ```py
 def reduce(f, list1):
@@ -3351,7 +3387,7 @@ fset1.issubset(tuple4) # True
 
 ### trie字典数
 
-![image](./imgs/trie.png)
+![image](./imgs/trie.avif)
 - 减少内存
 
 - DAWG(有向无环图)
@@ -4395,7 +4431,7 @@ C.__mro__
 
 ### 多重继承
 
-![image](./imgs/inheritance.png)
+![image](./imgs/inheritance.avif)
 
 - 深度优先: M5 -> M3 -> M1 -> M4 -> M1 -> M2
 - 广度优先: M5 -> M3 -> M4 -> M1 -> M2
@@ -6053,9 +6089,12 @@ with p.open() as f:
     for line in f:
         print(line)
 
-# ls
+# 读取当前目录下的文件。类似于ls命令
 for i in p.iterdir():
         print(i)
+
+# 生成当前目录下的文件list
+flist = [p for p in Path('.').iterdir() if p.is_file()]
 
 # 返回PosixPath对象
 p = Path('.')
@@ -6120,9 +6159,20 @@ os.unlink(filepath)
 ```
 
 ```py
+# 获取拓展名
+os.path.splitext(file)[1]
+
+# 获取当前目录下所有拓展名(包括子目录)
+suffix = set()
+for root, dirs, files in os.walk(".", topdown=False):
+    for name in files:
+        suffix.add(os.path.splitext(name)[1])
+```
+
+```py
 from os import walk
 
-# 输出文件和目录
+# 输出文件和目录(包括子目录下的文件)
 for root, dirs, files in os.walk(".", topdown=False):
    for name in files:
       print(os.path.join(root, name))
@@ -6521,9 +6571,9 @@ token = hashlib.sha3_512(name.encode(encoding='UTF-8')).hexdigest()
 import this
 ```
 
-![image](./imgs/pythonic.png)
-![image](./imgs/pythonic1.png)
-![image](./imgs/pythonic2.png)
+![image](./imgs/pythonic.avif)
+![image](./imgs/pythonic1.avif)
+![image](./imgs/pythonic2.avif)
 
 ## [test: 测试](./python-test.md)
 

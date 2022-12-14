@@ -7,6 +7,7 @@
         * [click](#click)
         * [prompt_toolkit](#prompt_toolkit)
         * [shovel: 像普通命令那样使用](#shovel-像普通命令那样使用)
+        * [tqdm: 加入进度条](#tqdm-加入进度条)
     * [参数解析](#参数解析)
         * [argparse](#argparse)
         * [optparse(参数)](#optparse参数)
@@ -95,6 +96,14 @@ shovel hello
 shovel f 1 2
 ```
 
+### [tqdm: 加入进度条](https://github.com/tqdm/tqdm)
+
+```py
+# 进度条
+from tqdm import tqdm
+for i in tqdm(range(10000)):
+    pass
+```
 
 ## 参数解析
 

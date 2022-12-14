@@ -155,7 +155,7 @@
 | n^3     | Cubic(立方)          |
 | 2^n     | Exponential(指数)    |
 
-![image](./imgs/Big-O.png)
+![image](./imgs/Big-O.avif)
 
 - 如果n=1000时需要花费1秒
 
@@ -196,7 +196,7 @@
 
     - 是否需要使用额外的空间, 不需要就是**在位的(in-place)**
 
-![image](./imgs/bigO_sort.png)
+![image](./imgs/bigO_sort.avif)
 
 - [geeksforgeeks: sorting-algorithms](https://www.geeksforgeeks.org/sorting-algorithms/)
 
@@ -206,7 +206,7 @@
 
 ### bubble sort(冒泡排序)
 
-![image](./imgs/bubbleSort.png)
+![image](./imgs/bubbleSort.avif)
 
 - 正向:
 
@@ -256,7 +256,7 @@ def bubbleSort(list1):
 
 - 优化的冒泡算法: 每个元素并不是传统的与后一个元素(i+1)对比, 而是对比不断缩小的长度系数(i+gap)
 
-![image](./imgs/combSort.png)
+![image](./imgs/combSort.avif)
 
 ```py
 def getNextGap(gap):
@@ -311,7 +311,7 @@ def cocktailSort(list1):
 
 - 冒泡排序的变种. 奇数排序一次, 偶数排序一次
 
-![image](./imgs/odd-even-sort.png)
+![image](./imgs/odd-even-sort.avif)
 ```py
 def oddEvenSort(list1):
     length = len(list1)
@@ -329,7 +329,7 @@ def oddEvenSort(list1):
 
 ### insertion sort(插入排序)
 
-![image](./imgs/insertionSort.png)
+![image](./imgs/insertionSort.avif)
 
 ```py
 def insert(list1, j, i):
@@ -408,7 +408,7 @@ def selectSort(list1):
 
 - 选择排序的变种, 找到最大值, 移动至末尾
 
-![image](./imgs/pancakeSort.png)
+![image](./imgs/pancakeSort.avif)
 
 ```py
 # 查询列表内最大值的偏移量
@@ -433,7 +433,7 @@ def pancakeSort(list1):
 
 ### merge sort(归并排序)
 
-![image](./imgs/mergeSort.png)
+![image](./imgs/mergeSort.avif)
 
 - merge sort由冯诺依曼于1945年发明
 
@@ -505,7 +505,7 @@ def mergeSort(list1, compare=lambda x, y: x < y):
 ```
 ### bitonic Sort(双音排序)
 
-![image](./imgs/bitonicSort.png)
+![image](./imgs/bitonicSort.avif)
 
 ```py
 def compAndSwap(list1, i, j, dire):
@@ -588,7 +588,7 @@ def shellSort(list1):
 
 ### quick sort (快速排序)
 
-![image](./imgs/quickSort.png)
+![image](./imgs/quickSort.avif)
 
 - 分治算法
 
@@ -655,7 +655,7 @@ print(list1)
     - 把最大的元素, 移动到最底层; 最小的数移动到最顶层
 
 
-![image](./imgs/heapSort.gif)
+![image](./imgs/heapSort.avif)
 
 ```py
 def heapify(list1, length, i):
@@ -707,7 +707,7 @@ def heapSort(list1):
 
 - 小数排序
 
-    ![image](./imgs/BucketSort.png)
+    ![image](./imgs/BucketSort.avif)
 
 ```py
 def bucketSort(list1):
@@ -743,7 +743,7 @@ print(list1)
 
 ### counting sort(计数排序)
 
-![image](./imgs/CountingSort.webp)
+![image](./imgs/CountingSort.avif)
 
 ```py
 def countingSort(list1):
@@ -768,7 +768,7 @@ def countingSort(list1):
 
 ### radix sort(基数排序)
 
-![image](./imgs/RadixSort.webp)
+![image](./imgs/RadixSort.avif)
 
 ```py
 def countingSort(list1, exp1):
@@ -836,7 +836,7 @@ def pigeonholeSort(list1):
 
 ### stooge sort
 
-![image](./imgs/stoogeSort.png)
+![image](./imgs/stoogeSort.avif)
 
 ```py
 def stooge(list1, l, r):
@@ -865,7 +865,7 @@ def stoogeSort(list1):
 - [Timsort — the fastest sorting algorithm you’ve never heard of](https://hackernoon.com/timsort-the-fastest-sorting-algorithm-youve-never-heard-of-36b28417f399)
 
 - [python中的sort之timsort学习](https://zhuanlan.zhihu.com/p/158972725)
-    ![image](./imgs/timsort.png)
+    ![image](./imgs/timsort.avif)
 
 - 由`Mergesort`(归并排序) 和 `insertion sort`(插入排序) 两种排序组成
 
@@ -1012,7 +1012,7 @@ def binarySearch(list1, x):
     - 缺点:
         - 需要额外空间
 
-    ![image](./imgs/hash_link.png)
+    ![image](./imgs/hash_link.avif)
 
 - 开放地址法(open addressing)
 
@@ -1028,7 +1028,7 @@ def binarySearch(list1, x):
 
         - 删除比链地址法要麻烦
 
-    ![image](./imgs/hash_linear.jpg)
+    ![image](./imgs/hash_linear.avif)
 
 - 桶越多, 冲突次数越少
 
@@ -1037,6 +1037,8 @@ def binarySearch(list1, x):
     - 完全冲突复杂度为O(n)
 
     - ruby采用链地址法, 在冲突大于5时, 就增加桶的数量
+
+    - JDK1.8 采用链地址法，针对链表上的数据超过8条的时候，使用了红黑树进行优化
 
     - python采用开放地址法, 但2/3的桶被填满时, 就增加桶的数量
 
@@ -1211,7 +1213,7 @@ print(find(str1, str2))
 
 - 最坏时间复杂度依然是O(nm), 但平均时间复杂度是: O(n)
 
-![image](./imgs/Boyer-Moore.png)
+![image](./imgs/Boyer-Moore.avif)
 
 ```py
 def find(str1, str2):
@@ -1236,7 +1238,7 @@ def find(str1, str2):
 
 #### kmp(Knuth-Morris-Pratt)
 
-![image](./imgs/kmp.jpeg)
+![image](./imgs/kmp.avif)
 
 - 时间复杂度: O(n+m)
 
@@ -1297,7 +1299,7 @@ print(find(str1, str2)) # 14
 
 ### lcs(Longest Common Subsequence)最长公共子序列
 
-![image](./imgs/lcs.png)
+![image](./imgs/lcs.avif)
 
 - 动态规划算法
 
@@ -1918,7 +1920,7 @@ def test_maxlen():
 
 > FIFO(先入先出)
 
-![image](./imgs/Circular-queue.png)
+![image](./imgs/Circular-queue.avif)
 
 - 只需在双向链表的代码实现里, 做些修改
 
@@ -2099,7 +2101,7 @@ if __name__ == '__main__':
 
 - [10种常用的图算法直观可视化解释](https://cloud.tencent.com/developer/article/1692264)
 
-![image](./imgs/graph.png)
+![image](./imgs/graph.avif)
 
 ```py
 class Node:
@@ -2255,7 +2257,7 @@ if __name__ == '__main__':
 
 ### 遍历有环图
 
-![image](./imgs/graph1.png)
+![image](./imgs/graph1.avif)
 
 | 节点 | 1 | 2 | 3 | 4 | 5 |
 |------|---|---|---|---|---|
@@ -2370,8 +2372,8 @@ dfs(list1)
 
 ## tree(树)
 
-![image](./imgs/bigO_link.png)
-![image](./imgs/tree_benchmark.png)
+![image](./imgs/bigO_link.avif)
+![image](./imgs/tree_benchmark.avif)
 
 ### binary tree(二叉树)
 
@@ -2434,11 +2436,11 @@ tree.right.left.left = TreeNode(7)
 tree.right.left.right = TreeNode(8)
 ```
 
-![image](./imgs/Preorder-Traversal.png)
+![image](./imgs/Preorder-Traversal.avif)
 
-![image](./imgs/Inorder-Traversal.png)
+![image](./imgs/Inorder-Traversal.avif)
 
-![image](./imgs/Postorder-Traversal.png)
+![image](./imgs/Postorder-Traversal.avif)
 
 ##### dfs
 
@@ -2789,7 +2791,7 @@ print(minDepth(tree))
 
 > 左右结点高度不能超过1
 
-![image](./imgs/balanced-binary-tree.png)
+![image](./imgs/balanced-binary-tree.avif)
 
 ```py
 def dfs(tree, isBalanced=True):
@@ -2817,7 +2819,7 @@ print(dfs(tree)) # (3, True)
 
 #### 判断是否为对称二叉树(symmetric binary tree)
 
-![image](./imgs/symmetric-binary-tree.png)
+![image](./imgs/symmetric-binary-tree.avif)
 
 - dfs
 ```py
@@ -3778,7 +3780,7 @@ print(f(list1, weight)) # 3
 
 ### 存储水
 
-![image](./imgs/water.png)
+![image](./imgs/water.avif)
 
 ```py
 def water(list1):

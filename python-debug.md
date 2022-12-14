@@ -318,7 +318,7 @@ RETURN_VALUE
 ```
 
 - 图里的值, 准确来说是对象引用(指针)
-![image](./imgs/stack.jpeg)
+![image](./imgs/stack.avif)
 
 #### 函数例子: 不同的frame stack
 ```py
@@ -1317,7 +1317,7 @@ stats.print_stats()
 
 > 注意: gpu的分析,只支持nvidia
 
-![image](./imgs/scalene.png)
+![image](./imgs/scalene.avif)
 
 ```py
 list1 = []
@@ -1466,7 +1466,7 @@ sudo py-spy top --pid 930
 # 跟踪程序
 sudo py-spy top -- python ~/test.py
 ```
-![image](./imgs/py-spy_top.png)
+![image](./imgs/py-spy_top.avif)
 
 - dump: 每个线程的调用stack
 
@@ -1520,7 +1520,7 @@ list1 = [1, 2, 3]
 objgraph.show_refs([list1], filename='sample-graph.png')
 ```
 
-![image](./imgs/sample-graph.png)
+![image](./imgs/sample-graph.avif)
 
 - 递归自身
 
@@ -1528,7 +1528,7 @@ objgraph.show_refs([list1], filename='sample-graph.png')
 list1.append(list1)
 objgraph.show_refs([list1], filename='sample-graph1.png')
 ```
-![image](./imgs/sample-graph1.png)
+![image](./imgs/sample-graph1.avif)
 
 - show_backrefs()
 
@@ -1539,7 +1539,7 @@ list1.append(list1)
 objgraph.show_backrefs([list1], filename='sample-backref-graph.png')
 ```
 
-![image](./imgs/sample-backref-graph.png)
+![image](./imgs/sample-backref-graph.avif)
 
 ## [line_profiler: 统计每行代码的cpu时间](https://github.com/rkern/line_profiler)
 
@@ -1613,7 +1613,7 @@ mprof run ./test.py
 mprof plot
 ```
 
-![image](./imgs/mprof.png)
+![image](./imgs/mprof.avif)
 
 ## [guppy3: 查看heap上的对象数量和大小](https://github.com/zhuyifei1999/guppy3)
 

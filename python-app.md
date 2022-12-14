@@ -33,6 +33,7 @@ pix.save("page-%i.png" % page.number)
 
 # 合并文档。文档必须是同一格式，如果是pdf合并epub就会报错
 doc.insert_pdf(doc1)
+doc.save("./new.pdf")
 
 # 拆分
 doc2 = fitz.open()
@@ -42,6 +43,8 @@ doc2.save("new.pdf")
 # 关闭缓冲区
 doc.close()
 ```
+
+- [EPUB 电子书简繁转换](https://github.com/The-Orizon/nlputils/blob/master/epubzhconv.py)
 
 # Image
 
@@ -515,3 +518,151 @@ phones = (
 ```
 
 # [Diagrams: 生成架构图](https://github.com/mingrammer/diagrams)
+
+# [ipywidgets: 交互式小部件(需要jupyter)](https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Basics.html)
+
+- [Creating animations with Flat and ffmpeg](https://github.com/aparrish/material-of-language/blob/master/creating-animations.ipynb)
+
+- 创造一个从0到30的计时器
+```py
+import ipywidgets as widgets
+
+def print_val(step=0):
+    print(step)
+
+play_widget = widgets.Play(min=0, max=30, interval=100)
+widgets.interact(print_val, step=play_widget)
+```
+
+- 用flat画一个圆，再使用widgets进行缩放
+```py
+from IPython.display import display, Image, HTML, SVG
+from flat import document, shape, rgb
+import ipywidgets as widgets
+
+def render(step=0):
+    page = document(80, 80, 'mm').addpage()
+    page.place(shape().nostroke().fill(rgb(255, 255, 255)).rectangle(0, 0, 80, 80))
+    page.place(shape().nostroke().fill(rgb(40, 40, 160)).ellipse(40, 40, step, step*1.5))
+    return page
+
+def show(page):
+    display(SVG(page.svg()))
+
+show(render(5))
+
+# 缩放函数
+def render_and_show(step=0):
+    show(render(step))
+
+# widgets缩放
+widgets.interact(render_and_show, step=widgets.Play(min=0, max=30, interval=1000/30))
+```
+
+# [ffmpeg-python](https://github.com/kkroening/ffmpeg-python)
+
+- [官方文档](https://github.com/kkroening/ffmpeg-python/tree/master/examples)
+
+- 读取视频信息
+```py
+import ffmpeg
+info = ffmpeg.probe('input.mp4')
+# 视频码率(如果使用ffmpeg正在转换的视频，显示不了)
+info['format']['bit_rate']
+# 音频码率(mkv、webm格式的视频，显示不了)
+info['streams'][1]['bit_rate']
+```
+
+- 提取当前目录(包括子目录)下视频文件的视频码率、音频码率。并进行排序
+
+```py
+import ffmpeg
+import os
+
+flist = []
+# 拓展名
+video_suffix = ['.MP4', '.avi', '.mkv', '.mp4', '.webm']
+
+# 递归所有子目录
+for root, dirs, files in os.walk(".", topdown=False):
+    for name in files:
+        if os.path.splitext(name)[1] in video_suffix:
+            info = ffmpeg.probe(os.path.join(root, name))
+            try:
+                v_bitrate = int(info['format']['bit_rate'])
+            except:
+                v_bitrate = 0
+            try:
+                a_bitrate = int(info['streams'][1]['bit_rate'])
+            except:
+                a_bitrate = 0
+
+            flist.append({'name': os.path.join(root, name), 'v_bitrate': v_bitrate ,'a_bitrate': a_bitrate})
+
+# 对视频码率排序
+print(sorted(flist, key=lambda x: x['v_bitrate']))
+# 对音频码率排序
+print(sorted(flist, key=lambda x: x['a_bitrate']))
+```
+
+- 用`fuckit` 模块代替上面例子的`try except` 语句
+```py
+import fuckit
+
+@fuckit
+def func():
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in files:
+            if os.path.splitext(name)[1] in video_suffix:
+                info = ffmpeg.probe(os.path.join(root, name))
+                v_bitrate = int(info['format']['bit_rate'])
+                a_bitrate = int(info['streams'][1]['bit_rate'])
+                flist.append({'name': os.path.join(root, name), 'v_bitrate': v_bitrate ,'a_bitrate': a_bitrate})
+
+func()
+```
+
+- 转换
+```py
+stream = ffmpeg.input('input.mp4')
+stream = ffmpeg.hflip(stream)
+stream = ffmpeg.output(stream, 'output.mkv')
+ffmpeg.run(stream)
+```
+
+- 视频服务器
+```py
+video_format = "flv"
+server_url = "http://127.0.0.1:8080"
+
+process = (
+    ffmpeg
+    .input("input.mp4")
+    .output(
+        server_url,
+        codec = "copy", # use same codecs of the original video
+        listen=1, # enables HTTP server
+        f=video_format)
+    .global_args("-re") # argument to act as a live stream
+    .run()
+)
+```
+```sh
+# 使用ffplay播放
+ffplay -f flv http://localhost:8080
+# 或者使用mpv
+mpv http://localhost:8080
+```
+
+- 截图
+```py
+# 截取第10秒，分辨率为480p
+(
+    ffmpeg
+    .input('input.mp4', ss=10)
+    .filter('scale', 480, -1)
+    .output('output.png', vframes=1)
+    .run()
+)
+```
+

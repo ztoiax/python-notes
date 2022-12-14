@@ -15,7 +15,7 @@
                 * [httpxproxy: 堆栈跟踪, 性能可视化](#httpxproxy-堆栈跟踪-性能可视化)
         * [aiohttp](#aiohttp)
             * [基本使用](#基本使用)
-            * [websocket](#websocket)
+        * [websocket](#websocket)
     * [scapy](#scapy)
         * [基本使用](#基本使用-1)
         * [sr(send and receive)](#srsend-and-receive)
@@ -699,11 +699,11 @@ wrk http://localhost:8000/httpx/session
 
 - 结果:三个测试,都是`aiohttp`更快
     - single
-    ![image](./imgs/httpx_vs_aiohttp-single.png)
+    ![image](./imgs/network/httpx_vs_aiohttp-single.avif)
     - single-http2
-    ![image](./imgs/httpx_vs_aiohttp-single-http2.png)
+    ![image](./imgs/network/httpx_vs_aiohttp-single-http2.avif)
     - session
-    ![image](./imgs/httpx_vs_aiohttp-session.png)
+    ![image](./imgs/network/httpx_vs_aiohttp-session.avif)
 
 ##### [httpxproxy: 堆栈跟踪, 性能可视化](https://github.com/florimondmanca/httpxprof)
 
@@ -871,9 +871,11 @@ chunk_size = 10
 result = loop.run_until_complete(get(url, file))
 ```
 
-#### websocket
+### websocket
 
 - [阮一峰的WebSocket 教程](http://www.ruanyifeng.com/blog/2017/05/websocket.html)
+
+- [微信韦世东:WebSocket从入门到写出开源库]()
 
 - 写入文件websocket_test.sh
 
@@ -1061,7 +1063,7 @@ answer.summary()
     tcpdump -ni enp27s0 dst www.baidu.com and "tcp[tcpflags] & (tcp-syn) != 0"
     ```
 
-    ![image](./imgs/tcp_syn.gif)
+    ![image](./imgs/network/tcp_syn.gif)
 
 - tcp traceroute
 ```py
@@ -1329,6 +1331,16 @@ s.recvfrom(128)
 
 ### TCP
 
+![image](./imgs/network/tcp_socket.avif)
+
+- accpet 系统调用并不参与 TCP 三次握手过程，它只是负责从 TCP 全连接队列取出一个已经建立连接的 socket文件描述符
+
+    ![image](./imgs/network/tcp_socket1.avif)
+
+- close()的流程
+
+    ![image](./imgs/network/tcp_socket2.avif)
+
 #### server
 
 - socket库实现
@@ -1423,6 +1435,8 @@ if __name__ == '__main__':
 ```
 
 ### UDP
+
+![image](./imgs/network/udp_socket.avif)
 
 #### server
 

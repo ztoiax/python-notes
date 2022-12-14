@@ -543,7 +543,7 @@ v = driver.find_element_by_id("kw").text
         </body>
     </html>
     ```
-    ![image](./imgs/frame.png)
+    ![image](./imgs/frame.avif)
 
 ```py
 # 先定位外层
