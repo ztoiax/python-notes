@@ -33,6 +33,8 @@
             * [hash函数](#hash函数)
                 * [双字母hash函数](#双字母hash函数)
         * [Bloom Filters(布隆过滤器)](#bloom-filters布隆过滤器)
+            * [Counting Bloom Filter(计数布隆过滤器)](#counting-bloom-filter计数布隆过滤器)
+            * [Cuckoo Filter(布谷鸟过滤器)](#cuckoo-filter布谷鸟过滤器)
         * [匹配查找](#匹配查找)
             * [穷举: O(nm)](#穷举-onm)
             * [Boyer-Moore](#boyer-moore)
@@ -46,6 +48,7 @@
             * [判断是否为环形队列](#判断是否为环形队列)
             * [LRU缓存](#lru缓存)
         * [skip list(跳表)](#skip-list跳表)
+        * [Python 不用堆和树实现按优先级过期的 LRU 缓存: https://death.andgravity.com/lru-cache](#python-不用堆和树实现按优先级过期的-lru-缓存-httpsdeathandgravitycomlru-cache)
         * [Blockchain(区块链)](#blockchain区块链)
     * [graph(图)](#graph图)
         * [遍历有环图](#遍历有环图)
@@ -1002,6 +1005,9 @@ def binarySearch(list1, x):
 
 ### hash tab(hash表)
 
+- 50%的碰撞概率：1.2 * √￣个数
+    例子：有100个，只需试12个就可能碰撞
+
 - 链地址法(chaining)
 
     - 遇到冲突时, 放如链表里
@@ -1182,12 +1188,51 @@ def hash(key):
     return (ord(k2)) - offset + 26 + (ord(k1)) - offset
 ```
 
-
 ### Bloom Filters(布隆过滤器)
 
 - [介绍](https://llimllib.github.io/bloomfilter-tutorial/zh_CN/)
 
+- [朱小厮的博客：过滤请求绝技 — 布隆过滤器与布谷鸟过滤器]()
+
 - [python实现](https://github.com/jaybaird/python-bloomfilter)
+
+![image](./imgs/Bloom-Filter.avif)
+
+- Bitmap 可以看作是一个位数组结构，在这个数组中每一个位置只占有 1 个 bit 的大小，而每个 bit 只有 0 和 1 两种状态。类似于位图（Bitmap）
+
+    - 定义了 K 个不同的哈希函数，当一个元素尝试被 add 加入 Bloom Filter 时，会进行 K 个哈希函数的计算，得到 k 个不同的 bit 索引位置，并将这 k 个 bit 索引位都置为 1，表示插入成功。
+
+    - 检索某个元素，同样经过 K 个不同的哈希函数得到 k 个哈希点位，然后再看看这些点位在对应的 bitmap 索引位上是否都为 1
+        - 如果这些点位有任何一个 0，则被检元素一定不存在
+        - 如果都是 1，则被检元素很可能存在。
+
+    - 优点：占用空间更少，申请一个 100w 个元素的位数组只占用 1000000Bit/8=125000Byte=125000/1024kb≈122kb 的空间。
+
+    - 缺点：
+
+        - 1.其返回的结果是概率性的
+
+        - 2.删除操作非常困难：一般的直接不允许 remove 移除元素，因为那样的话会把相应的 k 个 bits 位置为 0，而其中很有可能有其他元素执行哈希计算之后也会对应该 bit 位，从而造成更多的误判！如果要删除元素，则使用 Counting Bloom Filter。
+
+#### Counting Bloom Filter(计数布隆过滤器)
+
+- 将布隆过滤器的bitmap更换成数组，当数组某位置被映射一次时就+1，当删除时就-1
+
+#### Cuckoo Filter(布谷鸟过滤器)
+
+- [《Cuckoo Filter：Better Than Bloom》](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
+
+- 空间利用率高于布隆：空间上大概能节省 40% 多。布谷鸟过滤器要求位图的长度必须是 2 的指数
+
+- 支持删除操作
+
+- 为啥要取名布谷鸟呢? 有个成语，「鸠占鹊巢」,布谷鸟也是,布谷鸟从来不自己筑巢。它将自己的蛋产在别人的巢里，让别人来帮忙孵化。待小布谷鸟破壳而出之后，因为布谷鸟的体型相对较大，它又将养母的其它孩子（还是蛋）从巢里挤走 —— 从高空摔下夭折了。
+
+    - 一维数组结构，会有两个 hash 算法将新来的元素映射到数组的两个位置。如果两个位置中有一个位置为空，那么就可以将元素直接放进去。但是如果这两个位置都满了，它就不得不「鸠占鹊巢」，随机踢走一个，然后自己霸占了这个位置。
+
+    - 布谷鸟哈希算法会帮这些受害者（被挤走的蛋）寻找其它的窝。因为每一个元素都可以放在两个位置，只要任意一个有空位置，就可以塞进去。所以这个伤心的被挤走的蛋会看看自己的另一个位置有没有空，如果空了，自己挪过去也就皆大欢喜了。但是如果这个位置也被别人占了呢？好，那么它会再来一次「鸠占鹊巢」，将受害者的角色转嫁给别人。然后这个新的受害者还会重复这个过程直到所有的蛋都找到了自己的巢为止。
+
+    - 连续踢来踢去几百次还没有停下来，这时候会严重影响插入效率。这时候布谷鸟哈希会设置一个阈值，当连续占巢行为超出了某个阈值，就认为这个数组已经几乎满了。这时候就需要对它进行扩容，重新放置所有元素。
 
 ### 匹配查找
 
@@ -2092,6 +2137,8 @@ if __name__ == '__main__':
 ```
 
 ### skip list(跳表)
+
+### Python 不用堆和树实现按优先级过期的 LRU 缓存: https://death.andgravity.com/lru-cache
 
 ### Blockchain(区块链)
 
@@ -3088,6 +3135,7 @@ True
 ### 2-3树
 ### B树
 ### B+树
+B+ Tree 的一些变体CSB+ Tree、PB+ Tree、Bw Tree 以及吸收了 B+ Tree 和 Radix Tree 优点的 MassTree 等等
 ### B-link树
 ### R树
 ### LSMTree(日志结构合并树)

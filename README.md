@@ -3,9 +3,10 @@
 * [python](#python)
     * [环境配置](#环境配置)
         * [交互更友好的解释器](#交互更友好的解释器)
-        * [pip 包管理器](#pip-包管理器)
-        * [pyenv](#pyenv)
-        * [常用命令:](#常用命令)
+        * [包管理器和环境](#包管理器和环境)
+            * [pip](#pip)
+            * [pyenv](#pyenv)
+        * [常用命令](#常用命令)
     * [python 慢的原因](#python-慢的原因)
         * [python加速计划](#python加速计划)
     * [import and from](#import-and-from)
@@ -142,6 +143,7 @@
     * [Geometry: 几何](#geometry-几何)
 * [reference article(优秀文章)](#reference-article优秀文章)
 * [第三方软件资源](#第三方软件资源)
+* [学习项目](#学习项目)
 * [在线工具](#在线工具)
 
 <!-- vim-markdown-toc -->
@@ -178,8 +180,13 @@
 
 - [在线jupyter(需要科学上网)](https://colab.research.google.com/notebooks/intro.ipynb#recent=true)
 
-### pip 包管理器
+### 包管理器和环境
 
+- [An unbiased evaluation of environment management and packaging tools（对 Python 环境和包管理工具的公正分析）](https://alpopkes.com/posts/python/packaging_tools/)
+
+![image](./imgs/包管理器和环境对比.avif)
+
+#### pip
 - `pip install pkg` 普通用户的安装路径:
 
     `~/.local/lib/python3.9`
@@ -232,7 +239,7 @@
 curl -sS https://bootstrap.pypa.io/get-pip.py | sudo python3
 ```
 
-### pyenv
+#### pyenv
 
 > 多版本共存或相互隔离
 
@@ -282,7 +289,7 @@ pyenv virtualenv-delete second
 
 ![image](./imgs/virtualenv.avif)
 
-### 常用命令:
+### 常用命令
 
 ```bash
 # 转换json格式
@@ -6633,6 +6640,8 @@ import this
 
 - [Best-of Python: python资源分类](https://github.com/ml-tooling/best-of-python)
 
+- [awesome-python](https://github.com/vinta/awesome-python)
+
 - [awesome-python-cn: Python资源大全](https://github.com/jobbole/awesome-python-cn)
 
 - [Awesome Python: python资源分类排行](https://python.libhunt.com/)
@@ -6644,6 +6653,23 @@ import this
 - [rembg: 一键扣图](https://github.com/danielgatis/rembg)
 
 - [mitmproxy: http抓包](https://github.com/mitmproxy/mitmproxy)
+
+- [pyupgrade：一键升级 Python 代码的工具。](https://github.com/asottile/pyupgrade)
+
+    - 这是一个用于自动升级 Python 代码，以适应新版本语法的工具。支持升级到不同的 Python 版本、提供预览模式即查看改动变化等功能。
+
+# 学习项目
+
+- [Understanding Linux cp Command and Implementing in Python（用os库实现cp命令）](https://muhammadraza.me/2023/linux-cp/)
+
+- [Let's Make A Silly JSON-like Parser（做一个类 JSON 语法的解析器）](https://arunmani.in/articles/silly-json-parser/)
+
+- [chatfairy：只用115行，实现一个网页聊天室，使用 SSE 进行后端消息推送](https://github.com/yuxiaoy1/chatfairy)
+
+- [56 行代码用 Python 实现一个 Flex/Lex](https://www.skywind.me/blog/archives/2761)
+
+- [开发用 AI 驱动的 TODO 应用](https://tolkunov.dev/posts/ai-powered-todo-app/)
+    - 作者用 Django + 简单的 HTML + Whisper + mixtral-8x7b-instruct + SQLite 实现了一个 TODO 项目
 
 # 在线工具
 

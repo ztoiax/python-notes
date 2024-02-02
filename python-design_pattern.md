@@ -215,3 +215,7 @@ class Task:
         self.count += 1
         print('msg[{}]: {!r}'.format(self.count, msg))
 ```
+
+# reference
+
+- [美团技术团队：设计模式二三事](https://tech.meituan.com/2022/03/10/interesting-talk-about-design-patterns.html)

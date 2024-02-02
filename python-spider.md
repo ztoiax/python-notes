@@ -26,6 +26,7 @@
     * [appium](#appium)
     * [airtest](#airtest)
     * [poco](#poco)
+* [第三方爬虫框架](#第三方爬虫框架)
 
 <!-- vim-markdown-toc -->
 # Spider(网络爬虫)
@@ -1164,3 +1165,9 @@ snapshot('test.png')
 ```sh
 pip install pocoui
 ```
+
+# 第三方爬虫框架
+
+- [基于 AIOHTTP 模块实现的小红书图文/视频作品采集工具](https://github.com/JoeanAmier/XHS-Downloader)
+
+- [TikTokDownloader](https://github.com/JoeanAmier/TikTokDownloader)

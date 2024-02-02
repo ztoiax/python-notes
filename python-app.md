@@ -343,6 +343,8 @@ def reply_my_friend(msg):
     return auto_reply(msg.text)
 ```
 
+# [WeChatMsg：提取微信聊天记录，将其导出成HTML、Word、CSV文档永久保存，对聊天记录进行分析生成年度聊天报告](https://github.com/LC044/WeChatMsg)
+
 # [pyecharts: python ECharts数据可视化](https://github.com/pyecharts/pyecharts)
 
 - [官方文档](https://gallery.pyecharts.org/#/README)
