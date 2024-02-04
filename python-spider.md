@@ -22,6 +22,7 @@
         * [unnitest](#unnitest)
         * [grid with docker](#grid-with-docker)
     * [playwright](#playwright)
+    * [DrissionPage：类似 selenuium 的网页自动化工具](#drissionpage类似-selenuium-的网页自动化工具)
     * [Puppeteer](#puppeteer)
     * [appium](#appium)
     * [airtest](#airtest)
@@ -1019,6 +1020,8 @@ if __name__ == "__main__":
 - 并行测试, 一个浏览器实例, 可以进行多个web测试
 
 - 默认情况下, 使用headless模式
+
+## [DrissionPage：类似 selenuium 的网页自动化工具](https://github.com/g1879/DrissionPage)
 
 ## [Puppeteer]()
 
