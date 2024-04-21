@@ -1,3 +1,18 @@
+<!-- vim-markdown-toc GFM -->
+
+* [pymupdf(pdf, epub)](#pymupdfpdf-epub)
+* [Image](#image)
+        * [pynput.keyboard(自动输入)](#pynputkeyboard自动输入)
+* [pyautogui(自动化键盘, 鼠标)](#pyautogui自动化键盘-鼠标)
+* [wxpy: 微信自动化](#wxpy-微信自动化)
+* [WeChatMsg：提取微信聊天记录，将其导出成HTML、Word、CSV文档永久保存，对聊天记录进行分析生成年度聊天报告](#wechatmsg提取微信聊天记录将其导出成htmlwordcsv文档永久保存对聊天记录进行分析生成年度聊天报告)
+* [pyecharts: python ECharts数据可视化](#pyecharts-python-echarts数据可视化)
+* [Diagrams: 生成架构图](#diagrams-生成架构图)
+* [ipywidgets: 交互式小部件(需要jupyter)](#ipywidgets-交互式小部件需要jupyter)
+* [ffmpeg-python](#ffmpeg-python)
+
+<!-- vim-markdown-toc -->
+
 # pymupdf(pdf, epub)
 
 - [微信:Python处理PDF——PyMuPDF的安装与使用]()

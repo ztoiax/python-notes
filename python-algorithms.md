@@ -60,6 +60,7 @@
         * [走出迷宫](#走出迷宫)
         * [图的应用](#图的应用)
     * [tree(树)](#tree树)
+        * [树相关的基础概念：](#树相关的基础概念)
         * [binary tree(二叉树)](#binary-tree二叉树)
             * [遍历树](#遍历树)
                 * [dfs](#dfs)
@@ -158,7 +159,7 @@
 | n^3     | Cubic(立方)          |
 | 2^n     | Exponential(指数)    |
 
-![image](./imgs/Big-O.avif)
+![image](./imgs/algorithms/Big-O.avif)
 
 - 如果n=1000时需要花费1秒
 
@@ -199,7 +200,7 @@
 
     - 是否需要使用额外的空间, 不需要就是**在位的(in-place)**
 
-![image](./imgs/bigO_sort.avif)
+![image](./imgs/algorithms/bigO_sort.avif)
 
 - [geeksforgeeks: sorting-algorithms](https://www.geeksforgeeks.org/sorting-algorithms/)
 
@@ -209,7 +210,7 @@
 
 ### bubble sort(冒泡排序)
 
-![image](./imgs/bubbleSort.avif)
+![image](./imgs/algorithms/bubbleSort.avif)
 
 - 正向:
 
@@ -259,7 +260,7 @@ def bubbleSort(list1):
 
 - 优化的冒泡算法: 每个元素并不是传统的与后一个元素(i+1)对比, 而是对比不断缩小的长度系数(i+gap)
 
-![image](./imgs/combSort.avif)
+![image](./imgs/algorithms/combSort.avif)
 
 ```py
 def getNextGap(gap):
@@ -314,7 +315,7 @@ def cocktailSort(list1):
 
 - 冒泡排序的变种. 奇数排序一次, 偶数排序一次
 
-![image](./imgs/odd-even-sort.avif)
+![image](./imgs/algorithms/odd-even-sort.avif)
 ```py
 def oddEvenSort(list1):
     length = len(list1)
@@ -332,7 +333,7 @@ def oddEvenSort(list1):
 
 ### insertion sort(插入排序)
 
-![image](./imgs/insertionSort.avif)
+![image](./imgs/algorithms/insertionSort.avif)
 
 ```py
 def insert(list1, j, i):
@@ -411,7 +412,7 @@ def selectSort(list1):
 
 - 选择排序的变种, 找到最大值, 移动至末尾
 
-![image](./imgs/pancakeSort.avif)
+![image](./imgs/algorithms/pancakeSort.avif)
 
 ```py
 # 查询列表内最大值的偏移量
@@ -436,7 +437,7 @@ def pancakeSort(list1):
 
 ### merge sort(归并排序)
 
-![image](./imgs/mergeSort.avif)
+![image](./imgs/algorithms/mergeSort.avif)
 
 - merge sort由冯诺依曼于1945年发明
 
@@ -508,7 +509,7 @@ def mergeSort(list1, compare=lambda x, y: x < y):
 ```
 ### bitonic Sort(双音排序)
 
-![image](./imgs/bitonicSort.avif)
+![image](./imgs/algorithms/bitonicSort.avif)
 
 ```py
 def compAndSwap(list1, i, j, dire):
@@ -547,7 +548,7 @@ print(list1)
 
 ### shell sort(希尔排序)
 
-![image](./imgs/shellSort.gif)
+![image](./imgs/algorithms/shellSort.gif)
 ```py
 def shellSort(list1):
     length = len(list1)
@@ -591,7 +592,7 @@ def shellSort(list1):
 
 ### quick sort (快速排序)
 
-![image](./imgs/quickSort.avif)
+![image](./imgs/algorithms/quickSort.avif)
 
 - 分治算法
 
@@ -658,7 +659,7 @@ print(list1)
     - 把最大的元素, 移动到最底层; 最小的数移动到最顶层
 
 
-![image](./imgs/heapSort.avif)
+![image](./imgs/algorithms/heapSort.avif)
 
 ```py
 def heapify(list1, length, i):
@@ -710,7 +711,7 @@ def heapSort(list1):
 
 - 小数排序
 
-    ![image](./imgs/BucketSort.avif)
+    ![image](./imgs/algorithms/BucketSort.avif)
 
 ```py
 def bucketSort(list1):
@@ -746,7 +747,7 @@ print(list1)
 
 ### counting sort(计数排序)
 
-![image](./imgs/CountingSort.avif)
+![image](./imgs/algorithms/CountingSort.avif)
 
 ```py
 def countingSort(list1):
@@ -771,7 +772,7 @@ def countingSort(list1):
 
 ### radix sort(基数排序)
 
-![image](./imgs/RadixSort.avif)
+![image](./imgs/algorithms/RadixSort.avif)
 
 ```py
 def countingSort(list1, exp1):
@@ -839,7 +840,7 @@ def pigeonholeSort(list1):
 
 ### stooge sort
 
-![image](./imgs/stoogeSort.avif)
+![image](./imgs/algorithms/stoogeSort.avif)
 
 ```py
 def stooge(list1, l, r):
@@ -868,7 +869,7 @@ def stoogeSort(list1):
 - [Timsort — the fastest sorting algorithm you’ve never heard of](https://hackernoon.com/timsort-the-fastest-sorting-algorithm-youve-never-heard-of-36b28417f399)
 
 - [python中的sort之timsort学习](https://zhuanlan.zhihu.com/p/158972725)
-    ![image](./imgs/timsort.avif)
+    ![image](./imgs/algorithms/timsort.avif)
 
 - 由`Mergesort`(归并排序) 和 `insertion sort`(插入排序) 两种排序组成
 
@@ -1018,7 +1019,7 @@ def binarySearch(list1, x):
     - 缺点:
         - 需要额外空间
 
-    ![image](./imgs/hash_link.avif)
+    ![image](./imgs/algorithms/hash_link.avif)
 
 - 开放地址法(open addressing)
 
@@ -1034,7 +1035,7 @@ def binarySearch(list1, x):
 
         - 删除比链地址法要麻烦
 
-    ![image](./imgs/hash_linear.avif)
+    ![image](./imgs/algorithms/hash_linear.avif)
 
 - 桶越多, 冲突次数越少
 
@@ -1196,7 +1197,7 @@ def hash(key):
 
 - [python实现](https://github.com/jaybaird/python-bloomfilter)
 
-![image](./imgs/Bloom-Filter.avif)
+![image](./imgs/algorithms/Bloom-Filter.avif)
 
 - Bitmap 可以看作是一个位数组结构，在这个数组中每一个位置只占有 1 个 bit 的大小，而每个 bit 只有 0 和 1 两种状态。类似于位图（Bitmap）
 
@@ -1258,7 +1259,7 @@ print(find(str1, str2))
 
 - 最坏时间复杂度依然是O(nm), 但平均时间复杂度是: O(n)
 
-![image](./imgs/Boyer-Moore.avif)
+![image](./imgs/algorithms/Boyer-Moore.avif)
 
 ```py
 def find(str1, str2):
@@ -1283,7 +1284,7 @@ def find(str1, str2):
 
 #### kmp(Knuth-Morris-Pratt)
 
-![image](./imgs/kmp.avif)
+![image](./imgs/algorithms/kmp.avif)
 
 - 时间复杂度: O(n+m)
 
@@ -1344,7 +1345,7 @@ print(find(str1, str2)) # 14
 
 ### lcs(Longest Common Subsequence)最长公共子序列
 
-![image](./imgs/lcs.avif)
+![image](./imgs/algorithms/lcs.avif)
 
 - 动态规划算法
 
@@ -1965,7 +1966,7 @@ def test_maxlen():
 
 > FIFO(先入先出)
 
-![image](./imgs/Circular-queue.avif)
+![image](./imgs/algorithms/Circular-queue.avif)
 
 - 只需在双向链表的代码实现里, 做些修改
 
@@ -2148,7 +2149,7 @@ if __name__ == '__main__':
 
 - [10种常用的图算法直观可视化解释](https://cloud.tencent.com/developer/article/1692264)
 
-![image](./imgs/graph.avif)
+![image](./imgs/algorithms/graph.avif)
 
 ```py
 class Node:
@@ -2304,7 +2305,7 @@ if __name__ == '__main__':
 
 ### 遍历有环图
 
-![image](./imgs/graph1.avif)
+![image](./imgs/algorithms/graph1.avif)
 
 | 节点 | 1 | 2 | 3 | 4 | 5 |
 |------|---|---|---|---|---|
@@ -2419,8 +2420,110 @@ dfs(list1)
 
 ## tree(树)
 
-![image](./imgs/bigO_link.avif)
-![image](./imgs/tree_benchmark.avif)
+![image](./imgs/algorithms/bigO_link.avif)
+![image](./imgs/algorithms/tree_benchmark.avif)
+
+### 树相关的基础概念：
+
+- [爱可生开源社区：第15期：索引设计（索引组织方式 B+ 树）](https://mp.weixin.qq.com/s?__biz=MzU2NzgwMTg0MA==&mid=2247490020&idx=1&sn=f786f4f21595d16b4e55d46cd115d696&chksm=fc96fb7bcbe1726d1b37b154abb07fa66d9f6e05a9b29be626b447143ae4be59f61239739c3c&cur_album_id=1338281900976472064&scene=189#wechat_redirect)
+
+- binary tree(二叉树)
+
+    ![image](./imgs/algorithms/binary_tree.avif)
+
+    - 根节点：6 为根节点，根节点没有父节点，有儿子节点，一般叫做 ROOT 节点；
+
+    - 儿子节点：8 和 4 是 6 的儿子节点，4 是左儿子，8 是右儿子；
+
+    - 父节点：6 是 4 和 8 的父节点，父节点是儿子节点的上层节点；
+
+    - 叶子节点：4 和 5 是叶子节点，叶子节点指的是除根节点外没有儿子的节点；
+
+    - 兄弟节点：8 和 4 互为兄弟节点，因为有共同的父亲 6。10，9，7 三个节点没有兄弟，都只有一个儿子；
+
+    - 层数：一棵树的节点层数。这颗二叉树层数为 6；
+
+    - 高度：自下向上遍历，从叶子节点遍历到根节点所需要的节点数量。叶子节点 5 到根节点遍历 7，9，10，8，6，这棵树的高度为 5；
+
+    - 深度：自上而下遍历，从根节点到叶子节点遍历所需要的节点数量，同样，这棵树的深度也是 5；
+
+    - 高度和深度一般以 0 开始计算，当然也有按照从 1 开始计算的；
+
+    - 平衡因子：某节点的左子树与右子树深度的差值，一般结果为绝对值。
+
+    - 如果任何一个子树不存在，按照 0 处理。比如节点 10 的平衡因子就是 3；
+
+- 平衡二叉树（AVL）
+
+    ![image](./imgs/algorithms/avl_tree.avif)
+
+    - 1.所有左子树的节点都小于其对应的父节点（4，5，6）<（7）；（4）<（5）；（8）< （9）；
+    - 2.所有右子树上的节点都大于其对应的父节点（8，9，10）>（7）；（6）>（5）；（10）>（9）；
+    - 3.每个节点的平衡因子差值绝对值 <=1；
+
+    - 每个节点都符合以上三个特征。满足这样条件的树叫平衡二叉树（AVL）树。
+
+    - 问：那再次查找节点 5，需要遍历多少次呢？
+
+        - 由于数据是按照顺序组织的，那查找起来非常快，从上往下找：7-5，只需要在左子树上查找，也就是遍历 2 次就找到了 5。
+        - 假设要找到叶子节点 10，只需要在右子树上查找，那也最多需要 3 次，7-9-10。
+        - 也就说 AVL 树在查找方面性能很好，最坏的情况是找到一个节点需要消耗的次数也就是树的层数， 复杂度为 O(logN)
+
+    - 假设现在有 31 个节点，用 AVL 树表示如图
+        ![image](./imgs/algorithms/avl_tree-31个节点.avif)
+        - 一棵高度为 4 的 AVL 树，有 5 层共 31 个节点，橙色是 ROOT 节点，蓝色是叶子节点。对 AVL 树的查找来看起来已经很完美了，能不能再优化下？比如，能否把这个节点里存放的 KEY 增加？能否减少树的总层数？那减少纵深只能从横向来想办法，这时候可以考虑用多叉树。
+
+- B 树
+
+    - B 树是一种多叉的 AVL 树。B-Tree 减少了 AVL 数的高度，增加了每个节点的 KEY 数量。
+
+    - B 树的特性：（m 为阶数：结点的孩子个数最大值）
+        - 1.树中每个节点最多含有 m 个孩子节点 (m>=2)；
+        - 2.除根节点和叶子结点外，其他节点的孩子数量 >=ceil(m / 2)；
+        - 3.若根节点不是叶子结点，最少有两个孩子
+            - 特殊情况：没有孩子的根结点，即根结点为叶子结点，整棵树只有一个根节点；
+        - 4.每个非叶子结点中包含有 n 个关键字信息：(n，P0，K1，P1，K2，P2，......，Kn，Pn) 其中：
+
+            - Ki (i=1...n) 为关键字，且关键字按顺序升序排序 K(i-1)< Ki
+            - Pi 为指向儿子节点的指针，且指针 P(i-1) 指向的儿子节点里所有关键字均小于 Ki，但都大于 K(i-1)
+            - 关键字的个数 n 必须满足：[ceil(m / 2)-1]<= n <= m-1
+            - 如果一个结点有 n 个关键字，那么该结点有 n+1 个分支。这 n+1 个关键字按照递增顺序排列
+            - 所有叶子结点都出现在同一层，是所有遍历的终点位置
+
+    - 把上面的个31节点的avl树变为b树
+
+        ![image](./imgs/algorithms/b_tree.avif)
+
+        - 一棵 4 阶 B 树，总共有 11 个节点，节点数比avl树 少了 20 个；层数为 3，比avl树 少了两层
+        - 实际应用中，每个最小单元不是 KEY，而一般是按照块（BLOCK）来算：
+            - 磁盘文件系统 EXT4 每块 4KB
+            - PostgreSQL 是 8KB
+            - MySQL InnoDB 是 16KB
+            - MySQL NDB  是 32KB
+
+        - 这颗b树每个节点的基本单元是一个磁盘块（BLOCK，默认 4KB），根节点含有一个键值，其他节点含有 3 个键值，每个磁盘块包含对应的键值与数据。
+
+            - 比如现在要读取 KEY 为 31 的记录：
+                - 1.先找到根节点磁盘块（1），读入内存。（第一次IO）
+                - 2.关键字 31 大于区间（16，），根据指针 P2 找到磁盘块 3，读入内存（第二次 IO）
+                - 3.31 大于区间（20，24，28），根据指针 P4 读取磁盘块 11（第三次 IO），在磁盘块 11 中找到 KEY 为 31 的记录，返回结果。
+                - 这期间有三次磁盘 IO 的读取。可以明确看到，B 树相对于 AVL 树，减少了树的节点数与树的深度，减少了磁盘 IO。
+
+            - 看到这里其实有一个问题，三次 IO，前两次 IO 其实从磁盘读取了不必要的数据，因为只用比较 KEY，所以非叶子节点对应的 DATA 完全没有必要，如果 DATA 很大，那完全是浪费内存资源。考虑下能否把非叶子节点的 DATA 拿掉？
+
+- B+ 树
+
+    - B+ 树是对 B 树的一个小升级。大部分数据库的索引都是基于 B+ 树存储的。
+
+    - B+ 树最大的几个特点：
+        - 1.非叶子节点只保留 KEY，放弃 DATA；
+        - 2.KEY 和 DATA一起，在叶子节点，并且保存为一个有序链表（正序，反序，或者双向）；
+        - 3.B+ 树的查找与 B 树不同，当某个结点的 KEY 与所查的 KEY 相等时，并不停止查找，而是沿着这个 KEY 左边的指针向下，一直查到该关键字所在的叶子结点为止。
+
+    - 把上面的B 树做一个调整，变为以下 B+ 树
+        ![image](./imgs/algorithms/b+tree.avif)
+        - 非叶子节点不再包含除了主键外的数据，数据全部放在叶子节点，并且所有叶子节点存放在一个单向链表里，当然也可以双向链表。
+        - B+ 树同时具有平衡多叉树和链表的优点，即可兼顾 B 树对范围查找的高效，又可兼顾链表随机写入的高效， 这也是大部分数据库都用 B+ 树来存储索引的原因。
 
 ### binary tree(二叉树)
 
@@ -2483,11 +2586,11 @@ tree.right.left.left = TreeNode(7)
 tree.right.left.right = TreeNode(8)
 ```
 
-![image](./imgs/Preorder-Traversal.avif)
+![image](./imgs/algorithms/Preorder-Traversal.avif)
 
-![image](./imgs/Inorder-Traversal.avif)
+![image](./imgs/algorithms/Inorder-Traversal.avif)
 
-![image](./imgs/Postorder-Traversal.avif)
+![image](./imgs/algorithms/Postorder-Traversal.avif)
 
 ##### dfs
 
@@ -2838,7 +2941,7 @@ print(minDepth(tree))
 
 > 左右结点高度不能超过1
 
-![image](./imgs/balanced-binary-tree.avif)
+![image](./imgs/algorithms/balanced-binary-tree.avif)
 
 ```py
 def dfs(tree, isBalanced=True):
@@ -2866,7 +2969,7 @@ print(dfs(tree)) # (3, True)
 
 #### 判断是否为对称二叉树(symmetric binary tree)
 
-![image](./imgs/symmetric-binary-tree.avif)
+![image](./imgs/algorithms/symmetric-binary-tree.avif)
 
 - dfs
 ```py
@@ -3828,7 +3931,7 @@ print(f(list1, weight)) # 3
 
 ### 存储水
 
-![image](./imgs/water.avif)
+![image](./imgs/algorithms/water.avif)
 
 ```py
 def water(list1):

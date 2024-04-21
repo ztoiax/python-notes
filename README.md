@@ -4,6 +4,7 @@
     * [环境配置](#环境配置)
         * [交互更友好的解释器](#交互更友好的解释器)
         * [包管理器和环境](#包管理器和环境)
+            * [uv可以取代pip和venv](#uv可以取代pip和venv)
             * [pip](#pip)
             * [pyenv](#pyenv)
         * [常用命令](#常用命令)
@@ -185,6 +186,14 @@
 - [An unbiased evaluation of environment management and packaging tools（对 Python 环境和包管理工具的公正分析）](https://alpopkes.com/posts/python/packaging_tools/)
 
 ![image](./imgs/包管理器和环境对比.avif)
+
+#### [uv可以取代pip和venv](https://astral.sh/blog/uv)
+
+- `uv pip install`取代`pip isntall`
+- `uv pip compile`取代`pip-compile`
+- `uv pip sync`取代`pip-sync`
+
+- `uv venv`取代`python -m venv`
 
 #### pip
 - `pip install pkg` 普通用户的安装路径:
@@ -6668,8 +6677,16 @@ import this
 
 - [56 行代码用 Python 实现一个 Flex/Lex](https://www.skywind.me/blog/archives/2761)
 
+- [80 行 Python 实现一个搜索引擎](https://www.alexmolas.com/2024/02/05/a-search-engine-in-80-lines.html)
+
 - [开发用 AI 驱动的 TODO 应用](https://tolkunov.dev/posts/ai-powered-todo-app/)
     - 作者用 Django + 简单的 HTML + Whisper + mixtral-8x7b-instruct + SQLite 实现了一个 TODO 项目
+
+- [使用 Python 从头开始实现 RSA](https://coderoasis.com/implementing-rsa-from-scratch-in-python/)
+
+- [(如何(用Python)开发一个(Lisp)解释器)](https://www.norvig.com/lispy.html)
+
+- [用 Python 实现最小可用的 PostgreSQL](https://ivdl.co.za/2024/03/02/pretending-to-be-postgresql-part-one-1/)
 
 # 在线工具
 
