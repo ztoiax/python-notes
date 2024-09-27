@@ -223,3 +223,8 @@ image_merge = image_merge.astype(np.uint8)
 image.fromarray(image_merge).show()
 ```
 
+# 金融
+
+- [gs-quant：高盛开源的量化金融 Python 库](https://github.com/goldmansachs/gs-quant)
+
+    - 此库与高盛的服务高度集成，不登录无法使用高盛提供的市场数据和模型等专业功能。

@@ -1174,3 +1174,7 @@ pip install pocoui
 - [基于 AIOHTTP 模块实现的小红书图文/视频作品采集工具](https://github.com/JoeanAmier/XHS-Downloader)
 
 - [TikTokDownloader](https://github.com/JoeanAmier/TikTokDownloader)
+
+- [firecrawl： AI 爬虫工具，专门从事 Web 数据提取，并将其转换为 Markdown 格式或者其他结构化数据。](https://github.com/mendableai/firecrawl)
+
+    - [Github 星标 11.9K：强大的 Web 爬虫工具 FireCrawl，为 AI 训练与数据提取提供全面支持！](https://mp.weixin.qq.com/s/NORjlaZL-o95_5fPUuN0Fw)
