@@ -1,32 +1,33 @@
 
-<!-- vim-markdown-toc GFM -->
+<!-- mtoc-start -->
 
 * [系统编程](#系统编程)
-    * [命令行相关](#命令行相关)
-        * [typer](#typer)
-        * [click](#click)
-        * [prompt_toolkit](#prompt_toolkit)
-        * [shovel: 像普通命令那样使用](#shovel-像普通命令那样使用)
-        * [tqdm: 加入进度条](#tqdm-加入进度条)
-    * [参数解析](#参数解析)
-        * [argparse](#argparse)
-        * [optparse(参数)](#optparse参数)
-    * [shell](#shell)
-        * [subprocess](#subprocess)
-            * [Popen](#popen)
-                * [asyncio(异步)](#asyncio异步)
-                * [gevent](#gevent)
-            * [clipboard](#clipboard)
-            * [安全问题:代码注入](#安全问题代码注入)
-    * [性能监控](#性能监控)
-        * [psutil](#psutil)
-    * [监控文件](#监控文件)
-        * [pyinotify](#pyinotify)
-    * [限制cpu, 内存](#限制cpu-内存)
-    * [APScheduler(计划任务调度器)](#apscheduler计划任务调度器)
-        * [新建任务](#新建任务)
+  * [命令行相关](#命令行相关)
+    * [typer](#typer)
+    * [click](#click)
+    * [prompt_toolkit](#prompt_toolkit)
+    * [shovel: 像普通命令那样使用](#shovel-像普通命令那样使用)
+    * [tqdm: 加入进度条](#tqdm-加入进度条)
+  * [参数解析](#参数解析)
+    * [argparse](#argparse)
+    * [optparse(参数)](#optparse参数)
+  * [shell](#shell)
+    * [subprocess](#subprocess)
+      * [Popen](#popen)
+        * [asyncio(异步)](#asyncio异步)
+        * [gevent](#gevent)
+      * [clipboard](#clipboard)
+      * [安全问题:代码注入](#安全问题代码注入)
+  * [性能监控](#性能监控)
+    * [psutil](#psutil)
+  * [监控文件](#监控文件)
+    * [pyinotify](#pyinotify)
+  * [限制cpu, 内存](#限制cpu-内存)
+  * [APScheduler(计划任务调度器)](#apscheduler计划任务调度器)
+    * [新建任务](#新建任务)
 
-<!-- vim-markdown-toc -->
+<!-- mtoc-end -->
+
 # 系统编程
 
 ## 命令行相关

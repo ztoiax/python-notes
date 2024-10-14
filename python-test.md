@@ -1,25 +1,26 @@
-<!-- vim-markdown-toc GFM -->
+
+<!-- mtoc-start -->
 
 * [test(测试)](#test测试)
-    * [pytest](#pytest)
-        * [基本使用](#基本使用)
-        * [6种测试结果](#6种测试结果)
-        * [fixture](#fixture)
-        * [临时文件tmpdir, tmpfactory](#临时文件tmpdir-tmpfactory)
-        * [capsys获取stdout, stderr](#capsys获取stdout-stderr)
-            * [recwarn 读取warnings模块](#recwarn-读取warnings模块)
-        * [插件](#插件)
-        * [配置文件](#配置文件)
-            * [pytest.ini](#pytestini)
-            * [tox 测试多个python版本](#tox-测试多个python版本)
-        * [jenkins(持续集成)](#jenkins持续集成)
-    * [unittest](#unittest)
-        * [基本使用](#基本使用-1)
-        * [patch](#patch)
-        * [mock](#mock)
-        * [@mock.path()](#mockpath)
+  * [pytest](#pytest)
+    * [基本使用](#基本使用)
+    * [6种测试结果](#6种测试结果)
+    * [fixture](#fixture)
+    * [临时文件tmpdir, tmpfactory](#临时文件tmpdir-tmpfactory)
+    * [capsys获取stdout, stderr](#capsys获取stdout-stderr)
+      * [recwarn 读取warnings模块](#recwarn-读取warnings模块)
+    * [插件](#插件)
+    * [配置文件](#配置文件)
+      * [pytest.ini](#pytestini)
+      * [tox 测试多个python版本](#tox-测试多个python版本)
+    * [jenkins(持续集成)](#jenkins持续集成)
+  * [unittest](#unittest)
+    * [基本使用](#基本使用-1)
+    * [patch](#patch)
+    * [mock](#mock)
+    * [@mock.path()](#mockpath)
 
-<!-- vim-markdown-toc -->
+<!-- mtoc-end -->
 
 # test(测试)
 
