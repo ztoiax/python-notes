@@ -4,6 +4,7 @@
 * [设计模式](#设计模式)
   * [访问者模式](#访问者模式)
   * [发布/订阅模式(交换机)](#发布订阅模式交换机)
+  * [洋芋编程：计算机网络中的设计模式](#洋芋编程计算机网络中的设计模式)
 * [reference](#reference)
 
 <!-- mtoc-end -->
@@ -225,6 +226,8 @@ class Task:
         self.count += 1
         print('msg[{}]: {!r}'.format(self.count, msg))
 ```
+
+## [洋芋编程：计算机网络中的设计模式](https://mp.weixin.qq.com/s/AzzEkjVcSiBcOR4F-b6YjA)
 
 # reference
 

@@ -6694,6 +6694,8 @@ import this
 
 - [Simple Pastebin：简易版的 Pastebin，基于 Flask 框架](https://github.com/yuxiaoy1/simple-pastebin)
 
+- [如何使用 Python 从头开始实现简化版 Git](https://wyag-zh.hanyujie.xyz/)
+
 # 在线工具
 
 - [python模块函数案例](https://www.programcreek.com/python/)
