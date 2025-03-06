@@ -1,3 +1,9 @@
+---
+id: python-algorithms
+aliases: []
+tags: []
+---
+
 
 <!-- mtoc-start -->
 
@@ -27,6 +33,7 @@
     * [stooge sort](#stooge-sort)
     * [Timsort](#timsort)
     * [煎饼翻转](#煎饼翻转)
+    * [jessesort](#jessesort)
   * [search(搜索)](#search搜索)
     * [binary search(二分搜索)](#binary-search二分搜索)
     * [hash tab(hash表)](#hash-tabhash表)
@@ -1075,6 +1082,8 @@ def sort(list1, n):
 list1 = [3, 2, 4, 1]
 print(sort(list1, 4))
 ```
+
+### [jessesort](https://github.com/lewj85/jessesort)
 
 ## search(搜索)
 

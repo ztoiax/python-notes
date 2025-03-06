@@ -27,6 +27,7 @@
   * [appium](#appium)
   * [airtest](#airtest)
   * [poco](#poco)
+  * [changedetection：检测指定网页的某个部分是否发生变化。比如，网页上面的商品价格发生变化，它就会通知你。](#changedetection检测指定网页的某个部分是否发生变化比如网页上面的商品价格发生变化它就会通知你)
 * [第三方爬虫框架](#第三方爬虫框架)
 
 <!-- mtoc-end -->
@@ -1169,6 +1170,8 @@ snapshot('test.png')
 ```sh
 pip install pocoui
 ```
+
+## [changedetection：检测指定网页的某个部分是否发生变化。比如，网页上面的商品价格发生变化，它就会通知你。](https://github.com/dgtlmoon/changedetection.io)
 
 # 第三方爬虫框架
 
